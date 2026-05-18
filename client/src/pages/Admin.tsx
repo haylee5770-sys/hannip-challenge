@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tabs";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Redirect } from "wouter";
+import { supabase } from "@/lib/supabase";
 
 export default function Admin() {
   const { user, loading } = useAuth();
@@ -491,6 +492,36 @@ function SeasonsAdmin() {
     onError: (e) => toast.error(e.message),
   });
 
+  const [createDirectLoading, setCreateDirectLoading] = useState(false);
+
+  const handleDirectCreate = async () => {
+    setCreateDirectLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/create-season", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ name, startDate, totalDays }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error("실패: " + (data.error ?? res.statusText));
+      } else {
+        toast.success(`시즌 생성 완료! (${data.seasonNumber}기, id=${data.id})`);
+        utils.seasons.list.invalidate();
+        utils.seasons.current.invalidate();
+        utils.seasons.myProgress.invalidate();
+      }
+    } catch (e: any) {
+      toast.error("네트워크 오류: " + e.message);
+    } finally {
+      setCreateDirectLoading(false);
+    }
+  };
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editNumber, setEditNumber] = useState<number>(1);
@@ -611,14 +642,25 @@ function SeasonsAdmin() {
                 예상 종료일: <span className="font-serif">{calcEnd(startDate, totalDays)}</span> · 총 {totalDays}일
               </p>
             </div>
-            <Button
-              onClick={() => create.mutate({ name, startDate, totalDays })}
-              disabled={create.isPending || !name.trim()}
-              className="rounded-none"
-            >
-              {create.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              시즌 시작
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={() => create.mutate({ name, startDate, totalDays })}
+                disabled={create.isPending || !name.trim()}
+                className="rounded-none"
+              >
+                {create.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                시즌 시작
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDirectCreate}
+                disabled={createDirectLoading || !name.trim()}
+                className="rounded-none text-xs"
+              >
+                {createDirectLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+                직접 생성 (백업)
+              </Button>
+            </div>
           </div>
         </div>
       </div>

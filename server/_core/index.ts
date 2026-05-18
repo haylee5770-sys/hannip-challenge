@@ -9,6 +9,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { dailyReminderHandler } from "../scheduledHandlers";
+import { sdk } from "./sdk";
+import * as db from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,6 +41,45 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Scheduled job callbacks — must precede vite/static fallthrough
   app.post("/api/scheduled/dailyReminder", dailyReminderHandler);
+
+  // Direct admin REST endpoint for season creation (bypass tRPC for debugging)
+  app.post("/api/admin/create-season", async (req, res) => {
+    try {
+      console.log("[create-season] received body:", JSON.stringify(req.body));
+      const user = await sdk.authenticateRequest(req).catch(() => null);
+      console.log("[create-season] user:", user?.email, "role:", user?.role);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ error: "관리자만 사용할 수 있어요" });
+      }
+      const { name, startDate, totalDays = 13 } = req.body;
+      if (!name || !startDate) {
+        return res.status(400).json({ error: "name, startDate 필수" });
+      }
+      const d = new Date(startDate + "T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() + (totalDays - 1));
+      const endDate = d.toISOString().slice(0, 10);
+      const active = await db.getActiveSeason();
+      if (active) await db.endSeason(active.id);
+      const all = await db.listSeasons();
+      const nextNumber = all.reduce((max: number, s: { seasonNumber?: number | null }) => Math.max(max, s.seasonNumber ?? 0), 0) + 1;
+      console.log("[create-season] inserting seasonNumber=", nextNumber, "name=", name);
+      const id = await db.createSeason({
+        seasonNumber: nextNumber,
+        totalDays,
+        name,
+        startDate,
+        endDate,
+        status: "active",
+        createdByUserId: user.id,
+      });
+      console.log("[create-season] success, id=", id);
+      return res.json({ ok: true, id, seasonNumber: nextNumber, endDate });
+    } catch (e: any) {
+      console.error("[create-season] ERROR:", e);
+      return res.status(500).json({ error: e?.message ?? String(e) });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
