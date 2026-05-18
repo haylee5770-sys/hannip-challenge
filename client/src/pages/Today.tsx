@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,8 @@ type MealCategory =
 export default function Today() {
   const [date] = useState<string>(() => todayLocal());
   const utils = trpc.useUtils();
+  const { user } = useAuth();
+  const userName = user?.name ?? "";
 
   // Weight state
   const myWeights = trpc.weights.myHistory.useQuery();
@@ -315,7 +318,7 @@ export default function Today() {
           <div className="col-span-12 md:col-span-4">
             <div className="editorial-eyebrow text-muted-foreground mb-2">01 · WEIGHT</div>
             <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
-              체중 기록
+              {userName ? `${userName} 체중 기록` : "체중 기록"}
               {seasonProgress.data?.counts.weight != null && (
                 <span className="text-base font-sans font-normal text-blue-500 tabular-nums">
                   {seasonProgress.data.counts.weight}회
@@ -531,6 +534,7 @@ export default function Today() {
           date={date}
           meals={myMealsToday.data ?? []}
           mealCount={seasonProgress.data?.counts.meal ?? myMealsToday.data?.length}
+          userName={userName}
           onChange={() => {
             utils.meals.byMeDate.invalidate();
             utils.feed.today.invalidate();
@@ -542,7 +546,7 @@ export default function Today() {
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
       <section className="py-10 border-b hairline">
         <div className="editorial-eyebrow text-muted-foreground mb-6">03 · WATER</div>
-        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} />
+        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} />
       </section>
 
       {/* Exercise — 운동 기록 (식단·물과 동일 위계의 독립 섹션) */}
@@ -552,6 +556,7 @@ export default function Today() {
           date={date}
           exercises={myExercisesToday.data ?? []}
           exerciseCount={seasonProgress.data?.counts.exercise ?? myExercisesToday.data?.length}
+          userName={userName}
           onChange={() => {
             utils.exercises.byMeDate.invalidate();
             utils.feed.today.invalidate();
@@ -581,11 +586,13 @@ function MealsSection({
   date,
   meals,
   mealCount,
+  userName,
   onChange,
 }: {
   date: string;
   meals: MealRow[];
   mealCount?: number;
+  userName?: string;
   onChange: () => void;
 }) {
   const [creating, setCreating] = useState(false);
@@ -594,7 +601,7 @@ function MealsSection({
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-12 md:col-span-4">
         <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
-          식단 기록
+          {userName ? `${userName} 식단 기록` : "식단 기록"}
           {mealCount != null && (
             <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{mealCount}회</span>
           )}
@@ -983,7 +990,7 @@ const INTENSITY_OPTS = [
   { value: "high", label: "높음" },
 ] as const;
 
-function ExerciseSection({ date, exercises, exerciseCount, onChange }: { date: string; exercises: ExRow[]; exerciseCount?: number; onChange: () => void }) {
+function ExerciseSection({ date, exercises, exerciseCount, userName, onChange }: { date: string; exercises: ExRow[]; exerciseCount?: number; userName?: string; onChange: () => void }) {
   const [kind, setKind] = useState("");
   const [duration, setDuration] = useState("");
   const [intensity, setIntensity] = useState<"low" | "medium" | "high">("medium");
@@ -1015,7 +1022,7 @@ function ExerciseSection({ date, exercises, exerciseCount, onChange }: { date: s
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-12 md:col-span-4">
         <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
-          운동 기록
+          {userName ? `${userName} 운동 기록` : "운동 기록"}
           {exerciseCount != null && (
             <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{exerciseCount}회</span>
           )}
@@ -1781,7 +1788,7 @@ function PhotoPicker({
 const WATER_VOLUME_OPTIONS = [300, 400, 500, 600, 700, 800, 900, 1000] as const;
 const WATER_DAILY_TARGET_ML = 2000;
 
-function WaterSection({ date, waterCount }: { date: string; waterCount?: number }) {
+function WaterSection({ date, waterCount, userName }: { date: string; waterCount?: number; userName?: string }) {
   const utils = trpc.useUtils();
   const watersToday = trpc.waters.byDate.useQuery({ date });
   const [volumeMl, setVolumeMl] = useState<number>(500);
@@ -1834,7 +1841,7 @@ function WaterSection({ date, waterCount }: { date: string; waterCount?: number 
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-12 md:col-span-4">
         <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
-          물 기록
+          {userName ? `${userName} 물 기록` : "물 기록"}
           {((waterCount ?? items.length) > 0) && (
             <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{waterCount ?? items.length}회</span>
           )}
