@@ -490,7 +490,7 @@ export default function Today() {
                 disabled={upsertWeight.isPending}
                 className="rounded-none px-8 h-12 uppercase tracking-wider"
               >
-                {upsertWeight.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "기록 저장"}
+                {upsertWeight.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "인증하기"}
               </Button>
             </div>
             {weightDeltaInfo && (
@@ -834,19 +834,23 @@ function MealForm({
               }
               return;
             }
-            // 일반식: 한 건으로 전송 (사진 여러 장은 보조 자료로 동일 meal에 속함)
+            // 일반식: 사진 필수 검사
+            if (photos.length === 0) {
+              toast.error("식단 사진을 1장 이상 첨부해 주세요");
+              return;
+            }
             create.mutate({
               recordedDate: date,
               category,
               description: description.trim() || undefined,
               ...numbers,
-              photoBase64: photos.length ? photos : undefined,
+              photoBase64: photos,
             });
           }}
           disabled={create.isPending}
           className="rounded-none uppercase tracking-wider"
         >
-          {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "기록 저장"}
+          {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "인증하기"}
         </Button>
       </div>
     </div>
@@ -984,11 +988,14 @@ function ExerciseSection({ date, exercises, exerciseCount, onChange }: { date: s
   const [duration, setDuration] = useState("");
   const [intensity, setIntensity] = useState<"low" | "medium" | "high">("medium");
   const [note, setNote] = useState("");
+  const [photo, setPhoto] = useState<string | null>(null);
+  const exFileRef = useRef<HTMLInputElement>(null);
 
   const create = trpc.exercises.create.useMutation({
     onSuccess: () => {
       toast.success("운동이 기록되었습니다");
-      setKind(""); setDuration(""); setNote(""); setIntensity("medium");
+      setKind(""); setDuration(""); setNote(""); setIntensity("medium"); setPhoto(null);
+      if (exFileRef.current) exFileRef.current.value = "";
       onChange();
     },
     onError: (e) => toast.error(e.message),
@@ -996,6 +1003,13 @@ function ExerciseSection({ date, exercises, exerciseCount, onChange }: { date: s
   const del = trpc.exercises.delete.useMutation({
     onSuccess: () => { onChange(); toast.success("삭제되었습니다"); },
   });
+
+  const handleExPhoto = (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("이미지 파일만 업로드할 수 있어요."); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => setPhoto(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -1054,11 +1068,48 @@ function ExerciseSection({ date, exercises, exerciseCount, onChange }: { date: s
             className="rounded-none border-foreground/30 font-serif mb-4"
             rows={2}
           />
+
+          {/* 운동 사진 — 필수 */}
+          <div className="mb-4">
+            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">
+              PHOTO · 운동 인증 사진 <span className="text-destructive">*필수</span>
+            </Label>
+            {photo ? (
+              <div className="relative w-24 h-24 border hairline overflow-hidden">
+                <img src={photo} alt="운동 사진" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => { setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; }}
+                  className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="w-24 h-24 border-dashed border-2 border-foreground/20 hover:border-foreground/50 flex flex-col items-center justify-center cursor-pointer transition-colors gap-1">
+                <input
+                  ref={exFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleExPhoto(e.target.files[0])}
+                />
+                <Camera className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">사진 추가</span>
+              </label>
+            )}
+            <p className="text-xs text-muted-foreground mt-1 font-serif italic">운동 현장 사진을 1장 올려주세요.</p>
+          </div>
+
           <div className="flex justify-end">
             <Button
               onClick={() => {
                 if (!kind.trim() || !duration) {
                   toast.error("운동 종류와 시간을 입력해 주세요");
+                  return;
+                }
+                if (!photo) {
+                  toast.error("운동 사진을 1장 이상 첨부해 주세요");
                   return;
                 }
                 create.mutate({
@@ -1067,12 +1118,13 @@ function ExerciseSection({ date, exercises, exerciseCount, onChange }: { date: s
                   durationMin: parseInt(duration),
                   intensity,
                   note: note.trim() || undefined,
+                  photoBase64: photo,
                 });
               }}
               disabled={create.isPending}
               className="rounded-none uppercase tracking-wider"
             >
-              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "운동 기록"}
+              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "인증하기"}
             </Button>
           </div>
         </div>
@@ -1906,7 +1958,7 @@ function WaterSection({ date, waterCount }: { date: string; waterCount?: number 
               disabled={create.isPending}
               className="rounded-none uppercase tracking-wider"
             >
-              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "물 기록 저장"}
+              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "인증하기"}
             </Button>
           </div>
         </div>

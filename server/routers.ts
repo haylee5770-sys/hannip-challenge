@@ -429,8 +429,24 @@ const exercisesRouter = router({
       durationMin: z.number().int().min(1).max(1440),
       intensity: z.enum(["low", "medium", "high"]).default("medium"),
       note: z.string().max(500).optional(),
+      photoBase64: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      let photoKey: string | undefined;
+      let photoUrl: string | undefined;
+
+      if (input.photoBase64) {
+        const matches = input.photoBase64.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        if (!matches) throw new TRPCError({ code: "BAD_REQUEST", message: "이미지 데이터 형식이 올바르지 않아요." });
+        const mime = matches[1];
+        const ext = mime.split("/")[1].replace("+xml", "");
+        const buf = Buffer.from(matches[2], "base64");
+        const key = `exercise/${ctx.user.id}/${input.recordedDate}_${Date.now()}.${ext}`;
+        const stored = await storagePut(key, buf, mime);
+        photoKey = stored.key;
+        photoUrl = stored.url;
+      }
+
       const id = await db.createExercise({
         userId: ctx.user.id,
         recordedDate: input.recordedDate,
@@ -438,6 +454,8 @@ const exercisesRouter = router({
         durationMin: input.durationMin,
         intensity: input.intensity,
         note: input.note ?? null,
+        photoKey: photoKey ?? null,
+        photoUrl: photoUrl ?? null,
       });
       return { id };
     }),

@@ -137,6 +137,8 @@ export const exercises = mysqlTable("exercises", {
   durationMin: int("durationMin").notNull(),
   intensity: mysqlEnum("intensity", ["low", "medium", "high"]).default("medium").notNull(),
   note: text("note"),
+  photoKey: varchar("photoKey", { length: 512 }),
+  photoUrl: text("photoUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (t) => ({
