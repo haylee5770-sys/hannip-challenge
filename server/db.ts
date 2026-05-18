@@ -39,39 +39,36 @@ import {
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _connecting: Promise<ReturnType<typeof drizzle> | null> | null = null;
 
 export async function getDb() {
   if (_db) return _db;
-  if (_connecting) return _connecting;
 
-  _connecting = (async () => {
-    try {
-      const rawUrl = process.env.DATABASE_URL;
-      if (!rawUrl) return null;
-      const urlBase = rawUrl.split("?")[0];
-      const parsed = new URL(urlBase);
-      console.log("[DB] connecting to", parsed.hostname, "...");
-      const conn = await mysql.createConnection({
-        host: parsed.hostname,
-        port: parseInt(parsed.port || "4000"),
-        user: decodeURIComponent(parsed.username),
-        password: decodeURIComponent(parsed.password),
-        database: parsed.pathname.slice(1),
-        ssl: { rejectUnauthorized: false },
-        connectTimeout: 15000,
-      });
-      console.log("[DB] connected!");
-      _db = drizzle(conn);
-      return _db;
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _connecting = null;
-      return null;
-    }
-  })();
-
-  return _connecting;
+  try {
+    const rawUrl = process.env.DATABASE_URL;
+    if (!rawUrl) return null;
+    const urlBase = rawUrl.split("?")[0];
+    const parsed = new URL(urlBase);
+    console.log("[DB] creating pool to", parsed.hostname, "...");
+    const pool = mysql.createPool({
+      host: parsed.hostname,
+      port: parseInt(parsed.port || "4000"),
+      user: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password),
+      database: parsed.pathname.slice(1),
+      ssl: { rejectUnauthorized: false },
+      connectTimeout: 15000,
+      waitForConnections: true,
+      connectionLimit: 5,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 10000,
+    });
+    console.log("[DB] pool created!");
+    _db = drizzle(pool);
+    return _db;
+  } catch (error) {
+    console.error("[Database] Failed to create pool:", error);
+    return null;
+  }
 }
 
 async function db() {
