@@ -722,28 +722,35 @@ const seasonsRouter = router({
       totalDays: z.number().int().min(2).max(365).default(13),
     }))
     .mutation(async ({ ctx, input }) => {
-      // 챌린지 길이(기본 13일) → 종료일 = 시작일 + (totalDays-1)
-      const endDate = (() => {
-        const d = new Date(input.startDate + "T00:00:00Z");
-        d.setUTCDate(d.getUTCDate() + (input.totalDays - 1));
-        return d.toISOString().slice(0, 10);
-      })();
-      // 현재 진행 중인 시즌이 있으면 자동 종료
-      const active = await db.getActiveSeason();
-      if (active) await db.endSeason(active.id);
-      // 다음 기수 자동 부여 (공백 회피는 하지 않고 기존 최대+1)
-      const all = await db.listSeasons();
-      const nextNumber = all.reduce((max, s) => Math.max(max, s.seasonNumber ?? 0), 0) + 1;
-      const id = await db.createSeason({
-        seasonNumber: nextNumber,
-        totalDays: input.totalDays,
-        name: input.name,
-        startDate: input.startDate,
-        endDate,
-        status: "active",
-        createdByUserId: ctx.user.id,
-      });
-      return { id, endDate, seasonNumber: nextNumber };
+      try {
+        // 챌린지 길이(기본 13일) → 종료일 = 시작일 + (totalDays-1)
+        const endDate = (() => {
+          const d = new Date(input.startDate + "T00:00:00Z");
+          d.setUTCDate(d.getUTCDate() + (input.totalDays - 1));
+          return d.toISOString().slice(0, 10);
+        })();
+        // 현재 진행 중인 시즌이 있으면 자동 종료
+        const active = await db.getActiveSeason();
+        if (active) await db.endSeason(active.id);
+        // 다음 기수 자동 부여 (공백 회피는 하지 않고 기존 최대+1)
+        const all = await db.listSeasons();
+        const nextNumber = all.reduce((max, s) => Math.max(max, s.seasonNumber ?? 0), 0) + 1;
+        console.log("[seasons.create] inserting season", { name: input.name, startDate: input.startDate, endDate, seasonNumber: nextNumber, userId: ctx.user.id });
+        const id = await db.createSeason({
+          seasonNumber: nextNumber,
+          totalDays: input.totalDays,
+          name: input.name,
+          startDate: input.startDate,
+          endDate,
+          status: "active",
+          createdByUserId: ctx.user.id,
+        });
+        console.log("[seasons.create] done, id=", id);
+        return { id, endDate, seasonNumber: nextNumber };
+      } catch (e) {
+        console.error("[seasons.create] ERROR:", e);
+        throw e;
+      }
     }),
 
   close: adminProcedure

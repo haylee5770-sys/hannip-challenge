@@ -470,6 +470,7 @@ function SeasonsAdmin() {
       utils.seasons.leaderboard.invalidate();
       toast.success("새 시즌이 시작되었어요");
     },
+    onError: (e) => toast.error("시즌 생성 실패: " + e.message),
   });
   const close = trpc.seasons.close.useMutation({
     onSuccess: () => {
@@ -477,6 +478,7 @@ function SeasonsAdmin() {
       utils.seasons.current.invalidate();
       toast.success("시즌이 종료되었어요");
     },
+    onError: (e) => toast.error("종료 실패: " + e.message),
   });
   const update = trpc.seasons.update.useMutation({
     onSuccess: () => {
