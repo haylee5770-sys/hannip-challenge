@@ -530,7 +530,7 @@ export default function Today() {
         <MealsSection
           date={date}
           meals={myMealsToday.data ?? []}
-          mealCount={seasonProgress.data?.counts.meal}
+          mealCount={seasonProgress.data?.counts.meal ?? myMealsToday.data?.length}
           onChange={() => {
             utils.meals.byMeDate.invalidate();
             utils.feed.today.invalidate();
@@ -542,7 +542,7 @@ export default function Today() {
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
       <section className="py-10 border-b hairline">
         <div className="editorial-eyebrow text-muted-foreground mb-6">03 · WATER</div>
-        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water} />
+        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} />
       </section>
 
       {/* Exercise — 운동 기록 (식단·물과 동일 위계의 독립 섹션) */}
@@ -551,7 +551,7 @@ export default function Today() {
         <ExerciseSection
           date={date}
           exercises={myExercisesToday.data ?? []}
-          exerciseCount={seasonProgress.data?.counts.exercise}
+          exerciseCount={seasonProgress.data?.counts.exercise ?? myExercisesToday.data?.length}
           onChange={() => {
             utils.exercises.byMeDate.invalidate();
             utils.feed.today.invalidate();
@@ -1835,8 +1835,8 @@ function WaterSection({ date, waterCount }: { date: string; waterCount?: number 
       <div className="col-span-12 md:col-span-4">
         <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
           물 기록
-          {waterCount != null && (
-            <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{waterCount}회</span>
+          {((waterCount ?? items.length) > 0) && (
+            <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{waterCount ?? items.length}회</span>
           )}
         </h2>
         <p className="mt-3 font-serif italic text-muted-foreground text-sm">
