@@ -478,6 +478,32 @@ function SeasonsAdmin() {
       toast.success("시즌이 종료되었어요");
     },
   });
+  const update = trpc.seasons.update.useMutation({
+    onSuccess: () => {
+      utils.seasons.list.invalidate();
+      utils.seasons.current.invalidate();
+      utils.seasons.myProgress.invalidate();
+      setEditingId(null);
+      toast.success("시즌 정보가 수정되었어요");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editNumber, setEditNumber] = useState<number>(1);
+  const [editTotalDays, setEditTotalDays] = useState<number>(13);
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+
+  const startEdit = (s: { id: number; name: string; seasonNumber: number | null; totalDays: number | null; startDate: string; endDate: string }) => {
+    setEditingId(s.id);
+    setEditName(s.name);
+    setEditNumber(s.seasonNumber ?? 1);
+    setEditTotalDays(s.totalDays ?? 13);
+    setEditStartDate(s.startDate);
+    setEditEndDate(s.endDate);
+  };
 
   const nextNumber = (list.data?.reduce((m, s: { seasonNumber?: number | null }) => Math.max(m, s.seasonNumber ?? 0), 0) ?? 0) + 1;
   const [name, setName] = useState(`${nextNumber}기 챌린지`);
@@ -497,23 +523,41 @@ function SeasonsAdmin() {
           <div className="editorial-eyebrow text-muted-foreground">CURRENT</div>
           <h3 className="font-serif text-2xl">진행 중인 시즌</h3>
           {current.data ? (
-            <div className="space-y-2">
-              <div className="font-serif text-xl">
-                {current.data.seasonNumber ? `${current.data.seasonNumber}기 · ` : ""}{current.data.name}
+            editingId === current.data.id ? (
+              <SeasonEditForm
+                name={editName} setName={setEditName}
+                seasonNumber={editNumber} setSeasonNumber={setEditNumber}
+                totalDays={editTotalDays} setTotalDays={setEditTotalDays}
+                startDate={editStartDate} setStartDate={setEditStartDate}
+                endDate={editEndDate} setEndDate={setEditEndDate}
+                isPending={update.isPending}
+                onSave={() => update.mutate({ id: editingId!, name: editName, seasonNumber: editNumber, totalDays: editTotalDays, startDate: editStartDate, endDate: editEndDate })}
+                onCancel={() => setEditingId(null)}
+              />
+            ) : (
+              <div className="space-y-2">
+                <div className="font-serif text-xl">
+                  {current.data.seasonNumber ? `${current.data.seasonNumber}기 · ` : ""}{current.data.name}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {current.data.startDate} → {current.data.endDate} · {current.data.totalDays ?? 13}일
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" onClick={() => startEdit(current.data! as any)}>
+                    수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm("정말 시즌을 즉시 종료할까요?")) close.mutate({ id: current.data!.id });
+                    }}
+                  >
+                    즉시 종료
+                  </Button>
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                {current.data.startDate} → {current.data.endDate} · {current.data.totalDays ?? 13}일
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (confirm("정말 시즌을 즉시 종료할까요?")) close.mutate({ id: current.data!.id });
-                }}
-              >
-                즉시 종료
-              </Button>
-            </div>
+            )
           ) : (
             <p className="text-muted-foreground text-sm">진행 중인 시즌이 없습니다.</p>
           )}
@@ -582,24 +626,109 @@ function SeasonsAdmin() {
         <div className="border hairline divide-y hairline">
           {list.data?.length ? (
             list.data.map((s) => (
-              <div key={s.id} className="px-4 py-3 flex items-center justify-between text-sm">
-                <div>
-                  <div className="font-serif text-base">
-                    {s.seasonNumber ? `${s.seasonNumber}기 · ` : ""}{s.name}
+              <div key={s.id} className="px-4 py-3 text-sm">
+                {editingId === s.id ? (
+                  <div className="py-2">
+                    <SeasonEditForm
+                      name={editName} setName={setEditName}
+                      seasonNumber={editNumber} setSeasonNumber={setEditNumber}
+                      totalDays={editTotalDays} setTotalDays={setEditTotalDays}
+                      startDate={editStartDate} setStartDate={setEditStartDate}
+                      endDate={editEndDate} setEndDate={setEditEndDate}
+                      isPending={update.isPending}
+                      onSave={() => update.mutate({ id: editingId!, name: editName, seasonNumber: editNumber, totalDays: editTotalDays, startDate: editStartDate, endDate: editEndDate })}
+                      onCancel={() => setEditingId(null)}
+                    />
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {s.startDate} → {s.endDate} {s.totalDays ? `· ${s.totalDays}일` : ""}
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-serif text-base">
+                        {s.seasonNumber ? `${s.seasonNumber}기 · ` : ""}{s.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {s.startDate} → {s.endDate} {s.totalDays ? `· ${s.totalDays}일` : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="editorial-eyebrow text-muted-foreground">
+                        {s.status === "active" ? "진행 중" : "종료"}
+                      </span>
+                      <Button size="sm" variant="ghost" className="rounded-none text-xs" onClick={() => startEdit(s as any)}>
+                        수정
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="editorial-eyebrow text-muted-foreground">
-                  {s.status === "active" ? "진행 중" : "종료"}
-                </div>
+                )}
               </div>
             ))
           ) : (
             <div className="px-4 py-8 text-center text-muted-foreground">아직 시즌이 없어요.</div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SeasonEditForm({
+  name, setName,
+  seasonNumber, setSeasonNumber,
+  totalDays, setTotalDays,
+  startDate, setStartDate,
+  endDate, setEndDate,
+  isPending, onSave, onCancel,
+}: {
+  name: string; setName: (v: string) => void;
+  seasonNumber: number; setSeasonNumber: (v: number) => void;
+  totalDays: number; setTotalDays: (v: number) => void;
+  startDate: string; setStartDate: (v: string) => void;
+  endDate: string; setEndDate: (v: string) => void;
+  isPending: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="editorial-eyebrow text-muted-foreground text-xs mb-1 block">시즌 이름</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} className="rounded-none" />
+        </div>
+        <div>
+          <Label className="editorial-eyebrow text-muted-foreground text-xs mb-1 block">기수 (예: 10)</Label>
+          <Input
+            type="number" min={1}
+            value={seasonNumber}
+            onChange={(e) => setSeasonNumber(Math.max(1, parseInt(e.target.value || "1", 10)))}
+            className="rounded-none"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <Label className="editorial-eyebrow text-muted-foreground text-xs mb-1 block">시작일</Label>
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-none" />
+        </div>
+        <div>
+          <Label className="editorial-eyebrow text-muted-foreground text-xs mb-1 block">종료일</Label>
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-none" />
+        </div>
+        <div>
+          <Label className="editorial-eyebrow text-muted-foreground text-xs mb-1 block">총 일수</Label>
+          <Input
+            type="number" min={2} max={365}
+            value={totalDays}
+            onChange={(e) => setTotalDays(Math.max(2, Math.min(365, parseInt(e.target.value || "13", 10))))}
+            className="rounded-none"
+          />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={onSave} disabled={isPending || !name.trim()} className="rounded-none">
+          {isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}저장
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel} className="rounded-none">취소</Button>
       </div>
     </div>
   );

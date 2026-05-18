@@ -479,6 +479,14 @@ export async function endSeason(seasonId: number) {
   await conn.update(seasons).set({ status: "ended" }).where(eq(seasons.id, seasonId));
 }
 
+export async function updateSeason(
+  seasonId: number,
+  patch: { name?: string; seasonNumber?: number; totalDays?: number; startDate?: string; endDate?: string; status?: "upcoming" | "active" | "ended" },
+) {
+  const conn = await db();
+  await conn.update(seasons).set(patch).where(eq(seasons.id, seasonId));
+}
+
 export async function getActiveSeason() {
   const conn = await db();
   const rows = await conn.select().from(seasons).where(eq(seasons.status, "active")).limit(1);

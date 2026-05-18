@@ -759,6 +759,22 @@ const seasonsRouter = router({
       return { ok: true };
     }),
 
+  /** 어드민 전용 — 시즌 이름/기수/날짜 수정 */
+  update: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1).max(128).optional(),
+      seasonNumber: z.number().int().min(1).optional(),
+      totalDays: z.number().int().min(2).max(365).optional(),
+      startDate: dateString.optional(),
+      endDate: dateString.optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...patch } = input;
+      await db.updateSeason(id, patch);
+      return { ok: true };
+    }),
+
   /**
    * 내 시즌 진행 상황: Day N, 내 카테고리별 인증 수, 내 감량 %.
    * 시즌이 없으면 null.

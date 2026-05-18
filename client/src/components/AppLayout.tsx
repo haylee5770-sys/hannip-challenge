@@ -44,7 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-8">
               <Link href="/today">
                 <div className="flex flex-col items-start">
-                  <span className="editorial-eyebrow text-muted-foreground">EST. 2022.05.09</span>
+                  <span className="editorial-eyebrow text-muted-foreground">EST.2022/5/9</span>
                   <span className="editorial-h2 text-2xl md:text-3xl tracking-tight">
                     super hannip <span className="italic font-serif font-light">Challenge</span>
                   </span>
