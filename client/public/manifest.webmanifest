@@ -1,0 +1,18 @@
+{
+  "name": "Atelier Wellness",
+  "short_name": "Atelier",
+  "description": "초대된 멤버들이 함께 기록하고 응원하는 폐쇄형 헬스 커뮤니티",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5efe2",
+  "theme_color": "#f5efe2",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "lang": "ko"
+}

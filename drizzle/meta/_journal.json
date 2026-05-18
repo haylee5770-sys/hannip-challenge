@@ -1,0 +1,69 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1778944933123,
+      "tag": "0000_bitter_mister_fear",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778948072133,
+      "tag": "0001_loving_speed",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1778950885460,
+      "tag": "0002_sleepy_the_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1778953077632,
+      "tag": "0003_special_molten_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1778954040658,
+      "tag": "0004_outstanding_ego",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1778978083958,
+      "tag": "0005_aromatic_rhino",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1778987543721,
+      "tag": "0006_simple_night_nurse",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1778990159893,
+      "tag": "0007_naive_king_cobra",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1778990852826,
+      "tag": "0008_lame_rachel_grey",
+      "breakpoints": true
+    }
+  ]
+}

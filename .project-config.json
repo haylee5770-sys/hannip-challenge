@@ -1,0 +1,43 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://2XXXuy5ufAQBPyd.root:9neRB92N2fh5TJeqh5eL@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/gnqnR2mdFMVGMiwa4e4S2P?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663626306825/gnqnR2mdFMVGMiwa4e4S2P",
+    "access_key_id": "ASIAZV3A2ECZIRP5SYXJ",
+    "secret_access_key": "Fl5VaLUiPinRWXCsVzKv6vrnapNBW13rTJa91s7U",
+    "session_token": "IQoJb3JpZ2luX2VjEMj//////////wEaCXVzLWVhc3QtMSJIMEYCIQDrjsUPQkMziy8OgMda9kRPpSRCcrVMBHAUpa0OAscvrwIhAJxurHsxe59okFzu4a+7cK6duOgELkd6/3h50hGYz0jqKv8DCJD//////////wEQBBoMNjY1Mzg2MDk4ODY2IgzReNYToWwCApj+Awcq0wNIPAXD6eJQK0BhLBOvrF4OqQxN090tSvkNzXiCiqWMWyhrGXLbQCnOR/pJko+3SU5sY5WbKIqSWlOlVoICvHNyOm2r7zqrSST/Rz0yY6jzm6ZygpHOq0vyPVraIYO4Od1sVEA9bS+n6hUtp7zZiIc78Oy7iKMkIeFKLD9V21zyHCEYtRPOwVtGfuLDvTLn99NmYdtI+w+bg6x01j2nZ3kilDLzfIJVhsVZO4stcmSkakO0IVaOV8ae4KlWKxUMtfulgYWdMEimXTRRDpaLYN4pQu9YEhIX5V0DMl3Bg/s9rwnuK97CE5emq5+eX0gDqtKNTP0vQ2QJK7+u/5bzLnIp4sDFmujLNBiYWajxdgB2KTpyI+bwQrUCQuTXiTsT03+QVmB1cjOfaHIahYa3l24SOorJyFE/IfNk4H1L/luzZXLPCvXlEw1In2agM+PHcrgYaiPB4FW66Ezq8VPqpuecJn0XVoHEH8+SriexmbEHPr1GsMPDqvvIIfEU6ieHUf+lW2ehAz+w1VXfiP5SSQOr2oG6uVypYZaijoWXFlz5te7A0cZjyqtuugPbyyEg6HmTnReWJFf0LjCazSncJMer9KnjrIMey4cEwaABAJR4OjPSHDCOl6LQBjqcAeIYTeezoyVCw9Jpac+/gcR3vbvQHqnRhE+YdOxL+Za1cZMHsAFcF6gLnG1XsTd+/vV72yFbM4TJbfxfPPHIsZNPdC+azGHyqOukL7bUJf3h2/34Cz8UodBFNM+zIoX6GH9U5+8XoHv763IyP809Th7Zvot975dllw1vbpoFuu5pY5A3IhnAnXPa5DELrpkpqnH9tf/gHyb9TiSA+g==",
+    "expiration": "2026-05-17T03:21:50.000Z"
+  },
+  "name": "diet_tracker_app",
+  "path": "/home/ubuntu/diet_tracker_app",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "oUyEJdYLPBCeg8k6x2WyP6",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "eEg3EyLCAEi8vddGEygARv",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "해이 han",
+    "OWNER_OPEN_ID": "K3UuwaNLiZPRqWqykijMsv",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "adf10a87-2ed7-47f3-b368-657a6cae00d5",
+    "VITE_APP_ID": "gnqnR2mdFMVGMiwa4e4S2P",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "Diet Tracker - 다이어트 기록 및 공유 플랫폼",
+    "VITE_FRONTEND_FORGE_API_KEY": "hvhbMQCiNaZ6Bscpprj2ud",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}

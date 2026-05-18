@@ -1,0 +1,241 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-display: 'Pretendard', 'Pretendard Variable', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', '맑은 고딕', 'Malgun Gothic', sans-serif;
+  --font-serif: 'Pretendard', 'Pretendard Variable', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', '맑은 고딕', 'Malgun Gothic', sans-serif;
+  --font-sans: 'Pretendard', 'Pretendard Variable', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', '맑은 고딕', 'Malgun Gothic', sans-serif;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+:root {
+  /* Editorial cream palette — warm cream paper, deep ink, bronze accent */
+  --background: oklch(0.965 0.022 80);          /* cream paper */
+  --foreground: oklch(0.18 0.012 50);           /* deep ink */
+  --card: oklch(0.98 0.012 80);                 /* slightly lighter cream card */
+  --card-foreground: oklch(0.18 0.012 50);
+  --popover: oklch(0.98 0.012 80);
+  --popover-foreground: oklch(0.18 0.012 50);
+  --primary: oklch(0.22 0.02 50);               /* near-black ink */
+  --primary-foreground: oklch(0.965 0.022 80);
+  --secondary: oklch(0.92 0.022 80);            /* faded cream */
+  --secondary-foreground: oklch(0.28 0.015 50);
+  --muted: oklch(0.92 0.018 80);
+  --muted-foreground: oklch(0.45 0.018 50);     /* muted ink */
+  --accent: oklch(0.62 0.09 60);                /* bronze accent */
+  --accent-foreground: oklch(0.98 0.012 80);
+  --destructive: oklch(0.50 0.18 28);
+  --destructive-foreground: oklch(0.98 0.012 80);
+  --border: oklch(0.85 0.014 70);               /* hairline */
+  --input: oklch(0.88 0.014 70);
+  --ring: oklch(0.42 0.02 50);
+
+  --chart-1: oklch(0.22 0.02 50);               /* ink */
+  --chart-2: oklch(0.62 0.09 60);               /* bronze */
+  --chart-3: oklch(0.45 0.04 60);               /* taupe */
+  --chart-4: oklch(0.75 0.06 70);               /* sand */
+  --chart-5: oklch(0.55 0.06 50);
+
+  --sidebar: oklch(0.93 0.02 80);
+  --sidebar-foreground: oklch(0.18 0.012 50);
+  --sidebar-primary: oklch(0.22 0.02 50);
+  --sidebar-primary-foreground: oklch(0.98 0.012 80);
+  --sidebar-accent: oklch(0.88 0.018 70);
+  --sidebar-accent-foreground: oklch(0.18 0.012 50);
+  --sidebar-border: oklch(0.85 0.014 70);
+  --sidebar-ring: oklch(0.42 0.02 50);
+
+  --radius: 0.25rem;
+}
+
+.dark {
+  --background: oklch(0.16 0.012 50);
+  --foreground: oklch(0.92 0.018 70);
+  --card: oklch(0.20 0.012 50);
+  --card-foreground: oklch(0.92 0.018 70);
+  --popover: oklch(0.20 0.012 50);
+  --popover-foreground: oklch(0.92 0.018 70);
+  --primary: oklch(0.92 0.018 70);
+  --primary-foreground: oklch(0.16 0.012 50);
+  --secondary: oklch(0.24 0.012 50);
+  --secondary-foreground: oklch(0.85 0.018 70);
+  --muted: oklch(0.24 0.012 50);
+  --muted-foreground: oklch(0.65 0.018 70);
+  --accent: oklch(0.65 0.09 60);
+  --accent-foreground: oklch(0.16 0.012 50);
+  --destructive: oklch(0.62 0.18 28);
+  --destructive-foreground: oklch(0.95 0.018 70);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.65 0.018 70);
+
+  --chart-1: oklch(0.92 0.018 70);
+  --chart-2: oklch(0.65 0.09 60);
+  --chart-3: oklch(0.55 0.04 60);
+  --chart-4: oklch(0.45 0.06 70);
+  --chart-5: oklch(0.75 0.06 50);
+
+  --sidebar: oklch(0.20 0.012 50);
+  --sidebar-foreground: oklch(0.92 0.018 70);
+  --sidebar-primary: oklch(0.92 0.018 70);
+  --sidebar-primary-foreground: oklch(0.16 0.012 50);
+  --sidebar-accent: oklch(0.26 0.012 50);
+  --sidebar-accent-foreground: oklch(0.92 0.018 70);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.65 0.018 70);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: -0.01em;
+    font-weight: 400;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+
+  /* Typography helpers — all three resolve to Pretendard for unified Korean readability */
+  .font-display { font-family: var(--font-display); font-feature-settings: "lnum", "ss01"; }
+  .font-serif { font-family: var(--font-serif); font-style: normal; font-weight: 400; }
+  .font-sans { font-family: var(--font-sans); }
+
+  /* In Korean Pretendard, italic is barely visible; replace italic emphasis with subtle weight + color */
+  .font-serif.italic, .italic.font-serif {
+    font-style: normal;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .editorial-h1 .italic, .editorial-h2 .italic {
+    font-style: normal;
+    font-weight: 300;
+    color: color-mix(in oklab, var(--accent) 100%, transparent);
+  }
+
+  .editorial-h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+  }
+  .editorial-h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  .editorial-serif {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .editorial-eyebrow {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+  }
+  .hairline {
+    border-color: color-mix(in oklab, var(--foreground) 16%, transparent);
+  }
+  .paper-grain {
+    background-image:
+      radial-gradient(circle at 20% 20%, color-mix(in oklab, var(--accent) 4%, transparent) 0, transparent 35%),
+      radial-gradient(circle at 80% 60%, color-mix(in oklab, var(--foreground) 3%, transparent) 0, transparent 40%);
+  }
+  .number-display {
+    font-family: var(--font-display);
+    font-feature-settings: "lnum", "tnum";
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 3rem;
+      padding-right: 3rem;
+      max-width: 1320px;
+    }
+  }
+}
