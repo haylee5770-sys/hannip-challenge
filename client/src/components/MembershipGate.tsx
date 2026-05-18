@@ -5,6 +5,94 @@ import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
+/** 카카오톡·라인 등 인앱 브라우저 여부 판별 */
+function isInAppBrowser() {
+  const ua = navigator.userAgent.toLowerCase();
+  return (
+    ua.includes("kakaotalk") ||
+    ua.includes("line/") ||
+    ua.includes("instagram") ||
+    ua.includes("fbav") || // Facebook
+    // Android WebView 공통 마커
+    (ua.includes("android") && ua.includes("; wv)"))
+  );
+}
+
+function InAppBrowserBlock() {
+  const url = window.location.href;
+  const [copied, setCopied] = useState(false);
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isKakao = ua.includes("kakaotalk");
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      // 구형 기기 fallback
+      const el = document.createElement("textarea");
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
+      <div className="max-w-sm w-full text-center space-y-6">
+        <div>
+          <div className="editorial-eyebrow text-muted-foreground mb-3">MEMBERS ONLY</div>
+          <h1 className="editorial-h1 text-4xl mb-3">
+            super hannip <span className="italic font-serif font-light">Challenge</span>
+          </h1>
+        </div>
+
+        <div className="border hairline p-6 space-y-5 text-left">
+          <div>
+            <div className="editorial-eyebrow text-muted-foreground mb-2">안내</div>
+            <p className="font-serif text-base leading-relaxed">
+              {isKakao ? "카카오톡" : "이 앱"} 내에서는 구글 로그인이 제한돼요.<br />
+              {isIOS ? "Safari" : "Chrome"} 브라우저에서 열어야 로그인할 수 있어요.
+            </p>
+          </div>
+
+          <Button onClick={handleCopy} className="w-full rounded-none" variant={copied ? "outline" : "default"}>
+            {copied ? "✓ 링크 복사됨!" : "🔗 링크 복사하기"}
+          </Button>
+
+          <div className="border-t hairline pt-4 space-y-3">
+            <div className="editorial-eyebrow text-muted-foreground text-xs">여는 방법</div>
+            {isIOS ? (
+              <ol className="text-sm text-muted-foreground space-y-2 leading-relaxed list-none">
+                <li>① 위 버튼으로 링크를 복사해요</li>
+                <li>② <strong className="text-foreground">Safari</strong> 앱을 열어요</li>
+                <li>③ 주소창에 붙여넣기 → 이동</li>
+              </ol>
+            ) : (
+              <ol className="text-sm text-muted-foreground space-y-2 leading-relaxed list-none">
+                <li>① 위 버튼으로 링크를 복사해요</li>
+                <li>② <strong className="text-foreground">Chrome</strong> 앱을 열어요</li>
+                <li>③ 주소창에 붙여넣기 → 이동</li>
+              </ol>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground leading-relaxed border-t hairline pt-4">
+            한 번 로그인 후 바탕화면에 추가하면<br />
+            다음부터는 바로 들어올 수 있어요.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function toKoreanError(msg: string): string {
   if (!msg) return "오류가 발생했어요. 다시 시도해 주세요.";
   const m = msg.toLowerCase();
@@ -16,6 +104,9 @@ function toKoreanError(msg: string): string {
 }
 
 export default function MembershipGate({ children }: { children: React.ReactNode }) {
+  // 인앱 브라우저에서는 구글 로그인이 불가 → 전용 안내 화면
+  if (isInAppBrowser()) return <InAppBrowserBlock />;
+
   const { user, loading } = useAuth();
   const utils = trpc.useUtils();
 
