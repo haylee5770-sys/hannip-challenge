@@ -156,6 +156,17 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     setAuthLoading(false);
   };
 
+  const handleKakaoLogin = async () => {
+    setAuthError(null);
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) setAuthError(toKoreanError(error.message));
+    setAuthLoading(false);
+  };
+
   // ── 로딩 ──
   if (loading) {
     return (
@@ -179,7 +190,20 @@ export default function MembershipGate({ children }: { children: React.ReactNode
               오직 초대된 분들을 위한 프라이빗 웰니스 커뮤니티
             </p>
           </div>
-          <div className="border hairline p-6 space-y-4">
+          <div className="border hairline p-6 space-y-3">
+            <Button
+              type="button"
+              onClick={handleKakaoLogin}
+              disabled={authLoading}
+              className="w-full rounded-none bg-[#FEE500] text-[#3C1E1E] hover:bg-[#F5DC00] border-0 font-bold"
+            >
+              {authLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.548 1.516 4.787 3.809 6.156l-.972 3.612 4.184-2.76A11.3 11.3 0 0 0 12 18c5.523 0 10-3.477 10-7.5S17.523 3 12 3z"/>
+                </svg>
+              )}
+              카카오로 입장하기
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -196,7 +220,6 @@ export default function MembershipGate({ children }: { children: React.ReactNode
             </Button>
             {authError && <p className="text-xs text-destructive text-center">{authError}</p>}
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              구글 계정으로만 가입할 수 있어요.<br />
               시즌코드는 방장에게 받으세요.
             </p>
           </div>
