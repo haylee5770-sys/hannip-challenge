@@ -104,8 +104,12 @@ function toKoreanError(msg: string): string {
 }
 
 export default function MembershipGate({ children }: { children: React.ReactNode }) {
-  // 인앱 브라우저에서는 구글 로그인이 불가 → 전용 안내 화면
-  if (isInAppBrowser()) return <InAppBrowserBlock />;
+  // 카카오톡 인앱 브라우저는 카카오 로그인 가능 → 차단하지 않음
+  // 다른 인앱 브라우저(인스타, 페이스북 등)만 차단
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
+  const isKakaoInApp = ua.includes("kakaotalk");
+  const isOtherInApp = !isKakaoInApp && isInAppBrowser();
+  if (isOtherInApp) return <InAppBrowserBlock />;
 
   const { user, loading } = useAuth();
   const utils = trpc.useUtils();
