@@ -165,7 +165,10 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     setAuthLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "kakao",
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: window.location.origin,
+        scopes: "profile_nickname profile_image",
+      },
     });
     if (error) setAuthError(toKoreanError(error.message));
     setAuthLoading(false);
