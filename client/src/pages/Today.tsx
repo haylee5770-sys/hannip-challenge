@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+﻿import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Streamdown } from "streamdown";
+import { shareKakao, isKakaoReady } from "@/lib/kakao";
 
 type FeedbackTone = "warning" | "info" | "praise";
 type FeedbackItem = { tone: FeedbackTone; text: string };
@@ -44,6 +45,7 @@ export default function Today() {
   const utils = trpc.useUtils();
   const { user } = useAuth();
   const userName = user?.name ?? "";
+  const [kakaoShareText, setKakaoShareText] = useState<string | null>(null);
 
   // Weight state
   const myWeights = trpc.weights.myHistory.useQuery();
@@ -87,6 +89,9 @@ export default function Today() {
       toast.success("체중이 기록되었습니다");
       setInbodyPhotoBase64(null);
       if (inbodyFileRef.current) inbodyFileRef.current.value = "";
+      const kg = parseFloat(weightKg);
+      const txt = `🏋️ ${userName || "오늘"} 체중 ${Number.isFinite(kg) ? kg.toFixed(1) + "kg" : ""} 인증 완료!\n#super_hannip_challenge`;
+      setKakaoShareText(txt.trim());
     },
   });
 
@@ -214,6 +219,14 @@ export default function Today() {
 
   return (
     <div>
+      {/* 카카오 공유 배너 */}
+      {kakaoShareText && isKakaoReady() && (
+        <KakaoShareBanner
+          text={kakaoShareText}
+          onClose={() => setKakaoShareText(null)}
+        />
+      )}
+
       {/* 주간 AI 요약 + 스트릭 */}
       {(weeklyNudge.data || (myStreak.data?.streak ?? 0) >= 2) && (
         <div className={cn(
@@ -540,13 +553,14 @@ export default function Today() {
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
           }}
+          onShare={setKakaoShareText}
         />
       </section>
 
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
       <section className="py-10 border-b hairline">
         <div className="editorial-eyebrow text-muted-foreground mb-6">03 · WATER</div>
-        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} />
+        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} onShare={setKakaoShareText} />
       </section>
 
       {/* Exercise — 운동 기록 (식단·물과 동일 위계의 독립 섹션) */}
@@ -562,6 +576,7 @@ export default function Today() {
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
           }}
+          onShare={setKakaoShareText}
         />
       </section>
     </div>
@@ -588,12 +603,14 @@ function MealsSection({
   mealCount,
   userName,
   onChange,
+  onShare,
 }: {
   date: string;
   meals: MealRow[];
   mealCount?: number;
   userName?: string;
   onChange: () => void;
+  onShare?: (text: string) => void;
 }) {
   const [creating, setCreating] = useState(false);
 
@@ -634,9 +651,10 @@ function MealsSection({
               waterMl: m.waterMl,
             }))}
             onCancel={() => setCreating(false)}
-            onCreated={() => {
+            onCreated={(shareText) => {
               setCreating(false);
               onChange();
+              if (shareText) onShare?.(shareText);
             }}
           />
         )}
@@ -667,7 +685,7 @@ function MealForm({
     carbsG: number; proteinG: number; fatG: number; vegetableG: number; waterMl: number;
   }>;
   onCancel: () => void;
-  onCreated: () => void;
+  onCreated: (shareText?: string) => void;
 }) {
   const [category, setCategory] = useState<MealCategory>("regular");
   const isSmoothie = category === "smoothie";
@@ -695,7 +713,8 @@ function MealForm({
   const create = trpc.meals.create.useMutation({
     onSuccess: () => {
       toast.success("식사가 기록되었습니다");
-      onCreated();
+      const catLabel = CATEGORIES.find(c => c.value === category)?.label ?? "식사";
+      onCreated(`🥗 ${catLabel} 인증 완료! #super_hannip_challenge`);
     },
     onError: (e) => toast.error(e.message),
   });
@@ -835,6 +854,7 @@ function MealForm({
                     photoBase64: [p],
                   });
                 }
+                onCreated(`🥤 스무디 인증 완료! #super_hannip_challenge`);
               } catch (e) {
                 // create.onError가 토스트 표시 처리
                 return;
@@ -990,7 +1010,7 @@ const INTENSITY_OPTS = [
   { value: "high", label: "높음" },
 ] as const;
 
-function ExerciseSection({ date, exercises, exerciseCount, userName, onChange }: { date: string; exercises: ExRow[]; exerciseCount?: number; userName?: string; onChange: () => void }) {
+function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, onShare }: { date: string; exercises: ExRow[]; exerciseCount?: number; userName?: string; onChange: () => void; onShare?: (text: string) => void }) {
   const [kind, setKind] = useState("");
   const [duration, setDuration] = useState("");
   const [intensity, setIntensity] = useState<"low" | "medium" | "high">("medium");
@@ -1001,6 +1021,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange }:
   const create = trpc.exercises.create.useMutation({
     onSuccess: () => {
       toast.success("운동이 기록되었습니다");
+      onShare?.(`💪 ${kind.trim() || "운동"} 인증 완료! #super_hannip_challenge`);
       setKind(""); setDuration(""); setNote(""); setIntensity("medium"); setPhoto(null);
       if (exFileRef.current) exFileRef.current.value = "";
       onChange();
@@ -1788,7 +1809,7 @@ function PhotoPicker({
 const WATER_VOLUME_OPTIONS = [300, 400, 500, 600, 700, 800, 900, 1000] as const;
 const WATER_DAILY_TARGET_ML = 2000;
 
-function WaterSection({ date, waterCount, userName }: { date: string; waterCount?: number; userName?: string }) {
+function WaterSection({ date, waterCount, userName, onShare }: { date: string; waterCount?: number; userName?: string; onShare?: (text: string) => void }) {
   const utils = trpc.useUtils();
   const watersToday = trpc.waters.byDate.useQuery({ date });
   const [volumeMl, setVolumeMl] = useState<number>(500);
@@ -1804,6 +1825,7 @@ function WaterSection({ date, waterCount, userName }: { date: string; waterCount
       utils.waters.byDate.invalidate();
       utils.seasons.myProgress.invalidate();
       toast.success(`물 ${res.count}회 기록되었습니다 (${(volumeMl * res.count).toLocaleString()}ml)`);
+      onShare?.(`💧 물 ${res.count}회 인증 완료! (${(volumeMl * res.count).toLocaleString()}ml) #super_hannip_challenge`);
       setPhotos([]);
       if (fileRef.current) fileRef.current.value = "";
     },
@@ -2003,6 +2025,35 @@ function WaterSection({ date, waterCount, userName }: { date: string; waterCount
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------- Kakao Share Banner ----------------- */
+function KakaoShareBanner({ text, onClose }: { text: string; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 12000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm shadow-lg">
+      <div className="border hairline bg-[#FEE500] px-5 py-4 flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-bold text-[#3C1E1E] uppercase tracking-wider mb-0.5">인증 완료!</div>
+          <div className="text-sm text-[#3C1E1E] font-serif truncate">{text.split("\n")[0]}</div>
+        </div>
+        <Button
+          size="sm"
+          className="rounded-none bg-[#3C1E1E] text-[#FEE500] hover:bg-[#2a1414] shrink-0 h-9 px-4 text-xs font-bold uppercase tracking-wider"
+          onClick={() => { shareKakao(text); onClose(); }}
+        >
+          카톡 공유
+        </Button>
+        <button onClick={onClose} className="text-[#3C1E1E]/60 hover:text-[#3C1E1E] shrink-0">
+          <X className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

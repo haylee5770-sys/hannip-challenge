@@ -493,6 +493,25 @@ function SeasonsAdmin() {
   });
 
   const [createDirectLoading, setCreateDirectLoading] = useState(false);
+  const [dbHealthMsg, setDbHealthMsg] = useState<string | null>(null);
+
+  const checkDbHealth = async () => {
+    setDbHealthMsg("확인 중...");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/db-health", {
+        headers: session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {},
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setDbHealthMsg(`✅ DB 연결 정상 · 시즌 ${data.seasonCount}개 · 진행 중 시즌 ID: ${data.activeSeasonId ?? "없음"}`);
+      } else {
+        setDbHealthMsg(`❌ DB 오류: ${data.error}`);
+      }
+    } catch (e: any) {
+      setDbHealthMsg(`❌ 네트워크 오류: ${e.message}`);
+    }
+  };
 
   const handleDirectCreate = async () => {
     setCreateDirectLoading(true);
@@ -660,7 +679,17 @@ function SeasonsAdmin() {
                 {createDirectLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
                 직접 생성 (백업)
               </Button>
+              <Button
+                variant="ghost"
+                onClick={checkDbHealth}
+                className="rounded-none text-xs text-muted-foreground"
+              >
+                DB 상태 확인
+              </Button>
             </div>
+            {dbHealthMsg && (
+              <p className="text-xs font-mono mt-2 text-muted-foreground">{dbHealthMsg}</p>
+            )}
           </div>
         </div>
       </div>

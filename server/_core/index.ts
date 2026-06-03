@@ -42,6 +42,19 @@ async function startServer() {
   // Scheduled job callbacks — must precede vite/static fallthrough
   app.post("/api/scheduled/dailyReminder", dailyReminderHandler);
 
+  // Admin DB health check endpoint
+  app.get("/api/admin/db-health", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req).catch(() => null);
+      if (!user || user.role !== "admin") return res.status(403).json({ error: "관리자만 접근 가능해요" });
+      const seasons = await db.listSeasons();
+      const active = await db.getActiveSeason();
+      return res.json({ ok: true, seasonCount: seasons.length, activeSeasonId: active?.id ?? null });
+    } catch (e: any) {
+      return res.status(500).json({ ok: false, error: e?.message ?? String(e) });
+    }
+  });
+
   // Direct admin REST endpoint for season creation (bypass tRPC for debugging)
   app.post("/api/admin/create-season", async (req, res) => {
     try {
