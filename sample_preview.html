@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>샘플 미리보기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    gap: 40px;
+  }
+  .label {
+    color: #888;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: -30px;
+    align-self: flex-start;
+    max-width: 390px;
+    width: 100%;
+  }
+
+  /* ─── 공통 페이지 래퍼 (모바일 390px 기준) ─── */
+  .page {
+    width: 100%;
+    max-width: 390px;
+    min-height: 700px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ══════════════════════════════
+     샘플 A — 섹션 표지 (블랙)
+  ══════════════════════════════ */
+  .page-cover {
+    background: #0a0a0a;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 32px;
+    gap: 0;
+  }
+
+  .cover-tag {
+    display: inline-block;
+    background: #03C75A;
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 36px;
+    text-transform: uppercase;
+  }
+
+  .cover-title {
+    color: #ffffff;
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .cover-title em {
+    color: #03C75A;
+    font-style: normal;
+  }
+
+  .cover-subtitle {
+    color: #aaaaaa;
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  .cover-divider {
+    width: 40px;
+    height: 3px;
+    background: #03C75A;
+    border-radius: 2px;
+    margin: 0 auto 48px;
+  }
+
+  .cover-desc {
+    background: rgba(3, 199, 90, 0.08);
+    border: 1px solid rgba(3, 199, 90, 0.2);
+    border-radius: 14px;
+    padding: 20px 24px;
+    color: #cccccc;
+    font-size: 13.5px;
+    line-height: 1.8;
+    text-align: left;
+  }
+
+  .cover-desc strong {
+    color: #03C75A;
+    font-weight: 700;
+  }
+
+  .page-num {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 1px;
+  }
+  .page-cover .page-num { color: #444; }
+
+  /* ══════════════════════════════
+     샘플 B — 일반 콘텐츠 (화이트)
+  ══════════════════════════════ */
+  .page-content {
+    background: #ffffff;
+    padding: 0 0 48px 0;
+  }
+
+  .content-header {
+    background: #0a0a0a;
+    padding: 24px 28px 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .content-header-icon {
+    width: 36px;
+    height: 36px;
+    background: #03C75A;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .content-header-text {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .content-header-text span {
+    display: block;
+    color: #03C75A;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 1.5px;
+    margin-bottom: 2px;
+  }
+
+  .content-body {
+    padding: 28px 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .section-title::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 20px;
+    background: #03C75A;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .tip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tip-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .tip-num {
+    width: 24px;
+    height: 24px;
+    background: #03C75A;
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .tip-text {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.7;
+  }
+
+  .tip-text strong {
+    color: #111;
+    font-weight: 700;
+  }
+
+  .tip-text .sub {
+    display: block;
+    font-size: 12.5px;
+    color: #888;
+    margin-top: 3px;
+    line-height: 1.6;
+  }
+
+  .callout {
+    background: #f5fdf9;
+    border-left: 3px solid #03C75A;
+    border-radius: 0 12px 12px 0;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #2a5a3a;
+    line-height: 1.7;
+  }
+
+  .callout strong {
+    font-weight: 700;
+    color: #019a46;
+  }
+
+  .highlight-box {
+    background: #0a0a0a;
+    border-radius: 14px;
+    padding: 18px 20px;
+    color: #fff;
+    font-size: 13.5px;
+    line-height: 1.8;
+  }
+
+  .highlight-box .hl {
+    color: #03C75A;
+    font-weight: 700;
+  }
+
+  .page-content .page-num { color: #ccc; }
+</style>
+</head>
+<body>
+
+<div class="label">샘플 A — 섹션 표지 (블랙 배경)</div>
+
+<!-- ─── 샘플 A: 섹션 표지 ─── -->
+<div class="page page-cover">
+  <div class="cover-tag">Chapter 01</div>
+  <div class="cover-title">오토파지란?<br><em>(자가 포식)</em></div>
+  <div class="cover-divider"></div>
+  <div class="cover-subtitle">우리 몸이 스스로를 치유하는<br>가장 강력한 메커니즘</div>
+  <div class="cover-desc">
+    <strong>자가포식(autophagy)</strong>은 세포가 스스로<br>
+    손상된 단백질과 세포 소기관을 분해하고<br>
+    재활용하는 과정입니다.<br><br>
+    의도적인 칼로리 제한을 통해<br>
+    <strong>세포 스스로 재생할 시간과 힘</strong>을<br>
+    주는 것이 핵심입니다.
+  </div>
+  <div class="page-num">03</div>
+</div>
+
+<div class="label">샘플 B — 일반 콘텐츠 (화이트 배경)</div>
+
+<!-- ─── 샘플 B: 일반 콘텐츠 ─── -->
+<div class="page page-content">
+  <div class="content-header">
+    <div class="content-header-icon">🌙</div>
+    <div class="content-header-text">
+      <span>HABIT 02</span>
+      수면 — 해독의 골든타임
+    </div>
+  </div>
+
+  <div class="content-body">
+
+    <div class="section-title">왜 잠이 중요한가?</div>
+
+    <div class="tip-list">
+      <div class="tip-item">
+        <div class="tip-num">1</div>
+        <div class="tip-text">
+          <strong>더 많이 잔 사람이 더 폭 잔 사람이</strong><br>
+          해독을 더 많이 합니다.
+          <span class="sub">수면 중 뇌는 독소를 씻어내고 좀비세포를 청소합니다.</span>
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-num">2</div>
+        <div class="tip-text">
+          <strong>회복과 해독, 뽐뿜</strong>으로 가려면
+          잘 자야 합니다.
+          <span class="sub">성장호르몬은 수면 중 분비 — 지방 분해의 핵심입니다.</span>
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-num">3</div>
+        <div class="tip-text">
+          <strong>잠을 무시하면 그만큼 손해</strong>입니다.
+          <span class="sub">수면 부족은 식욕 호르몬을 자극해 다음 날 과식으로 이어집니다.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      아무리 좋은 영양도 독소가 쌓여 있거나<br>
+      장 환경이 무너진 상태에서는<br>
+      <strong>제대로 흡수될 수 없습니다.</strong>
+    </div>
+
+    <div class="highlight-box">
+      최소 <span class="hl">11시 취침</span>이 목표 🌙<br>
+      밤 12시 이후는 <span class="hl">자가포식의 골든타임</span><br>
+      절대 놓치지 마세요!
+    </div>
+
+  </div>
+  <div class="page-num">10</div>
+</div>
+
+</body>
+</html>
