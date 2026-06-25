@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hay unnie's SUPER HANNIP Diet Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; flex-direction:column; align-items:center; padding:40px 20px; gap:32px; }
+.page { width:100%; max-width:390px; border-radius:20px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,0.6); }
+.page-footer { font-size:10px; color:#999; letter-spacing:0.5px; text-align:center; padding:10px 0 14px; background:inherit; }
+/* 커버 */
+.page-cover { background:#0a0a0a; align-items:center; text-align:center; padding:56px 32px 0; min-height:560px; }
+.cover-tag { display:inline-block; background:#03C75A; color:#000; font-size:11px; font-weight:700; letter-spacing:3px; padding:5px 14px; border-radius:20px; margin-bottom:28px; }
+.cover-title { color:#fff; font-size:28px; font-weight:900; line-height:1.4; margin-bottom:8px; text-shadow:0 2px 12px rgba(0,0,0,0.5); }
+.cover-title em { color:#03C75A; font-style:normal; }
+.cover-divider { width:40px; height:3px; background:#03C75A; border-radius:2px; margin:20px auto 24px; }
+.cover-desc { background:rgba(3,199,90,0.08); border:1px solid rgba(3,199,90,0.2); border-radius:14px; padding:18px 20px; color:#ccc; font-size:13.5px; line-height:1.9; text-align:left; margin-bottom:24px; }
+.cover-desc strong { color:#03C75A; font-weight:700; }
+.page-cover .page-footer { color:#555; }
+/* 컨텐츠 */
+.page-content { background:#fff; }
+.content-header { background:#0a0a0a; padding:26px 22px 22px; text-align:center; }
+.content-header-text { color:#03C75A; font-size:26px; font-weight:900; line-height:1.25; letter-spacing:-0.5px; text-shadow:0 0 20px rgba(3,199,90,0.4), 0 2px 8px rgba(0,0,0,0.6); }
+.content-body { padding:24px 22px 0; display:flex; flex-direction:column; gap:16px; }
+.section-title { font-size:16px; font-weight:700; color:#111; display:flex; align-items:center; gap:8px; padding-bottom:10px; border-bottom:2px solid #f0f0f0; }
+.section-title::before { content:''; display:block; width:4px; height:18px; background:#03C75A; border-radius:2px; flex-shrink:0; }
+.body-text { font-size:14px; color:#333; line-height:1.9; }
+.body-text strong { color:#111; font-weight:700; }
+.body-text em { color:#03C75A; font-style:normal; font-weight:700; }
+.callout { background:#f3fcf7; border-left:3px solid #03C75A; border-radius:0 12px 12px 0; padding:13px 16px; font-size:13px; color:#1a4a2e; line-height:1.75; box-shadow:inset 0 1px 0 rgba(3,199,90,0.15); }
+.callout strong { font-weight:700; color:#03C75A; }
+.quote-box { background:#f8f8f8; border-radius:14px; padding:28px 22px 24px; font-size:14px; color:#222; line-height:1.9; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); position:relative; }
+.quote-box::before { content:'\201C'; font-size:60px; color:#03C75A; line-height:1; position:absolute; top:4px; left:16px; font-family:Georgia,serif; opacity:0.8; }
+.quote-box::after { content:'\201D'; font-size:60px; color:#03C75A; line-height:1; position:absolute; bottom:-8px; right:16px; font-family:Georgia,serif; opacity:0.8; }
+.quote-mark { display:none; }
+.tip-list { display:flex; flex-direction:column; gap:14px; }
+.tip-item { display:flex; gap:10px; align-items:flex-start; }
+.tip-num { width:24px; height:24px; background:#03C75A; color:#000; font-size:12px; font-weight:700; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; box-shadow:0 2px 6px rgba(3,199,90,0.4); }
+.tip-text { font-size:13.5px; color:#333; line-height:1.8; }
+.tip-text strong { color:#111; font-weight:700; }
+.tip-text .sub { display:block; font-size:12.5px; color:#666; margin-top:4px; line-height:1.7; }
+.page-img { width:100%; height:auto; display:block; }
+.page-content .page-footer { background:#fff; }
+.autophagy-highlight { text-align:center; padding:20px 0 8px; }
+.autophagy-highlight .main { font-size:28px; font-weight:900; color:#03C75A; letter-spacing:-0.5px; display:block; text-shadow:0 0 16px rgba(3,199,90,0.25); }
+.autophagy-highlight .sub2 { font-size:20px; font-weight:900; color:#111; letter-spacing:-0.3px; }
+</style>
+</head>
+<body>
+
+<div class="page page-cover">
+  <div class="cover-tag">Hay unnie's Story</div>
+  <div class="cover-title">안녕하세요<br><em>해이언니</em>입니다</div>
+  <div class="cover-divider"></div>
+  <div class="cover-desc">저는 2022년부터 2026년 현재까지 건강한 다이어트 관리톡방을 운영했습니다.<br><br>독소배출, 항산화에 관심을 가지며 식이섬유가 우리 몸에 미치는 긍정적인 영향에 대해서 몸소 체감하였으며, <strong>건강식에 대한 중요성</strong>을 깨닫게 되었습니다.<br><br>그리고 4년간 다이어트 단톡방을 운영하면서 건강한 루틴에 대해 깊게 집중하게 되었고, 이러한 고민에 닿게 되었습니다.</div>
+  <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 01</div>
+</div>
+
+<div class="page page-content">
+  <div class="content-header">
+    <div class="content-header-text">세포가 진짜<br>좋아하는 것</div>
+  </div>
+  <div class="content-body">
+    <div class="quote-box">
+      <span class="quote-mark">"</span>세상엔 건강제품이 넘치고 매순간 선택의 연속이다.<br>하지만, 그 수많은 정보들 중에서<br><strong>세포가 진짜 좋아하는 것은 무엇일까?</strong><span class="quote-mark close">"</span>
+    </div>
+    <div class="section-title">제가 찾은 해답은</div>
+    <div class="body-text">인류가 원래 먹어오던 건강한 음식과<br>선조들의 식습관을 <em>★ 벤치마킹 ★</em> 하는것<br>불필요한 칼로리를 제한하고 건강한 음식을<br>먹음으로써 <strong>세포가 스스로 재생할 시간과 힘</strong>을 주는것</div>
+    <div class="autophagy-highlight">
+      <span class="main">바로 오토파지</span>
+      <span class="sub2">(자가포식) 입니다</span>
+    </div>
+    <div class="callout">2016년, 일본의 오스미 요시노리 교수가 자가포식으로 노벨상을<br>수상했습니다. 전 세계에 증명해낸 기적의 과학으로<br>인류 건강의 새로운 패러다임이 시작되었습니다.</div>
+    <img src="images/ohsumi.png" alt="오스미 요시노리 교수" class="page-img" style="width:67%; margin:0 auto; display:block;" onerror="this.style.display='none'">
+  </div>
+  <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 02</div>
+</div>
+
+<div class="page page-content">
+  <div class="content-header">
+    <div class="content-header-text">오토파지란?<br>(자가포식)</div>
+  </div>
+  <div class="content-body">
+    <div class="body-text"><strong>우리 몸이 스스로 치유를 하는 과정</strong>을 말해요.<br><br>의도적으로 칼로리를 제한하여 영양소 결핍을 만들면, 세포가 스스로 오래되거나 고장난 세포를 찾아 자가포식과 분해를 통해 <em>재활용 가능한 세포로 바꿔주는</em> 역할을 합니다.</div>
+    <div class="callout">도서 "오토파지"의 저자이자 과학자인<br><strong>"제임스 클레멘트"</strong>는<br>이러한 단식을 1개월에서 3개월에 한번씩<br>주기적으로 해야 한다고 말합니다.<br><strong>(한번에 1~5일의 단식 권고)</strong></div>
+  </div>
+  <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 03</div>
+</div>
+
+<div class="page page-content">
+  <div class="content-header">
+    <div class="content-header-text">오토파지<br>메커니즘</div>
+  </div>
+  <div class="content-body">
+    <img src="images/autophagy_compare.png" alt="오토파지 전후 비교" class="page-img" onerror="this.style.display='none'">
+    <img src="images/autophagy_steps.png" alt="오토파지 5단계" class="page-img" onerror="this.style.display='none'">
+  </div>
+  <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 04</div>
+</div>
+
+<div class="page page-content">
+  <div class="content-header">
+    <div class="content-header-text">세포의 비움,<br>한입의 채움</div>
+  </div>
+  <div class="content-body">
+    <div class="body-text">오토파지 과학과 <em>'한입'의 철학</em>이 만나는 지점</div>
+    <div class="section-title">(주) 한입의 기업 철학</div>
+    <div class="tip-list">
+      <div class="tip-item"><div class="tip-num">1</div><div class="tip-text"><strong>진심을 담은 한입</strong><span class="sub">(주)한입은 신체와 정신이 모두 건강해지는 '한입'의 중요성을 잘 알고 있습니다. 그렇기에 한 그릇의 '건강보양식'을 짓는 정성으로 제품을 만듭니다.</span></div></div>
+      <div class="tip-item"><div class="tip-num">2</div><div class="tip-text"><strong>오토파지 디톡스 &amp; 다이어트</strong><span class="sub">세포 스스로를 청소하는 오토파지 원리를 기반으로 합니다. 좋은 것을 채우고 독소 등 나쁜 것을 배출하는 자체 개발 디톡스 &amp; 다이어트 프로그램을 통해, 현대인의 장 건강과 기초 건강 증진에 큰 도움을 드립니다.</span></div></div>
+      <div class="tip-item"><div class="tip-num">3</div><div class="tip-text"><strong>파이토케미컬의 기술력</strong><span class="sub">신체와 식품에 대한 높은 이해도를 바탕으로 누구나 쉽게 섭취할 수 있고, 항산화 기능을 높여 우리 몸을 다스릴 수 있는 파이토케미컬 전문 기업입니다.</span></div></div>
+    </div>
+    <div class="callout"><strong>※ 파이토케미컬</strong>: 식물이 유해 환경으로부터 자신을 지키기 위해 스스로 합성해내는 물질로, 천연 항산화제이자 암세포 자살을 유도하는 성분입니다.</div>
+  </div>
+  <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 05</div>
+</div>
+
+</body>
+</html>
