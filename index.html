@@ -17,6 +17,8 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
 .cover-title { color:#fff; font-size:28px; font-weight:900; line-height:1.4; margin-bottom:8px; text-shadow:0 2px 12px rgba(0,0,0,0.5); }
 .cover-title em { color:#03C75A; font-style:normal; }
 .cover-divider { width:40px; height:3px; background:#03C75A; border-radius:2px; margin:20px auto 24px; }
+.cover-subtitle { color:#ccc; font-size:13.5px; line-height:1.7; text-align:center; }
+.cover-img { width:100%; border-radius:14px; margin-bottom:24px; display:block; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
 .cover-desc { background:rgba(3,199,90,0.08); border:1px solid rgba(3,199,90,0.2); border-radius:14px; padding:18px 20px; color:#ccc; font-size:13.5px; line-height:1.9; text-align:left; margin-bottom:24px; }
 .cover-desc strong { color:#03C75A; font-weight:700; }
 .page-cover .page-footer { color:#555; }
@@ -42,6 +44,10 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
 .tip-text { font-size:13.5px; color:#333; line-height:1.8; }
 .tip-text strong { color:#111; font-weight:700; }
 .tip-text .sub { display:block; font-size:12.5px; color:#666; margin-top:4px; line-height:1.7; }
+.tip-title { display:block; font-size:19px; font-weight:800; color:#111; }
+.tip-title-sub { display:block; font-size:13px; font-weight:500; color:#555; margin-top:3px; }
+.tip-highlight { display:block; font-size:14.5px; font-weight:700; color:#0a5c2e; background:rgba(3,199,90,0.14); padding:11px 13px; border-radius:8px; margin:8px 0; line-height:1.65; }
+.tip-highlight-red { display:block; font-size:14.5px; font-weight:700; color:#a30000; background:rgba(255,68,68,0.12); padding:11px 13px; border-radius:8px; margin:8px 0; line-height:1.65; }
 .page-img { width:100%; height:auto; display:block; }
 .page-content .page-footer { background:#fff; }
 .autophagy-highlight { text-align:center; padding:20px 0 8px; }
@@ -229,17 +235,18 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
     <div class="tip-list">
       <div class="tip-item">
         <div class="tip-num">따</div>
-        <div class="tip-text"><strong>① [따] 따뜻한 체온 (순환과 해독의 고속도로)</strong>
-          <span class="sub">배를 따뜻하게 유지하면 지방 연소와 해독 효율이 비약적으로 상승합니다. 체온이 낮으면 엉금엉금 기어서 운반하는 꼴입니다.<br><br>
+        <div class="tip-text"><span class="tip-title">[따]듯한 체온<span class="tip-title-sub">(순환과 해독의 고속도로)</span></span>
+          <span class="tip-highlight">지방 분해 효소가 가장 활발한 온도 37도,<br>배를 따듯하게 유지하면 지방 연소와 해독 효율이 비약적으로 상승합니다.<br><br>몸이 차면 혈관이 쪼그라들어 혈액이 느려지기 때문에 운동도, 식단도, 모든 노력의 효과가 떨어집니다.</span>
+          <span class="sub">
           · <strong>미온수 사수:</strong> 찬물은 장기를 위축시킵니다. 체온과 비슷한 따뜻한 물을 수시로 마셔 혈류 속도를 높이세요.<br>
-          · <strong>복부 보온:</strong> 지방 분해 효소가 활발해지는 체온 바로 37도. 복부는 신체의 보일러, 배가 따뜻해야 전신 혈액이 데워져 지방 연소가 유리합니다. 반신욕, 족욕을 병행하면 금상첨화입니다.<br>
-          · <strong>림프 순환:</strong> 아침 기상 직후 설태(혀 백태)를 먼저 닦아내고 (독소 재흡수 방지), 겨드랑이와 서혜부를 가볍게 두드려 독소 배수구를 열어주세요.</span>
+          · <strong>복부 보온:</strong> 지방 분해 효소가 활발해지는 체온 바로 37도. 복부는 신체의 보일러, 배가 따뜻해야 전신 혈액이 데워져 지방 연소가 유리합니다. 반신욕, 족욕을 병행하면 금상첨화입니다.</span>
         </div>
       </div>
       <div class="tip-item">
         <div class="tip-num">잠</div>
-        <div class="tip-text"><strong>② [잠] 폭자기 (세포 자가포식의 시간)</strong>
-          <span class="sub">수면은 내 몸이 스스로를 청소하는 '오토파지' 골든타임입니다. 늦게 잘수록 해독은 못하고 그냥 굶는 꼴이 됩니다.<br><br>
+        <div class="tip-text"><span class="tip-title">[잠]푹자기<span class="tip-title-sub">(세포 자가포식의 골든 타임)</span></span>
+          <span class="tip-highlight">잠은 살 빼는 보약,<br>살은 잘 때 빠진다.<br><br>수면은 내 몸이 스스로를 청소하는 '오토파지' 골든타임입니다. 늦게 잘수록 해독은 못하고 그냥 굶는 꼴이 됩니다.</span>
+          <span class="sub">
           · <strong>아무리 늦어도 11시 취침, 최소 8시간 수면!!!</strong><br>
           · <strong>졸음은 신호:</strong> 디톡스 중 졸음은 몸이 회복 모드로 들어갔다는 증거입니다. 참지 말고 20분 낮잠을 자거나 평소보다 1시간 일찍 주무세요. (주의: 낮잠을 30분 이상 자면 밤수면에 독이 됩니다)<br>
           · <strong>세트포인트 안정:</strong> 깊은 잠을 자야 뇌가 바뀐 몸무게를 '내 것'으로 인정하기 시작합니다. 수면 부족은 해독 실패의 지름길입니다.</span>
@@ -247,16 +254,18 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
       </div>
       <div class="tip-item">
         <div class="tip-num">마</div>
-        <div class="tip-text"><strong>③ [마] 마음: 스트레스 (호르몬 방어막)</strong>
-          <span class="sub">스트레스 호르몬은 지방을 더 꽉 잡습니다.<br><br>
+        <div class="tip-text"><span class="tip-title">[마]음 챙김<span class="tip-title-sub">(스트레스는 최대의 적)</span></span>
+          <span class="tip-highlight">멘탈이 흔들리면<br>다이어트가 뿌리째 흔들립니다.<br><br>스트레스 호르몬은 지방을 더 꽉 잡기에,<br>그에 맞서 싸워줄 행복 호르몬을 불러와야 합니다.</span>
+          <span class="sub">
           · <strong>명현현상 긍정하기:</strong> 두통이나 피로감을 '공사 소음'으로 받아들이세요. "내 몸이 지금 깨끗해지고 있구나"라는 믿음이 코르티솔(스트레스 호르몬) 수치를 낮춥니다.<br>
           · <strong>심한 이상 신호 대응:</strong> 구토나 극심한 두통 시에는 억지로 버티지 말고 방장에게 상의하세요. 따뜻한 소금물이나 꿀물, 휴식 등 전략을 취하도록 합니다.</span>
         </div>
       </div>
       <div class="tip-item">
         <div class="tip-num">음</div>
-        <div class="tip-text"><strong>④ [음] 음식: 영양 (채워서 밀어내는 엔진)</strong>
-          <span class="sub">한입 핵심 전략입니다. 굶지 말고 영양을 '주입'하세요.<br><br>
+        <div class="tip-text"><span class="tip-title">[음]식<span class="tip-title-sub">(영양을 채워서 독소를 밀어내는 엔진)</span></span>
+          <span class="tip-highlight">자연에서 얻은 음식,<br>선조들의(원시인) 식습관을 벤치마킹합니다.<br><br>한입 다이어트의 핵심 전략은 무작정 굶는 것이 아니라, 영양을 채우는 다이어트입니다.</span>
+          <span class="sub">
           · <strong>8시간 시퀀스 (10AM~6PM):</strong> 2시간 간격으로 단스(3회)와 과스(2회)를 교차 복용하세요.<br>
           · <strong>2L 이상의 미온수:</strong> 영양소가 독소를 밀어내면, 물이 그 독소를 몸 밖으로 운반합니다. 스무디(폭발적인 식이섬유)를 먹고 물을 마시지 않으면 변비 옵니다. 찬물보다는 체온과 비슷한 미온수를 수시로 마셔 혈류 속도를 높여주세요.<br>
           · <strong>영양 밀어넣기:</strong> 배가 고프지 않더라도 제시간에 드셔야 합니다. 양질의 영양소는 디톡스의 땔감 역할을 합니다.<br>
@@ -266,8 +275,9 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
       </div>
       <div class="tip-item">
         <div class="tip-num">운</div>
-        <div class="tip-text"><strong>⑤ [운] 운동 (지방 연소 증폭)</strong>
-          <span class="sub">디톡스에서의 운동은 체력을 짜내는 것이 아니라, 지방 연소 모드를 활성화하는 보조 장치입니다.<br><br>
+        <div class="tip-text"><span class="tip-title">[운]동<span class="tip-title-sub">(지방 연소 증폭)</span></span>
+          <span class="tip-highlight">운동이 없는 다이어트는 세상에 없다.<br><br>다이어트 = 운동 X 식단입니다.<br><br>식단을 아무리 잘해도 운동이 0이면<br>그 다이어트는 0이 됩니다.</span>
+          <span class="sub">
           · <strong>심박수 60~70%:</strong> 뛰면서 대화가 가능한 정도까지만. 숨이 턱 끝까지 차는 고강도는 금물! 고강도는 지방보다 근육을 사용합니다. 가벼운 러닝이나 빠르게 걷기를 30~40분 하세요. (너무 짧은 운동은 의미 없어요. 20분 미만은 예열하다가 끝나는 꼴)<br>
           · <strong>조건부 실행:</strong> 머리가 맑고 몸이 가벼울 때만 누리는 '특권'입니다. 컨디션이 나쁘다면 과감히 생략하고 '따'와 '잠'에 집중하세요. 오히려 독이 됩니다.</span>
         </div>
@@ -298,38 +308,54 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
 <!-- PAGE 12 -->
 <div class="page page-content">
   <div class="content-header">
-    <div class="content-header-text">금기 5계명<br>상세 가이드</div>
+    <div class="content-header-text" style="color:#ff4444; text-shadow:0 0 20px rgba(255,68,68,0.4), 0 2px 8px rgba(0,0,0,0.6);">금기 5계명<br>상세 가이드</div>
   </div>
   <div class="content-body">
     <div class="tip-list">
       <div class="tip-item">
         <div class="tip-num" style="background:#ff4444;">따</div>
-        <div class="tip-text"><strong>① [따] 차가운 체온 금지</strong>
-          <span class="sub">찬물·찬바람은 해독 고속도로를 막는 행위입니다. 체온이 낮아지면 독소 배출이 느려지고 디톡스 효율이 크게 떨어집니다.</span>
+        <div class="tip-text"><span class="tip-title">[따] 차가운 체온</span>
+          <span class="tip-highlight-red">해독 고속도로를 막는 행위</span>
+          <span class="sub">
+          · <strong>찬물 금지:</strong> 차가운 물은 장기를 위축시키고 혈류 속도를 늦춥니다. 독소가 나갈 길을 스스로 막는 꼴입니다.<br>
+          · <strong>찬바람 쐬기 금지:</strong> 체온이 떨어지면 몸은 해독이 아닌 '체온 유지'에 모든 에너지를 써버립니다. 디톡스 중에는 몸을 과할 정도로 따뜻하게 보호하세요.</span>
         </div>
       </div>
       <div class="tip-item">
         <div class="tip-num" style="background:#ff4444;">잠</div>
-        <div class="tip-text"><strong>② [잠] 수면 부족 &amp; 야간 청색광 금지</strong>
-          <span class="sub">자기 전 스마트폰 청색광은 멜라토닌 분비를 방해합니다. 밤 10시~새벽은 세포 재생과 해독이 가장 활발한 시간입니다.</span>
+        <div class="tip-text"><span class="tip-title">[잠] 수면 부족과 야간 청색광</span>
+          <span class="tip-highlight-red">재생 엔진을 끄는 행위</span>
+          <span class="sub">
+          · <strong>자기 전 스마트폰 금지:</strong> 청색광은 멜라토닌 분비를 방해하고 스트레스 호르몬을 높여 지방 연소를 방해합니다.<br>
+          · <strong>늦게 자기 금지:</strong> 밤 10시~새벽 2시는 세포 재생과 해독이 가장 활발한 시간입니다. 이때 깨어있으면 '오토파지' 시스템이 작동하지 않습니다.</span>
         </div>
       </div>
       <div class="tip-item">
         <div class="tip-num" style="background:#ff4444;">마</div>
-        <div class="tip-text"><strong>③ [마] 체중계 숫자 집착 금지</strong>
-          <span class="sub">초기 체중 변화는 지방이 아닌 수분과 염증의 움직임입니다. 코르티솔이 올라가면 디톡스 과정 자체를 방해합니다.</span>
+        <div class="tip-text"><span class="tip-title">[마] 마음: 체중계 숫자에 대한 집착</span>
+          <span class="tip-highlight-red">호르몬을 교란하는 행위</span>
+          <span class="sub">
+          · <strong>숫자에 일희일비 금지:</strong> 디톡스 초기 체중 변화는 수분과 염증의 이동입니다. 체중계는 감량 그래프를 보는 것이지, 엄밀히 말하면 감량의 척도가 아닙니다. 몸무게가 낮아지면 기분 좋아하고, 올라가면 무시하세요 (정신승리)<br>
+          · 숫자에 집착해 불안해지면 코르티솔(스트레스 호르몬)이 나와 인슐린 수치를 건드리고 지방을 꽉 잠그게 됩니다.</span>
         </div>
       </div>
       <div class="tip-item">
         <div class="tip-num" style="background:#ff4444;">음</div>
-        <div class="tip-text"><strong>④ [음] 인슐린 스파이크 유발 음식 금지</strong>
-          <span class="sub">설탕·시럽이 들어간 당류 음식, 오전 고당도 음식은 인슐린 스파이크를 즉각 발생시킵니다. 스무디를 건너뛰고 고지방·고단백 음식으로 대체하는 것도 금지입니다.</span>
+        <div class="tip-text"><span class="tip-title">[음] 음식: 인슐린 스파이크와 영양 결손</span>
+          <span class="tip-highlight-red">지방 스위치를 끄는 행위</span>
+          <span class="sub">
+          · <strong>당 음료·카페인 섭취 금지:</strong> 스무디 &amp; 물 외에 아무것도 드시지 마세요. 특히 설탕이나 시럽이 든 음료 &amp; 음식은 인슐린을 폭발시켜 즉시 지방 연소를 중단시킵니다. 카페인은 간이 해독에 집중하는 것을 방해합니다. 1순위 방해꾼입니다.<br>
+          · <strong>스무디 건너뛰기 금지:</strong> 배가 안 고프다고 스무디를 건너뛰지 마세요. 양질의 영양소가 들어와야 그 힘으로 세포 속 독소를 '밀어낼' 수 있습니다. 최소 영양이 끊기면 몸은 다시 '기아' 모드로 돌아가 지방을 저장합니다.<br>
+          · <strong>벌컥벌컥 마시기 금지:</strong> 액체라고 그냥 삼키지 마세요. 침(소화효소)과 섞이지 않은 스무디는 위장에 부담이 되고 흡수율을 떨어뜨립니다.</span>
         </div>
       </div>
       <div class="tip-item">
         <div class="tip-num" style="background:#ff4444;">운</div>
-        <div class="tip-text"><strong>⑤ [운] 고강도 운동 &amp; 무리한 활동 금지</strong>
-          <span class="sub">숨이 턱 막히는 고강도 운동은 당분을 에너지원으로 전환시켜 디톡스 효과를 떨어뜨립니다. 타바타·HIIT 등 고강도 운동은 디톡스 기간 중 삼가주세요.</span>
+        <div class="tip-text"><span class="tip-title">[운]동: 무리한 운동은 금지</span>
+          <span class="tip-highlight-red">무리한 운동은 금지</span>
+          <span class="sub">
+          · <strong>디톡스 3일:</strong> 무리한 운동은 금지, 컨디션에 따라 운동 진행<br>
+          · <strong>하다말다 금지:</strong> 일주일에 고강도 운동 2~3일 하는 건 아무 의미 없습니다. 운동은 매일매일 해야만 비로소 세트포인트값이 깨집니다. 꾸준히 실행할 수 있는 나만의 루틴을 꼭 찾으세요.</span>
         </div>
       </div>
     </div>
@@ -344,9 +370,9 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
   </div>
   <div class="content-body">
     <div class="quote-box">
-      <span class="quote-mark">"</span>디톡스 현상은 당신의 <strong>'과거'</strong>가 보내는 성적표입니다.<br>가장 강력한 해방의 신호를 기꺼이 받아이세요.<span class="quote-mark close">"</span>
+      <span class="quote-mark">"</span>디톡스 현상은<br>당신의 <strong>'과거'</strong>가 보내는<br>성적표입니다<br><br>가장 강력한 해방의 신호를<br>기꺼이 받아들이세요<span class="quote-mark close">"</span>
     </div>
-    <div class="body-text">맑은 몸이 디톡스를 시작하고 두통, 물갈음 느낌을 느낄 수 있습니다.<br>"이거 부작용이 아니야?" "나쁜 것 맞는 거 아니야?"라고 알고 있지요.<br><br>기억하세요. 명현 증상은 지난 세월 동안 어떻게 대해왔는지에 대한 정직한 기억이자 최대한 빨리 치유를 촉진할 수 있는 신호입니다.</div>
+    <div class="body-text">많은 분이 디톡스를 시작하고 두통, 졸음, 구토감을 느끼면 겁을 먹습니다. "이거 부작용 아니야?" "나랑 안 맞는 거 아니야?"라고 말이죠.<br><br>기억하세요. 명현증상은 지난 세월 동안 몸을 어떻게 대해왔는지에 대한 정직한 기록이기에 최대한 빨리 청소할수록 유리합니다. 몸이 <strong>스스로를</strong> 고치기 시작했다는 <em>가장 강력한 해방의 신호</em>를 기쁘게 받아들이면 최상의 디톡스를 해갈 수 있습니다.</div>
   </div>
   <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 16</div>
 </div>
@@ -367,28 +393,34 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
   <div class="content-body">
     <div style="display:flex; flex-direction:column; gap:10px;">
       <div style="background:#f8f8f8; border-radius:12px; padding:13px 15px; border-left:3px solid #03C75A;">
-        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">추위 &amp; 울음</div>
-        <div style="font-size:12.5px; color:#333; line-height:1.7;">해독되면서 독소·노폐물이 빠져나올 때 나타나는 반응입니다.<br><span style="color:#03C75A; font-weight:600;">→ 단백질 음료를 챙기고, 따뜻한 물을 자주 마셔주세요.</span></div>
+        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">추위 &amp; 졸음</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7;">에너지를 해독과 세포 재생(오토파지)에 집중 배치하느라 체온 유지와 활동 에너지를 잠시 아끼는 중입니다. 졸리다는 것은 현재 내 몸이 해독에 최선을 다하고 있다는 증거입니다.</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7; margin-top:8px;"><span style="color:#ff4444;">●</span> <strong style="color:#ff4444;">[해결 지침]</strong> 따뜻한 물을 수시로 마시고, 몸이 보내는 신호에 따라 즉시 휴식을 취하세요. 단, 낮잠은 30분을 넘기지 마세요. (밤에 잠이 오지 않아 해독에 방해가 많이 됩니다)</div>
       </div>
       <div style="background:#f8f8f8; border-radius:12px; padding:13px 15px; border-left:3px solid #03C75A;">
         <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">두통 &amp; 구토</div>
-        <div style="font-size:12.5px; color:#333; line-height:1.7;">탄수화물과 당류 섭취가 현저히 낮아지는 과정에서 해독이 이루어지는 상태입니다.<br><span style="color:#03C75A; font-weight:600;">→ 단백질 음료를 한번에 마시지 말고 나누어 드세요.</span></div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7;">평소 의존하던 탄수화물/카페인이 끊기며 뇌의 연료가 '지방'으로 교체되는 과정에서의 일시적 현상입니다. 두통이 있다는 건 몸이 그동안 쌓인 묵은 독소를 털어내고 에너지 시스템을 재편성하고 있다는 뜻입니다.</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7; margin-top:8px;"><span style="color:#ff4444;">●</span> <strong style="color:#ff4444;">[해결 지침]</strong> 미지근한 물을 한 모금씩 천천히 음미하며 마시고 한숨 자고 나면 개운해집니다.</div>
       </div>
       <div style="background:#f8f8f8; border-radius:12px; padding:13px 15px; border-left:3px solid #03C75A;">
         <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">심장 두근거림</div>
-        <div style="font-size:12.5px; color:#333; line-height:1.7;">전해질·마그네슘 부족으로 인해 발생합니다.<br><span style="color:#03C75A; font-weight:600;">→ 소금을 소량 넣은 물 또는 전해질 음료를 드세요.</span></div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7;">유기농 스무디의 칼륨 성분이 몸속 나트륨과 부종을 무서운 속도로 밀어내며 생기는 전기 신호의 변화입니다.</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7; margin-top:8px;"><span style="color:#ff4444;">●</span> <strong style="color:#ff4444;">[해결 지침]</strong> 청소 속도가 너무 빠른 것이니 질 좋은 소금 한 꼬집을 물에 타서 드시면 즉시 진정됩니다.</div>
       </div>
       <div style="background:#f8f8f8; border-radius:12px; padding:13px 15px; border-left:3px solid #03C75A;">
-        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">배에서 나오는 소리</div>
-        <div style="font-size:12.5px; color:#333; line-height:1.7;">장이 활성화되면서 발생하는 소리로, 장이 열심히 일하고 있다는 신호입니다.<br><span style="color:#03C75A; font-weight:600;">→ 방장에게 문의하세요.</span></div>
+        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">배에서 꼬르륵 소리</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7;">위장이 비워짐과 동시에 장운동이 활발해지며 '장내 대청소'를 시작했다는 기분 좋은 신호입니다.</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7; margin-top:8px;"><span style="color:#ff4444;">●</span> <strong style="color:#ff4444;">[해결 지침]</strong> "지방 엔진이 가동되기 시작했구나!"라고 즐겁게 받아들이며 스무디를 30번 씹어 드세요.</div>
       </div>
       <div style="background:#f8f8f8; border-radius:12px; padding:13px 15px; border-left:3px solid #03C75A;">
-        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">피부 가려움 &amp; 발진</div>
-        <div style="font-size:12.5px; color:#333; line-height:1.7;">독소가 피부로 빠져나오는 현상입니다. 이 과정이 끝나면 피부가 다시 깨끗해집니다.<br><span style="color:#03C75A; font-weight:600;">→ 단식과 음료 중심으로 빠르게 진행하세요.</span></div>
+        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">피부 가려움 &amp; 방귀</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7;">배출 경로가 소변뿐만 아니라 피부와 장 가스로 확장되며 몸속 오염원이 밖으로 빠져나가는 과정입니다.</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7; margin-top:8px;"><span style="color:#ff4444;">●</span> <strong style="color:#ff4444;">[해결 지침]</strong> 림프절(겨드랑이, 사타구니)을 가볍게 두드려 독소 배수구를 열어주면 증상이 완화됩니다.</div>
       </div>
       <div style="background:#f8f8f8; border-radius:12px; padding:13px 15px; border-left:3px solid #03C75A;">
-        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">초반 1~2kg 감량</div>
-        <div style="font-size:12.5px; color:#333; line-height:1.7;">처음에 빠지는 것은 지방이 아니라 수분과 글리코겐입니다.<br><span style="color:#03C75A; font-weight:600;">→ 지방이 빠지기 시작하면 계속 빠집니다. 믿고 기다리세요.</span></div>
+        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">초반 1~2kg 급감</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7;">인슐린이 안정되면서 몸을 붓게 만들던 불필요한 수분과 염분이 빠져나가는 '세포 정화 단계'입니다.</div>
+        <div style="font-size:12.5px; color:#333; line-height:1.7; margin-top:8px;"><span style="color:#ff4444;">●</span> <strong style="color:#ff4444;">[해결 지침]</strong> 숫자에 일희일비하지 마세요. 지금 빠진 수분의 길이 나중에 지방이 타서 나갈 고속도로가 됩니다.</div>
       </div>
     </div>
   </div>
@@ -412,6 +444,7 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
   <div class="cover-tag">ORGANIC PHYTOCHEMICAL</div>
   <div class="cover-title">유기농 파이토케미컬<br>전문기업에서 만든<br><em>한입 스무디</em></div>
   <div class="cover-divider"></div>
+  <img src="images/PPP.jpg" alt="유기농 과일 채소 원물" class="cover-img" onerror="this.style.display='none'">
   <div class="cover-subtitle">컬러마다 어떤 재료가 들어갔을까요?</div>
   <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 20</div>
 </div>
@@ -424,7 +457,7 @@ body { font-family:'Noto Sans KR',sans-serif; background:#1a1a1a; display:flex; 
   <div class="content-body">
     <img src="images/21.webp" alt="컬러푸드" class="page-img" onerror="this.style.display='none'">
     <div class="section-title">① 파이토케미컬이란?</div>
-    <div class="body-text">식물이 스스로를 지키는 <em>강력한 방패</em>입니다.<br><br>식물은 뜨거운 자외선, 해충, 바이러스로부터 자신을 보호하기 위해 강력한 화학물질을 만들어냅니다. 이것이 바로 <strong>파이토케미컬(Phytochemical)</strong>입니다.<br><br>이 성분은 식물의 <em>화려한 색상</em> 속에 담겨 있으며, 활성산소를 물리쳐 노화를 늦추고 만성 질환으로부터 세포를 보호합니다.</div>
+    <div class="body-text">식물은 동물처럼 위협을 피해 도망갈 수 없습니다.<br>따라서 뜨거운 자외선, 해충, 바이러스로부터 자신을 보호하기 위해 강력한 화학물질을 만들어내는데, 이것이 바로 <strong>'파이토케미컬(Phytochemical)'</strong>입니다.<br><br>이 성분은 식물의 <em>화려한 색상</em> 속에 담겨 있으며, 우리 몸속 '항산화 부대'의 핵심 무기가 됩니다. 활성산소를 물리쳐 노화를 늦추고 만성 질환으로부터 세포를 보호하는 결정적인 역할을 합니다.</div>
   </div>
   <div class="page-footer">Hay unnie's SUPER HANNIP Diet Guide - page 21</div>
 </div>
