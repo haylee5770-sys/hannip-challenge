@@ -2,6 +2,7 @@
 import { useRoute, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2, ChevronLeft } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 const COND: Record<string, string> = { best: "😆 최상", ok: "🙂 괜찮음", meh: "😐 그저 그럼", tired: "😩 힘이 없음" };
 const MOOD: Record<number, string> = { 4: "😊", 3: "🙂", 2: "😐", 1: "😔" };
@@ -44,8 +45,7 @@ export default function MemberDetail() {
 
       {ws.length > 0 && (
         <section className="rounded-2xl bg-card border border-border p-4">
-          <h2 className="font-semibold mb-2">몸무게 변화</h2>
-          <div className="flex flex-wrap gap-2 text-sm">{ws.map(w => <span key={w.date} className="px-2 py-1 rounded-lg bg-background/50">{w.date.slice(5)} <b>{w.kg}</b>kg</span>)}</div>
+          <WeightChart data={ws.map(w => ({ date: String(w.date), kg: Number(w.kg) }))} />
         </section>
       )}
 
@@ -70,6 +70,58 @@ export default function MemberDetail() {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+/** 몸무게 변화 가로 그래프 (2026-11-21, 인바디 참고): 점 위에 kg, 점을 누르면 날짜, 오른쪽 위 '날짜 모두 보기' */
+function WeightChart({ data }: { data: Array<{ date: string; kg: number }> }) {
+  const pts = data.filter(d => Number.isFinite(d.kg));
+  const [sel, setSel] = useState(pts.length - 1);
+  const [allDates, setAllDates] = useState(false);
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (scroller.current) scroller.current.scrollLeft = scroller.current.scrollWidth; }, [pts.length]);
+  if (!pts.length) return null;
+  const STEP = 64, PADX = 32, TOP = 34, H = 150, BOTTOM = 30;
+  const w = Math.max(320, PADX * 2 + STEP * (pts.length - 1));
+  const kgs = pts.map(p => p.kg);
+  let lo = Math.min(...kgs), hi = Math.max(...kgs);
+  if (hi - lo < 2) { const mid = (hi + lo) / 2; lo = mid - 1; hi = mid + 1; }
+  const x = (i: number) => pts.length === 1 ? w / 2 : PADX + i * ((w - PADX * 2) / (pts.length - 1));
+  const y = (kg: number) => TOP + (hi - kg) / (hi - lo) * (H - TOP - BOTTOM);
+  const path = pts.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.kg)}`).join(" ");
+  const first = pts[0].kg, last = pts[pts.length - 1].kg, diff = Math.round((last - first) * 10) / 10;
+  const md = (d: string) => { const [, m, dd] = d.slice(0, 10).split("-"); return `${Number(m)}/${Number(dd)}`; };
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-semibold">몸무게 변화</h2>
+        <button type="button" onClick={() => setAllDates(v => !v)} className={"text-xs rounded-full border px-2.5 py-1 " + (allDates ? "border-primary/60 text-primary bg-primary/10" : "border-white/15 text-muted-foreground")}>
+          {allDates ? "날짜 접기" : "날짜 모두 보기"}
+        </button>
+      </div>
+      <div className="text-xs text-muted-foreground mb-1">
+        처음 {first}kg → 지금 <b className="text-foreground">{last}kg</b>
+        {pts.length > 1 && <span className={diff < 0 ? "text-primary ml-1" : diff > 0 ? "text-rose-300 ml-1" : "ml-1"}>({diff > 0 ? "+" : ""}{diff}kg)</span>}
+      </div>
+      <div ref={scroller} className="overflow-x-auto -mx-1">
+        <svg width={w} height={H} className="block">
+          <line x1={PADX - 16} x2={w - PADX + 16} y1={H - BOTTOM + 8} y2={H - BOTTOM + 8} stroke="rgba(255,255,255,0.12)" />
+          {pts.length > 1 && <path d={path} fill="none" stroke="var(--primary)" strokeOpacity={0.7} strokeWidth={2} />}
+          {pts.map((p, i) => {
+            const on = i === sel;
+            return (
+              <g key={p.date + i} onClick={() => setSel(i)} style={{ cursor: "pointer" }}>
+                <rect x={x(i) - STEP / 2} y={0} width={STEP} height={H} fill="transparent" />
+                <text x={x(i)} y={y(p.kg) - 12} textAnchor="middle" fontSize={on ? 13 : 11} fontWeight={on ? 700 : 400} fill={on ? "var(--primary)" : "rgba(255,255,255,0.7)"}>{p.kg}</text>
+                <circle cx={x(i)} cy={y(p.kg)} r={on ? 7 : 5} fill={on ? "var(--primary)" : "#2b2d30"} stroke="var(--primary)" strokeWidth={2} />
+                {(allDates || on) && <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={11} fill={on ? "var(--primary)" : "rgba(255,255,255,0.55)"}>{md(p.date)}</text>}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div className="text-center text-xs text-muted-foreground mt-1">{pts[sel] && <>{pts[sel].date.slice(0, 10).replace(/-/g, ".")} · <b className="text-foreground">{pts[sel].kg}kg</b></>} · 동그라미를 누르면 날짜가 보여요</div>
     </div>
   );
 }
