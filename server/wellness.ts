@@ -331,6 +331,50 @@ export async function careList() {
   return out;
 }
 
+/* ---------- 체중계·인바디 사진 읽기 (2026-11-21) ----------
+   기기마다 단위가 달라도 저장 기준을 통일: 골격근량 = kg, 체지방률 = %.
+   골격근 %로 나오면 kg로, 체지방을 kg로 보여 주면 %로 바꿔 저장 → 대시보드 그래프 오르내림을 비교할 수 있다.
+   '근육량'(골격근량이 아님)은 다른 값이라 바꾸지 않고 비워 둔다. */
+export async function analyzeScaleImage(url: string) {
+  const SCHEMA = {
+    type: "object",
+    properties: {
+      weightKg: { type: "number" },
+      muscleValue: { type: "number" }, muscleUnit: { type: "string", enum: ["kg", "%", "none"] }, muscleType: { type: "string", enum: ["skeletal", "muscle", "none"] },
+      fatValue: { type: "number" }, fatUnit: { type: "string", enum: ["kg", "%", "none"] },
+    },
+    required: ["weightKg", "muscleValue", "muscleUnit", "muscleType", "fatValue", "fatUnit"],
+    additionalProperties: false,
+  };
+  const res = await invokeLLM({
+    messages: [
+      { role: "system", content: "체중계·인바디·스마트 체중계 앱 화면 사진에서 숫자를 그대로 읽습니다. weightKg=체중(kg, lb면 kg로 환산). 골격근량(Skeletal Muscle Mass, SMM)이면 muscleType=skeletal, 그냥 '근육량'(Muscle Mass, 제지방 근육)이면 muscleType=muscle. muscleUnit은 화면에 표시된 단위(kg 또는 %). 체지방은 체지방률(%)이면 fatUnit=%, 체지방량(kg)이면 fatUnit=kg. 둘 다 보이면 체지방률(%)을 고른다. 화면에 없는 값은 0과 none." },
+      { role: "user", content: [{ type: "text", text: "이 체중계 화면을 읽어 JSON으로 답해 주세요." }, { type: "image_url", image_url: { url, detail: "high" } }] as any },
+    ],
+    response_format: { type: "json_schema", json_schema: { name: "scale", strict: true, schema: SCHEMA } },
+  } as any);
+  const raw = (res as any)?.choices?.[0]?.message?.content ?? "{}";
+  let j: any = {};
+  try { j = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw)); } catch { return null; }
+  const w = Number(j.weightKg) > 20 && Number(j.weightKg) < 300 ? Math.round(Number(j.weightKg) * 10) / 10 : null;
+  const notes: string[] = [];
+  let smm: number | null = null;
+  const mv = Number(j.muscleValue);
+  if (mv > 0 && j.muscleType === "skeletal") {
+    if (j.muscleUnit === "%") { if (w) { smm = Math.round((w * mv / 100) * 10) / 10; notes.push(`골격근 ${mv}% → ${smm}kg로 바꿔 저장해요`); } }
+    else smm = Math.round(mv * 10) / 10;
+  } else if (mv > 0 && j.muscleType === "muscle") {
+    notes.push("화면의 값이 '골격근량'이 아니라 '근육량'이라 골격근량 칸은 비워 뒀어요. 골격근량이 보이는 화면이면 다시 올려 주세요");
+  }
+  let bf: number | null = null;
+  const fv = Number(j.fatValue);
+  if (fv > 0) {
+    if (j.fatUnit === "kg") { if (w) { bf = Math.round((fv / w * 100) * 10) / 10; notes.push(`체지방 ${fv}kg → 체지방률 ${bf}%로 바꿔 저장해요`); } }
+    else bf = Math.round(fv * 10) / 10;
+  }
+  return { weightKg: w, skeletalMuscleKg: smm && smm > 5 && smm < 80 ? smm : null, bodyFatPercent: bf && bf > 1 && bf < 70 ? bf : null, notes };
+}
+
 /* ---------- 이번 달 몸무게 쟀는지 ---------- */
 export async function weighInStatus(userId: number) {
   const today = kstToday(); const month = today.slice(0, 7);

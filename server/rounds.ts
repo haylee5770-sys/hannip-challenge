@@ -58,9 +58,10 @@ export async function countRange(): Promise<{ since: string; until: string; seas
 }
 
 /* ---------- 항목별 인증 번호 ---------- */
-export type ItemCounts = { meal: number; smoothie: number; water: number; exercise: number; wake: number; itge: number; total: number };
+export type ItemCounts = { meal: number; smoothie: number; water: number; exercise: number; wake: number; itge: number; weight: number; total: number };
 export async function itemCounts(userId: number, since: string, until: string): Promise<ItemCounts> {
   const one = async (query: any) => Number((await q(query))[0]?.c ?? 0);
+  const weight = await one(sql`SELECT COUNT(*) c FROM weights WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`).catch(() => 0);
   const [meal, smoothie, water, exercise, wake, itge] = await Promise.all([
     one(sql`SELECT COUNT(*) c FROM meals WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until} AND category <> 'smoothie'`),
     one(sql`SELECT COUNT(*) c FROM meals WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until} AND category = 'smoothie'`),
@@ -69,7 +70,7 @@ export async function itemCounts(userId: number, since: string, until: string): 
     one(sql`SELECT COUNT(*) c FROM sleeps WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`),
     one(sql`SELECT COUNT(*) c FROM itgeNotes WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`).catch(() => 0),
   ]);
-  return { meal, smoothie, water, exercise, wake, itge, total: meal + smoothie + water + exercise + wake };
+  return { meal, smoothie, water, exercise, wake, itge, weight, total: meal + smoothie + water + exercise + wake };
 }
 
 /* ---------- 순위 (모든 멤버) ---------- */
@@ -143,17 +144,40 @@ export async function updateAward(id: number, patch: { name?: string; count?: nu
 export async function renameRound(seasonId: number, name: string) { await q(sql`UPDATE seasons SET name=${name} WHERE id=${seasonId}`); }
 
 /* ---------- 이게돼 ---------- */
-export async function createItge(userId: number, date: string, content: string) {
+/** 이게돼 한 줄평 (2026-11-21 고침): 글쓴이가 겪은 변화·작은 성공만 한 줄로. 공지·광고·안내 문장(예: "DM 부탁드리며")은 절대 쓰지 않음 */
+async function itgeSummary(content: string): Promise<string> {
   let summary = content.replace(/\s+/g, " ").slice(0, 28);
   try {
     const r: any = await invokeLLM({ messages: [
-      { role: "system", content: "다이어트 커뮤니티 후기 글을 20자 안팎의 한국어 한 줄로 요약합니다. 따옴표·이모지 없이 핵심만." },
+      { role: "system", content: [
+        "다이어트·건강 챌린지 크루가 쓴 '이게돼'(나의 변화·작은 성공 후기) 글을 한 줄평으로 만듭니다.",
+        "글쓴이 몸·마음·습관에 생긴 변화나 성공만 25자 안팎 한국어 한 줄로 씁니다. 예: '스무디 3일 만에 아침 붓기가 쏙'.",
+        "공지·광고·이벤트·안내·부탁·링크·해시태그 문장은 무시하고 절대 그대로 옮기지 않습니다.",
+        "변화나 성공 내용이 없으면 '오늘의 작은 성공을 기록했어요'라고 씁니다. 따옴표·이모지 없이 한 줄만.",
+      ].join("\n") },
       { role: "user", content },
     ] } as any);
     const c = r?.choices?.[0]?.message?.content;
-    if (typeof c === "string" && c.trim()) summary = c.trim().replace(/^["']|["']$/g, "").split("\n")[0].slice(0, 60);
+    if (typeof c === "string" && c.trim()) summary = c.trim().replace(/^["'“”]|["'“”]$/g, "").split("\n")[0].slice(0, 60);
   } catch (e) { console.warn("[itge] summary failed", e); }
+  return summary;
+}
+/** 예전 방식으로 만든 한 줄평을 한 번만 새로 만든다 */
+export async function refreshOldItgeSummaries() {
+  try {
+    await q(sql`ALTER TABLE itgeNotes ADD COLUMN IF NOT EXISTS summaryV INT NOT NULL DEFAULT 0`);
+    const rows = await q(sql`SELECT id, content FROM itgeNotes WHERE summaryV = 0 LIMIT 200`);
+    for (const r of rows) {
+      const s = await itgeSummary(String(r.content));
+      await q(sql`UPDATE itgeNotes SET summary=${s}, summaryV=1 WHERE id=${r.id}`);
+    }
+    if (rows.length) console.log("[itge] refreshed summaries", rows.length);
+  } catch (e: any) { console.warn("[itge] refresh skip", e?.message); }
+}
+export async function createItge(userId: number, date: string, content: string) {
+  const summary = await itgeSummary(content);
   await q(sql`INSERT INTO itgeNotes (userId, recordedDate, content, summary) VALUES (${userId}, ${date}, ${content}, ${summary})`);
+  await q(sql`UPDATE itgeNotes SET summaryV=1 WHERE userId=${userId} AND summaryV=0 AND content=${content}`).catch(() => {});
   const range = await countRange();
   const c = await itemCounts(userId, range.since, range.until);
   return { summary, count: c.itge };

@@ -407,217 +407,117 @@ export default function Today() {
           onBrag={bragItem}
         />
       </section>
-      {/* 체중 — 한 달에 한 번 (2026-11-20 매일 → 월 1회) */}
-      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 md:col-span-4">
-            
-            <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
-              {userName ? `${userName} 한 달 체중` : "한 달 체중"}
-              {seasonProgress.data?.counts.weight != null && (
-                <span className="text-base font-sans font-normal text-primary tabular-nums">
-                  {seasonProgress.data.counts.weight}회
-                </span>
-              )}
-            </h2>
-            <p className="mt-3 font-serif italic text-muted-foreground text-sm">
-              체중은 한 달에 한 번만 재요. 매달 같은 날, 아침 공복에 재면 가장 정확해요.
-            </p>
-          </div>
-          <div className="col-span-12 md:col-span-8 space-y-6">
-            {/* Scale type selector */}
-            <div>
-              <div className="editorial-eyebrow text-muted-foreground mb-2">체중계 종류 선택</div>
-              <div className="grid grid-cols-3 gap-2">
-                {([
-                  { value: "regular" as const, label: "일반체중계" },
-                  { value: "inbody_dial" as const, label: "인바디 다이얼" },
-                  { value: "inbody_other" as const, label: "인바디 외 기기" },
-                ] as { value: ScaleType; label: string }[]).map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      setScaleType(value);
-                      setWeightKg("");
-                      setSkeletalMuscleKg("");
-                      setBodyFatPercent("");
-                      setInbodyPhotoBase64(null);
-                      if (inbodyFileRef.current) inbodyFileRef.current.value = "";
-                    }}
-                    className={cn(
-                      "border hairline px-2 py-3 text-sm transition-colors text-center",
-                      scaleType === value
-                        ? "bg-foreground text-background border-foreground"
-                        : "hover:bg-secondary/40"
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 font-serif italic text-xs text-muted-foreground">
-                {scaleType === "regular" && "체중만 기록합니다. 체중계 화면 사진 필수."}
-                {scaleType === "inbody_dial" && "사진 업로드 시 AI가 체중·근골격·체지방률을 자동 인식합니다."}
-                {scaleType === "inbody_other" && "인바디 외 기기 사진 필수. 체중·근골격·체지방률을 직접 입력해 주세요."}
-              </p>
-            </div>
-
-            {/* Photo upload — mandatory for all types */}
-            <div className="border hairline p-4 bg-card/40">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <div className="editorial-eyebrow text-muted-foreground mb-1">
-                    {scaleType === "inbody_dial" ? "인바디 다이얼 사진" : "체중계 사진"} · 필수
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {scaleType === "inbody_dial"
-                      ? <>인바디 다이얼 화면을 캡처해 올려주세요. AI가 <span className="text-foreground">체중·근골격·체지방률</span>을 자동 인식해요. 카드 영역만 꽉 차게 찍으면 인식률이 높아집니다.</>
-                      : "체중계 화면 사진을 올려주세요. 정직한 기록이 챌린지의 기본입니다."}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={inbodyFileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleInbodyFile(f);
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => inbodyFileRef.current?.click()}
-                    disabled={inbodyAnalyzing}
-                    className="rounded-none uppercase tracking-wider"
-                  >
-                    {inbodyAnalyzing ? (
-                      <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI 인식 중</>
-                    ) : inbodyPhotoBase64 ? (
-                      <><Camera className="h-4 w-4 mr-2" />다른 사진 선택</>
-                    ) : (
-                      <><Camera className="h-4 w-4 mr-2" />사진 올리기</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-              {inbodyPhotoBase64 && (
-                <div className="mt-4 flex items-start gap-4">
-                  <img
-                    src={inbodyPhotoBase64}
-                    alt="체중계 미리보기"
-                    className="w-32 h-32 object-cover border hairline"
-                  />
-                  <div className="flex-1">
-                    <div className="text-sm text-muted-foreground mb-2">
-                      저장 시 이 사진이 인증 증거로 기록됩니다.
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setInbodyPhotoBase64(null);
-                        setSkeletalMuscleKg("");
-                        setBodyFatPercent("");
-                        if (inbodyFileRef.current) inbodyFileRef.current.value = "";
-                      }}
-                      className="rounded-none"
-                    >
-                      <X className="h-3 w-3 mr-1" />제거
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Input fields — vary by scale type */}
-            <div className={cn(
-              "grid gap-4",
-              scaleType === "regular" ? "grid-cols-1 max-w-xs" : "grid-cols-1 sm:grid-cols-3"
-            )}>
-              <div>
-                <Label className="editorial-eyebrow text-muted-foreground">체중 (kg)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  placeholder={scaleType === "inbody_dial" ? "AI 자동 입력" : "직접 입력 (kg)"}
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                  className="rounded-none border-0 border-b border-foreground/30 px-0 text-2xl number-display h-12 focus-visible:ring-0 focus-visible:border-foreground bg-transparent"
-                />
-              </div>
-              {scaleType !== "regular" && (
-                <>
-                  <div>
-                    <Label className="editorial-eyebrow text-muted-foreground">
-                      근골격 (kg){scaleType === "inbody_dial" && <span className="ml-1 text-xs opacity-50">자동인식</span>}
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      placeholder={scaleType === "inbody_dial" ? "AI 자동 입력" : "직접 입력 (kg)"}
-                      value={skeletalMuscleKg}
-                      onChange={(e) => setSkeletalMuscleKg(e.target.value)}
-                      className="rounded-none border-0 border-b border-foreground/30 px-0 text-2xl number-display h-12 focus-visible:ring-0 focus-visible:border-foreground bg-transparent"
-                    />
-                  </div>
-                  <div>
-                    <Label className="editorial-eyebrow text-muted-foreground">
-                      체지방률 (%){scaleType === "inbody_dial" && <span className="ml-1 text-xs opacity-50">자동인식</span>}
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      placeholder={scaleType === "inbody_dial" ? "AI 자동 입력" : "직접 입력 (%)"}
-                      value={bodyFatPercent}
-                      onChange={(e) => setBodyFatPercent(e.target.value)}
-                      className="rounded-none border-0 border-b border-foreground/30 px-0 text-2xl number-display h-12 focus-visible:ring-0 focus-visible:border-foreground bg-transparent"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSaveWeight}
-                disabled={upsertWeight.isPending}
-                className="rounded-none px-8 h-12 uppercase tracking-wider"
-              >
-                {upsertWeight.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
-              </Button>
-            </div>
-            {weightDeltaInfo && (
-              <div className={cn(
-                "border hairline px-4 py-3 flex items-center gap-3 text-sm",
-                weightDeltaInfo.tone === "loss"
-                  ? "bg-primary/10 border-primary/40 text-primary"
-                  : "bg-rose-500/10 border-rose-400/40 text-rose-300",
-              )}>
-                <span className="editorial-eyebrow">
-                  {weightDeltaInfo.tone === "loss" ? "YESTERDAY → TODAY" : "YESTERDAY → TODAY"}
-                </span>
-                <span className="number-display tabular-nums">
-                  {weightDeltaInfo.deltaG > 0 ? `+${weightDeltaInfo.deltaG}g` : `${weightDeltaInfo.deltaG}g`}
-                </span>
-                <span className="font-serif italic">{weightDeltaInfo.message}</span>
-              </div>
-            )}
-            {todayWeight?.inbodyPhotoUrl && !inbodyPhotoBase64 && (
-              <div className="text-xs text-muted-foreground italic">
-                오늘 사진이 이미 등록되었어요. 새 사진을 올리면 덮어쓰기됩니다.
-              </div>
-            )}
-          </div>
-        </div>
+      {/* 체중 — 한 달에 한 번 (2026-11-21 새로: 체중계 종류 선택 없이 큰 버튼 → 사진 올리면 AI가 읽고, 골격근 kg · 체지방률 %로 통일) */}
+      <section id="weight" className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+        <WeightSection date={date} userName={userName} onBrag={bragItem} />
       </section>
 
       {/* Season photos (Before / After) — 맨 아래 */}
       <SeasonPhotosSection />
+    </div>
+  );
+}
+
+/* ----------------- Weight Section (2026-11-21) ----------------- */
+function WeightSection({ date, userName, onBrag }: { date: string; userName?: string; onBrag?: BragFn }) {
+  const utils = trpc.useUtils();
+  const history = trpc.weights.myHistory.useQuery({});
+  const [open, setOpen] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [w, setW] = useState("");
+  const [smm, setSmm] = useState("");
+  const [bf, setBf] = useState("");
+  const [notes, setNotes] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const analyze = trpc.wellness.analyzeScale.useMutation();
+  const save = trpc.weights.upsert.useMutation({ onError: (e) => toast.error(e.message) });
+  const list = (history.data ?? []).slice().sort((a, b) => a.recordedDate.localeCompare(b.recordedDate));
+  const prev = list.filter(x => x.recordedDate < date).slice(-1)[0];
+
+  const onFile = (file: File) => {
+    const r = new FileReader();
+    r.onload = async () => {
+      // 글자를 잘 읽도록 긴 변 1600px로 맞춤
+      const raw = r.result as string;
+      const img = new Image(); img.src = raw; await new Promise(res => { img.onload = res; img.onerror = res; });
+      const k = 1600 / Math.max(img.naturalWidth || 1600, img.naturalHeight || 1600);
+      const c = document.createElement("canvas"); c.width = Math.round((img.naturalWidth || 1600) * k); c.height = Math.round((img.naturalHeight || 1600) * k);
+      const g = c.getContext("2d")!; g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      const data = img.naturalWidth ? c.toDataURL("image/jpeg", 0.92) : raw;
+      setPhoto(data); setNotes([]);
+      try {
+        const a = await analyze.mutateAsync({ photoBase64: data });
+        if (a.weightKg) setW(String(a.weightKg)); if (a.skeletalMuscleKg) setSmm(String(a.skeletalMuscleKg)); if (a.bodyFatPercent) setBf(String(a.bodyFatPercent));
+        setNotes(a.notes);
+        toast.success("사진에서 숫자를 읽었어요. 맞는지 확인해 주세요.");
+      } catch { toast.error("자동으로 읽지 못했어요. 직접 입력해 주세요."); }
+    };
+    r.readAsDataURL(file);
+  };
+  const submit = async () => {
+    const kg = parseFloat(w);
+    if (!photo) return toast.error("체중계 사진을 올려 주세요. 사진 인증이 필수예요.");
+    if (!Number.isFinite(kg)) return toast.error("체중을 입력해 주세요.");
+    const s = parseFloat(smm), b = parseFloat(bf);
+    try {
+      await save.mutateAsync({ recordedDate: date, weightKg: kg, skeletalMuscleKg: Number.isFinite(s) ? s : null, bodyFatPercent: Number.isFinite(b) ? b : null, inbodyPhotoBase64: photo });
+    } catch { return; }
+    utils.weights.myHistory.invalidate(); utils.wellness.weighIn.invalidate(); utils.wellness.intake.invalidate(); utils.rounds.myCounts.invalidate();
+    const diff = prev ? Math.round((kg - prev.weightKg) * 10) / 10 : null;
+    onBrag?.({
+      item: "weight", label: "체중", emoji: "⚖️", photo,
+      feedback: [`${kg}kg`, Number.isFinite(s) ? `골격근 ${s}kg` : null, Number.isFinite(b) ? `체지방률 ${b}%` : null, diff != null ? `지난번보다 ${diff > 0 ? "+" : ""}${diff}kg` : null].filter(Boolean).join(" · "),
+    });
+    setOpen(false); setPhoto(null); setW(""); setSmm(""); setBf(""); setNotes([]);
+  };
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 한 달 체중` : "한 달 체중"}</h2>
+      <p className="text-xs text-muted-foreground">체중은 한 달에 한 번, <b className="text-foreground">매달 1일</b> 아침 공복에 재요.</p>
+      {!open && (
+        <Button onClick={() => setOpen(true)} className="w-full rounded-xl h-11">
+          <Plus className="h-4 w-4 mr-2" /> 체중 기록 추가
+        </Button>
+      )}
+      {open && (
+        <div className="space-y-3 rounded-xl border border-border p-4">
+          <p className="text-sm">사진을 올리면 <b className="text-primary">AI가 체중·골격근량·체지방률을 자동으로 읽어요.</b></p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            기기마다 단위가 달라도 <b className="text-foreground">골격근량은 kg, 체지방률은 %</b>로 맞춰 저장해요. 그래야 대시보드에서 오르내림을 비교할 수 있어요.
+            일반 체중계는 체중만 읽혀요. AI 인식은 오류가 있을 수 있으니 숫자를 꼭 확인하고, 직접 고쳐도 돼요.
+          </p>
+          <div className="flex items-center gap-3">
+            {photo ? <img src={photo} alt="" className="w-20 h-20 rounded-lg object-cover border border-border" /> : null}
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
+            <Button type="button" variant="outline" onClick={() => fileRef.current?.click()} disabled={analyze.isPending} className="rounded-xl">
+              {analyze.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI가 읽는 중</> : <><Camera className="h-4 w-4 mr-2" />{photo ? "다른 사진" : "사진 올리기"}</>}
+            </Button>
+          </div>
+          {notes.length > 0 && <div className="space-y-1">{notes.map((n, i) => <p key={i} className="text-[11px] text-amber-200">ⓘ {n}</p>)}</div>}
+          <div className="grid grid-cols-3 gap-2">
+            {([["체중 (kg)*", w, setW], ["골격근량 (kg)", smm, setSmm], ["체지방률 (%)", bf, setBf]] as const).map(([label, v, set]) => (
+              <label key={label} className="text-[11px] text-muted-foreground">{label}
+                <input inputMode="decimal" value={v} onChange={e => set(e.target.value)} placeholder="-" className="mt-0.5 w-full h-11 rounded-lg border border-border bg-transparent px-2 text-lg font-semibold text-foreground" />
+              </label>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => { setOpen(false); setPhoto(null); setNotes([]); }} className="flex-1 rounded-xl">취소</Button>
+            <Button onClick={submit} disabled={save.isPending} className="flex-1 rounded-xl">{save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}</Button>
+          </div>
+        </div>
+      )}
+      {list.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {list.slice(-6).map(x => (
+            <span key={x.id} className="px-2 py-1 rounded-lg bg-background/50 border border-border">
+              {x.recordedDate.slice(2).replace(/-/g, ".")} <b className="text-primary">{x.weightKg}kg</b>
+              {x.skeletalMuscleKg != null ? ` · 골격근 ${x.skeletalMuscleKg}` : ""}{x.bodyFatPercent != null ? ` · 체지방 ${x.bodyFatPercent}%` : ""}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1573,7 +1473,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
 }
 
 /* ----------------- 공통: 자랑하기 형식 · 큰 횟수 배지 · 메달 · 팝업 (2026-11-20) ----------------- */
-export type BragItem = "meal" | "smoothie" | "water" | "exercise" | "wake";
+export type BragItem = "meal" | "smoothie" | "water" | "exercise" | "wake" | "weight";
 export type BragFn = (p: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string }) => void;
 
 function CountBadge({ n }: { n?: number | null }) {

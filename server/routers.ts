@@ -1682,6 +1682,12 @@ const wellnessRouter = router({
     return wellness.memberDetail(input.userId);
   }),
   careList: adminProcedure.query(async () => wellness.careList()),
+  analyzeScale: approvedProcedure.input(z.object({ photoBase64: z.string().min(20) })).mutation(async ({ ctx, input }) => {
+    const { url } = await uploadDataUrl(input.photoBase64, `scale-ai-tmp/${ctx.user.id}/${Date.now()}`);
+    const r = await wellness.analyzeScaleImage(url);
+    if (!r) throw new TRPCError({ code: "BAD_REQUEST", message: "사진을 읽지 못했어요. 직접 입력해 주세요." });
+    return r;
+  }),
   weighIn: approvedProcedure.query(async ({ ctx }) => wellness.weighInStatus(ctx.user.id)),
 });
 
