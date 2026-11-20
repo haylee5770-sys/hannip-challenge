@@ -32,17 +32,34 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   g.fillStyle = "rgba(255,255,255,0.06)"; roundRect(g, 40, 40, W - 80, H - 80, 44); g.fill();
   g.fillStyle = accent; roundRect(g, 40, 40, W - 80, 12, 6); g.fill();
 
-  // 맨 위: 이름 · 항목 N회째
+  // 맨 위 한 줄 (2026-11-20 시안2): 이름(흰색) + 항목(포인트색) 같은 글씨·크기·두께, 오른쪽 동그라미 안에 인증 번호
+  const name = card.userName || "멤버";
+  const item = card.itemLabel ?? card.title;
+  const hasCount = card.count != null;
+  const maxHeadW = hasCount ? W - 180 - 200 : W - 180;
+  let size = 92;
+  for (; size > 44; size -= 4) { g.font = `900 ${size}px ${bodyFont}`; if (g.measureText(`${name} ${item}`).width <= maxHeadW) break; }
+  g.textAlign = "left"; g.font = `900 ${size}px ${bodyFont}`;
+  g.fillStyle = "#ffffff"; g.fillText(name, 90, 200);
+  const nw = g.measureText(name + " ").width;
+  g.fillStyle = accent; g.fillText(item, 90 + nw, 200);
+  if (hasCount) {
+    const cx = W - 170, cy = 168, r = 80;
+    g.save(); g.shadowColor = accent; g.shadowBlur = 30; g.strokeStyle = accent; g.lineWidth = 8;
+    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke(); g.restore();
+    g.save(); g.globalAlpha = 0.12; g.fillStyle = accent; g.beginPath(); g.arc(cx, cy, r - 4, 0, Math.PI * 2); g.fill(); g.restore();
+    g.textAlign = "center"; g.fillStyle = accent;
+    const cs = String(card.count);
+    g.font = `900 ${cs.length >= 3 ? 60 : 84}px ${bodyFont}`; g.fillText(cs, cx, cy + 20);
+    g.font = `700 22px ${bodyFont}`; g.fillStyle = "#cfd2d6"; g.fillText("인증", cx, cy + 56);
+  }
+  // 시계 + 날짜·시간 (아래 피드백 글씨와 같은 크기·두께)
   g.textAlign = "left";
-  g.fillStyle = "#ececea"; g.font = `700 46px ${bodyFont}`;
-  g.fillText(clip(g, card.userName || "멤버", 520), 90, 140);
-  const nameW = Math.min(520, g.measureText(card.userName || "멤버").width);
-  g.fillStyle = accent; g.font = `900 92px ${bodyFont}`;
-  const head = `${card.itemLabel ?? card.title} ${card.count ?? ""}${card.count != null ? "회째" : ""}`.trim();
-  g.fillText(clip(g, head, W - 180), 90, 250);
-  g.fillStyle = "#a6a9ae"; g.font = `500 36px ${bodyFont}`;
-  g.fillText(`${card.emoji}  ${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}`, 90, 312);
-  void nameW;
+  g.save(); g.strokeStyle = "#ececea"; g.lineWidth = 5; g.lineCap = "round";
+  g.beginPath(); g.arc(114, 284, 22, 0, Math.PI * 2); g.stroke();
+  g.beginPath(); g.moveTo(114, 284); g.lineTo(114, 272); g.moveTo(114, 284); g.lineTo(124, 287); g.stroke(); g.restore();
+  g.fillStyle = "#ececea"; g.font = `600 40px ${bodyFont}`;
+  g.fillText(`${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}`, 154, 298);
 
   // 가운데: 사진 또는 글
   const bx = 90, by = 352, bw = W - 180, bh = 780;
@@ -66,8 +83,8 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
     g.textAlign = "left"; g.fillStyle = "#ececea"; g.font = `600 40px ${bodyFont}`;
     wrap(g, `💬 ${fb}`, W - 180).slice(0, 2).forEach((l, i) => g.fillText(l, 90, 1190 + i * 52));
   }
-  g.textAlign = "right"; g.fillStyle = accent; g.font = `500 26px ${bodyFont}`;
-  g.fillText("super hannip Challenge", W - 90, H - 62);
+  g.textAlign = "center"; g.fillStyle = "rgba(255,255,255,0.22)"; g.font = `500 26px ${bodyFont}`;
+  g.fillText("super hannip Challenge", W / 2, H - 62);
   return await new Promise<Blob>((res) => c.toBlob(b => res(b!), "image/png"));
 }
 

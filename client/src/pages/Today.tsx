@@ -930,7 +930,7 @@ function MealForm({
                 onCreated({
                   item: "smoothie", label: "스무디", emoji: "🥤", photo: photos[0],
                   feedback: pickedList.length
-                    ? `${pickedList.map(p => p.name).join(" · ")} · 단백질 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g (${pickedList.reduce((a, p) => a + p.kcal, 0)}kcal)`
+                    ? `${pickedList.map(p => p.name).join(" · ")} · 탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g`
                     : "오늘도 스무디로 몸을 챙겼어요",
                 });
               } catch (e) {
@@ -953,10 +953,9 @@ function MealForm({
                 photoBase64: photos,
               });
             } catch { return; }
-            const tip = (feedback.data as any[] | undefined)?.[0]?.text as string | undefined;
             onCreated({
-              item: "meal", label: "식단", emoji: "🥗", photo: photos[0],
-              feedback: tip || `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g`,
+              item: "meal", label: "일반식", emoji: "🥗", photo: photos[0],
+              feedback: `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g`,
             });
           }}
           disabled={create.isPending}
