@@ -228,7 +228,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     onClick={() => setMobileOpen(false)}
                     className="w-full text-left flex items-baseline gap-3 py-2"
                   >
-                    <span className="editorial-eyebrow text-muted-foreground w-20">{item.label}</span>
+                    <span className="editorial-eyebrow text-muted-foreground w-28 shrink-0 whitespace-nowrap">{item.label}</span>
                     <span className="font-serif text-xl">{item.korean}</span>
                   </button>
                 </Link>

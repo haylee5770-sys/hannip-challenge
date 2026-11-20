@@ -339,29 +339,35 @@ export default function Today() {
       )}
 
       {/* 우리 방 모토 — 오늘 칸 위, 가운데 */}
-      <p className="text-center text-sm md:text-base text-primary mb-3 pt-1">{(["꾸|준함이 ", "자|존감이 되고, ", "자|존감이 ", "인|생을 바꾼다"]).map((s, i) => { const [h, r] = s.split("|"); return <span key={i}><span className="dot-mark">{h}</span>{r}</span>; })}</p>
+      {/* 점 없이 첫 글자(꾸·자·자·인)만 굵게, 나머지는 얇게 (2026-11-21) */}
+      <p className="text-center text-sm md:text-base text-primary mb-3 pt-1 font-light">{(["꾸|준함이 ", "자|존감이 되고, ", "자|존감이 ", "인|생을 바꾼다"]).map((s, i) => { const [h, r] = s.split("|"); return <span key={i}><span className="font-bold">{h}</span>{r}</span>; })}</p>
 
-      {/* 날짜 앞뒤로 보기 (팀보드처럼) */}
-      <div className="flex items-center justify-between rounded-2xl bg-card border border-border px-3 py-2 mb-4">
-        <button type="button" onClick={() => setDate(shiftDate(date, -1))} className="px-3 py-2 text-xl text-muted-foreground hover:text-primary" aria-label="이전 날">‹</button>
-        <div className="text-center">
-          <div className="text-lg md:text-xl font-semibold tabular-nums">
-            {date === todayLocal() && <span className="text-primary mr-1.5">오늘</span>}
+      {/* 날짜만 따로 한 박스 — 날짜 바로 옆 꽉 찬 ◀ ▶ (2026-11-21) */}
+      <div className="rounded-2xl bg-card border border-border px-3 py-3 mb-2">
+        <div className="flex items-center justify-center gap-2">
+          <button type="button" onClick={() => setDate(shiftDate(date, -1))} className="p-2 text-primary hover:opacity-80" aria-label="이전 날">
+            <svg width="14" height="14" viewBox="0 0 10 10" aria-hidden="true"><path d="M8 1 L2 5 L8 9 Z" fill="currentColor" /></svg>
+          </button>
+          <div className="text-xl md:text-2xl font-semibold tabular-nums whitespace-nowrap">
+            {date === todayLocal() && <span className="text-primary text-2xl md:text-3xl font-bold mr-2">오늘</span>}
             {formatShortDate(date)}
           </div>
-          {date !== todayLocal() && (
-            <button type="button" onClick={() => setDate(todayLocal())} className="text-[11px] text-muted-foreground underline">오늘로</button>
-          )}
-          <DailyLines date={date} />
+          <button
+            type="button"
+            onClick={() => setDate(shiftDate(date, 1))}
+            disabled={date >= todayLocal()}
+            className="p-2 text-primary hover:opacity-80 disabled:text-muted-foreground disabled:opacity-25"
+            aria-label="다음 날"
+          >
+            <svg width="14" height="14" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1 L8 5 L2 9 Z" fill="currentColor" /></svg>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setDate(shiftDate(date, 1))}
-          disabled={date >= todayLocal()}
-          className="px-3 py-2 text-xl text-muted-foreground hover:text-primary disabled:opacity-20"
-          aria-label="다음 날"
-        >›</button>
+        {date !== todayLocal() && (
+          <div className="text-center"><button type="button" onClick={() => setDate(todayLocal())} className="text-[11px] text-muted-foreground underline">오늘로</button></div>
+        )}
       </div>
+      {/* 명언·어제 돌아보기 한마디 — 박스 밖 빈 공간에 글자만 */}
+      <DailyLines date={date} />
       {date < todayLocal() && user?.role !== "admin" && (
         <p className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-center text-sm text-amber-200">
           🔒 밤 12시가 지난 날짜는 보기만 할 수 있어요. 기록·수정·삭제는 그날 안에만 돼요.
@@ -1559,7 +1565,8 @@ function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone }: {
         {items.map(it => (
           <button key={it.k} type="button" onClick={() => setTab(it.k)}
             className={cn("rounded-xl border py-2 flex flex-col items-center justify-center leading-tight transition-colors",
-              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-border text-muted-foreground")}>
+              // 아직 안 한 칸(–)도 색이 빠지지 않게 같은 연두 테두리 (2026-11-21, 수면만 회색으로 보이던 문제)
+              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/60 bg-primary/[0.04] text-primary")}>
             <span className="text-sm font-bold">{it.label}</span>
             <span className="text-[10px] mt-0.5 opacity-80 tabular-nums">{it.sub}</span>
           </button>
@@ -1657,10 +1664,11 @@ function DailyLines({ date }: { date: string }) {
   if (!showQuote && !prefs.coach) return null;
   const qt = quoteOf(date);
   return (
-    <div className="mt-1 space-y-1 text-xs leading-snug text-muted-foreground max-w-[18rem] mx-auto">
-      {showQuote && <div className="break-keep">“{qt.text}”<div className="opacity-70 mt-0.5">— {qt.by}</div></div>}
-      {prefs.coach && q.isLoading && <div>어제 기록을 돌아보고 있어요…</div>}
-      {prefs.coach && q.data?.coach && <div className="text-foreground/85">🌱 {q.data.coach}</div>}
+    <div className="text-center text-xs leading-snug text-muted-foreground max-w-[20rem] mx-auto px-2">
+      {showQuote && <div className="break-keep py-2">“{qt.text}”<div className="opacity-70 mt-0.5">— {qt.by}</div></div>}
+      {prefs.coach && (q.isLoading || q.data?.coach) && <div className="mb-2 h-px w-10 mx-auto bg-border" />}
+      {prefs.coach && q.isLoading && <div className="pb-3">어제 기록을 돌아보고 있어요…</div>}
+      {prefs.coach && q.data?.coach && <div className="break-keep pb-3 text-foreground/85">🌱 {q.data.coach}</div>}
     </div>
   );
 }
