@@ -111,6 +111,12 @@ export async function ensureSchema() {
       updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY happyNotes_user_date (userId, recordedDate)
     )`, "happyNotes"],
+    // 따·잠·마·음·운 체크 (2026-11-20)
+    ["ALTER TABLE happyNotes ADD COLUMN IF NOT EXISTS warm BOOLEAN NOT NULL DEFAULT false", "happyNotes.warm"],
+    ["ALTER TABLE happyNotes ADD COLUMN IF NOT EXISTS slept BOOLEAN NOT NULL DEFAULT false", "happyNotes.slept"],
+    ["ALTER TABLE happyNotes ADD COLUMN IF NOT EXISTS cleanEat BOOLEAN NOT NULL DEFAULT false", "happyNotes.cleanEat"],
+    ["ALTER TABLE happyNotes ADD COLUMN IF NOT EXISTS exercised BOOLEAN NOT NULL DEFAULT false", "happyNotes.exercised"],
+    ["ALTER TABLE happyNotes MODIFY COLUMN mood TINYINT NOT NULL DEFAULT 0", "happyNotes.mood default 0"],
   ];
   for (const [stmt, label] of stmts) {
     try {
@@ -885,7 +891,35 @@ export async function countSleepDaysInRange(userId: number, since: string, until
 
 /* -------- Happy notes (행복 한 줄 일기) -------- */
 
-export type HappyNote = { id: number; userId: number; recordedDate: string; mood: number; goodThing: string | null; promise: string | null };
+export type HappyNote = {
+  id: number; userId: number; recordedDate: string; mood: number; goodThing: string | null; promise: string | null;
+  warm?: number | boolean; slept?: number | boolean; cleanEat?: number | boolean; exercised?: number | boolean;
+};
+
+/** 따·잠·마·음·운 체크 저장 */
+export async function upsertHappyChecks(userId: number, date: string, c: { mood: number; warm: boolean; slept: boolean; cleanEat: boolean; exercised: boolean }) {
+  const conn = await db();
+  await conn.execute(sql`INSERT INTO happyNotes (userId, recordedDate, mood, warm, slept, cleanEat, exercised) VALUES (${userId}, ${date}, ${c.mood}, ${c.warm}, ${c.slept}, ${c.cleanEat}, ${c.exercised})
+    ON DUPLICATE KEY UPDATE mood = VALUES(mood), warm = VALUES(warm), slept = VALUES(slept), cleanEat = VALUES(cleanEat), exercised = VALUES(exercised)`);
+}
+
+/** 올해 무언가 하나라도 기록한 날 수 (1년 진행 막대용) */
+export async function countRecordDaysInYear(userId: number, year: number): Promise<number> {
+  const conn = await db();
+  const since = `${year}-01-01`;
+  const until = `${year}-12-31`;
+  const tables = ["meals", "waters", "exercises", "sleeps", "weights", "happyNotes"];
+  const days = new Set<string>();
+  for (const t of tables) {
+    try {
+      const res = await conn.execute(sql.raw(`SELECT DISTINCT DATE_FORMAT(recordedDate, '%Y-%m-%d') AS d FROM \`${t}\` WHERE userId = ${Number(userId)} AND recordedDate BETWEEN '${since}' AND '${until}'`));
+      for (const r of rowsOf(res)) days.add(String((r as any).d));
+    } catch (e: any) {
+      console.warn("[yearProgress] skip", t, e?.message?.slice(0, 80));
+    }
+  }
+  return days.size;
+}
 
 function rowsOf(res: any): any[] {
   return Array.isArray(res) && Array.isArray(res[0]) ? res[0] : Array.isArray(res) ? res : [];
@@ -893,7 +927,7 @@ function rowsOf(res: any): any[] {
 
 export async function getHappyNote(userId: number, date: string): Promise<HappyNote | null> {
   const conn = await db();
-  const res = await conn.execute(sql`SELECT id, userId, DATE_FORMAT(recordedDate, '%Y-%m-%d') AS recordedDate, mood, goodThing, promise FROM happyNotes WHERE userId = ${userId} AND recordedDate = ${date} LIMIT 1`);
+  const res = await conn.execute(sql`SELECT id, userId, DATE_FORMAT(recordedDate, '%Y-%m-%d') AS recordedDate, mood, goodThing, promise, warm, slept, cleanEat, exercised FROM happyNotes WHERE userId = ${userId} AND recordedDate = ${date} LIMIT 1`);
   return (rowsOf(res)[0] as HappyNote) ?? null;
 }
 

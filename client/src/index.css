@@ -52,21 +52,21 @@
   /* 차콜 그레이 + 연두(라임) 포인트 — 2026-11-20 방장 요청 (팀보드 회색 느낌) */
   --background: #2b2d31;
   --foreground: #ececea;
-  --card: #34363b;
+  --card: #383b41;
   --card-foreground: #ececea;
-  --popover: #34363b;
+  --popover: #383b41;
   --popover-foreground: #ececea;
   --primary: #b6f24a;                 /* 연두 포인트 */
   --primary-foreground: #1d1f22;
-  --secondary: #3a3d42;
+  --secondary: #44474e;
   --secondary-foreground: #ececea;
-  --muted: #3a3d42;
+  --muted: #44474e;
   --muted-foreground: #a6a9ae;
   --accent: #b6f24a;
   --accent-foreground: #1d1f22;
   --destructive: #ff6b6b;
   --destructive-foreground: #1d1f22;
-  --border: #4a4d53;
+  --border: #4c5057;
   --input: #4a4d53;
   --ring: #b6f24a;
 

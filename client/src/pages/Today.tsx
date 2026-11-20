@@ -42,7 +42,8 @@ type MealCategory =
   | "snack";
 
 export default function Today() {
-  const [date] = useState<string>(() => todayLocal());
+  const [date, setDate] = useState<string>(() => todayLocal());
+  const sleepToday = trpc.sleep.byDate.useQuery({ date });
   const utils = trpc.useUtils();
   const { user } = useAuth();
   const userName = user?.name ?? "";
@@ -228,32 +229,13 @@ export default function Today() {
         />
       )}
 
-      {/* 주간 AI 요약 + 스트릭 */}
-      {(weeklyNudge.data || (myStreak.data?.streak ?? 0) >= 2) && (
-        <div className={cn(
-          "mb-4 px-5 py-3 flex items-start gap-3 border hairline",
-          weeklyNudge.data?.type === "praise" ? "bg-primary/10 border-primary/40" : "bg-amber-400/10 border-amber-400/40"
-        )}>
-          <span className="text-xl mt-0.5">
-            {weeklyNudge.data?.type === "praise" ? "🌟" : "💪"}
-          </span>
-          <div className="flex-1">
-            <p className="text-sm leading-relaxed text-foreground/90">
-              {weeklyNudge.data?.text ?? ""}
-            </p>
-          </div>
-          {(myStreak.data?.streak ?? 0) >= 2 && (
-            <div className="flex flex-col items-center shrink-0 ml-2">
-              <span className="text-xl">🔥</span>
-              <span className="text-xs font-serif tabular-nums text-foreground/70">{myStreak.data?.streak}일</span>
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* 우리 방 모토 한 줄 (주간 안내 대신, 2026-11-20) */}
+      <div className="mb-6 rounded-2xl bg-card border border-border px-5 py-4 text-center">
+        <p className="text-base md:text-lg font-semibold">나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.</p>
+      </div>
       {/* Season banner */}
       {seasonProgress.data?.season && (
-        <section className="mb-8 border hairline bg-secondary/40 px-5 py-4 md:px-6 md:py-5">
+        <section className="mb-4 rounded-2xl bg-card border border-border px-5 py-4 md:px-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex items-baseline gap-4">
               <div>
@@ -299,36 +281,37 @@ export default function Today() {
         </section>
       )}
 
-      {/* Editorial cover */}
-      <section className="pb-10 border-b hairline">
-        {/* 우리 방 모토 — 맨 위 */}
-        <div className="border-l-4 border-primary pl-4 mb-8">
-          <div className="editorial-eyebrow text-primary mb-1">OUR MOTTO</div>
-          <p className="text-2xl md:text-4xl font-semibold leading-snug">
-            나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.
-          </p>
+      {/* 날짜 앞뒤로 보기 (팀보드처럼) */}
+      <div className="flex items-center justify-between rounded-2xl bg-card border border-border px-3 py-2 mb-4">
+        <button type="button" onClick={() => setDate(shiftDate(date, -1))} className="px-3 py-2 text-xl text-muted-foreground hover:text-primary" aria-label="이전 날">‹</button>
+        <div className="text-center">
+          <div className="text-lg md:text-xl font-semibold">{formatKoDate(date)}</div>
+          {date !== todayLocal()
+            ? <button type="button" onClick={() => setDate(todayLocal())} className="text-xs text-primary underline">오늘로 돌아가기</button>
+            : <div className="text-xs text-primary">오늘</div>}
         </div>
-        <div className="editorial-eyebrow text-muted-foreground mb-3">
-          VOL. {new Date().getFullYear()} · TODAY
-        </div>
-        <h1 className="editorial-h1 text-5xl md:text-7xl lg:text-8xl">
-          오늘, <span className="italic font-serif font-light text-primary">행복의 결과</span>
-        </h1>
-        <p className="mt-4 font-serif italic text-lg md:text-xl text-muted-foreground">
-          {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
-        </p>
-      </section>
+        <button
+          type="button"
+          onClick={() => setDate(shiftDate(date, 1))}
+          disabled={date >= todayLocal()}
+          className="px-3 py-2 text-xl text-muted-foreground hover:text-primary disabled:opacity-20"
+          aria-label="다음 날"
+        >›</button>
+      </div>
 
-      {/* 행복 한 줄 일기 — 맨 처음 */}
-      <HappyDiarySection date={date} />
-
+      {/* 따·잠·마·음·운 매일 체크 */}
+      <DailyChecklist
+        date={date}
+        autoSlept={!!sleepToday.data}
+        autoCleanEat={(myMealsToday.data?.length ?? 0) > 0}
+        autoExercised={(myExercisesToday.data?.length ?? 0) > 0}
+      />
       {/* Sleep — 수면 기록 */}
       <SleepSection date={date} sleepCount={seasonProgress.data?.counts.sleep} />
 
 
       {/* Meals — 식단 기록 (독립 섹션) */}
-      <section className="py-10 border-b hairline">
-        <div className="editorial-eyebrow text-muted-foreground mb-6">03 · MEALS</div>
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <MealsSection
           date={date}
           meals={myMealsToday.data ?? []}
@@ -344,14 +327,12 @@ export default function Today() {
       </section>
 
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
-      <section className="py-10 border-b hairline">
-        <div className="editorial-eyebrow text-muted-foreground mb-6">04 · WATER</div>
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} onShare={setKakaoShareText} />
       </section>
 
       {/* Exercise — 운동 기록 */}
-      <section className="py-10 border-b hairline">
-        <div className="editorial-eyebrow text-muted-foreground mb-6">05 · EXERCISE</div>
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <ExerciseSection
           date={date}
           exercises={myExercisesToday.data ?? []}
@@ -366,11 +347,11 @@ export default function Today() {
         />
       </section>
       {/* 체중 — 한 달에 한 번 (2026-11-20 매일 → 월 1회) */}
-      <section className="py-10 border-b hairline">
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-4">
-            <div className="editorial-eyebrow text-muted-foreground mb-2">06 · MONTHLY WEIGHT</div>
-            <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
+            
+            <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
               {userName ? `${userName} 한 달 체중` : "한 달 체중"}
               {seasonProgress.data?.counts.weight != null && (
                 <span className="text-base font-sans font-normal text-primary tabular-nums">
@@ -614,7 +595,7 @@ function MealsSection({
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-12 md:col-span-4">
-        <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
+        <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
           {userName ? `${userName} 식단 기록` : "식단 기록"}
           {mealCount != null && (
             <span className="text-base font-sans font-normal text-primary tabular-nums">{mealCount}회</span>
@@ -1157,7 +1138,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-12 md:col-span-4">
-        <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
+        <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
           {userName ? `${userName} 운동 기록` : "운동 기록"}
           {exerciseCount != null && (
             <span className="text-base font-sans font-normal text-primary tabular-nums">{exerciseCount}회</span>
@@ -1418,16 +1399,15 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
   const [wakeMinute, setWakeMinute] = useState<number>(0);
 
   // 기존 기록 있으면 최초 1회만 입력값을 동기화한다 (render-phase setState 회피)
-  const initRef = useRef(false);
+  const initRef = useRef<string | null>(null);
   useEffect(() => {
-    if (initRef.current) return;
-    if (!todaySleep.data) return;
-    initRef.current = true;
-    setBedHour(todaySleep.data.bedHour);
-    setBedMinute(todaySleep.data.bedMinute);
-    setWakeHour(todaySleep.data.wakeHour);
-    setWakeMinute(todaySleep.data.wakeMinute);
-  }, [todaySleep.data]);
+    if (todaySleep.isLoading || initRef.current === date) return;
+    initRef.current = date;
+    setBedHour(todaySleep.data?.bedHour ?? 23);
+    setBedMinute(todaySleep.data?.bedMinute ?? 0);
+    setWakeHour(todaySleep.data?.wakeHour ?? 7);
+    setWakeMinute(todaySleep.data?.wakeMinute ?? 0);
+  }, [todaySleep.data, todaySleep.isLoading, date]);
 
   const evalResult = useMemo(
     () => evaluateSleepClient(bedHour, bedMinute, wakeHour, wakeMinute),
@@ -1467,11 +1447,11 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
   const recent = (sleepHistory.data ?? []).slice(-7);
 
   return (
-    <section className="py-10 border-b hairline">
+    <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-4">
-          <div className="editorial-eyebrow text-muted-foreground mb-2">02 · SLEEP</div>
-          <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
+          
+          <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
             수면 기록
             {sleepCount != null && (
               <span className="text-base font-sans font-normal text-primary tabular-nums">{sleepCount}회</span>
@@ -1596,13 +1576,109 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
   );
 }
 
+/* ----------------- 날짜 도우미 ----------------- */
+function shiftDate(d: string, days: number): string {
+  const [y, m, dd] = d.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, dd + days));
+  return t.toISOString().slice(0, 10);
+}
+function formatKoDate(d: string): string {
+  const [y, m, dd] = d.split("-").map(Number);
+  const w = ["일", "월", "화", "수", "목", "금", "토"][new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
+  return `${m}월 ${dd}일 ${w}요일`;
+}
+
+/* ----------------- 따·잠·마·음·운 매일 체크 (2026-11-20) ----------------- */
+function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date: string; autoSlept: boolean; autoCleanEat: boolean; autoExercised: boolean }) {
+  const utils = trpc.useUtils();
+  const note = trpc.happy.byDate.useQuery({ date });
+  const [mood, setMood] = useState(0);
+  const [warm, setWarm] = useState(false);
+  const [slept, setSlept] = useState(false);
+  const [cleanEat, setCleanEat] = useState(false);
+  const [exercised, setExercised] = useState(false);
+  const loadedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (note.isLoading || loadedFor.current === date) return;
+    loadedFor.current = date;
+    const n = note.data;
+    setMood(n?.mood ?? 0);
+    setWarm(!!n?.warm); setSlept(!!n?.slept); setCleanEat(!!n?.cleanEat); setExercised(!!n?.exercised);
+  }, [note.data, note.isLoading, date]);
+
+  const save = trpc.happy.saveChecks.useMutation({
+    onSuccess: () => { utils.happy.byDate.invalidate(); utils.happy.yearProgress.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const persist = (next: Partial<{ mood: number; warm: boolean; slept: boolean; cleanEat: boolean; exercised: boolean }>) => {
+    const v = { mood, warm, slept, cleanEat, exercised, ...next };
+    save.mutate({ date, ...v });
+  };
+
+  const rows: Array<{ key: string; head: string; label: string; checked: boolean; auto?: boolean; toggle?: () => void }> = [
+    { key: "warm", head: "따", label: "몸을 따뜻하게 했어요", checked: warm, toggle: () => { setWarm(!warm); persist({ warm: !warm }); } },
+    { key: "slept", head: "잠", label: "푹 잤어요", checked: slept || autoSlept, auto: autoSlept && !slept, toggle: () => { setSlept(!slept); persist({ slept: !slept }); } },
+    { key: "mind", head: "마", label: "내 마음 알아차리기", checked: mood > 0 },
+    { key: "eat", head: "음", label: "한 끼 이상 클린하게 먹었어요", checked: cleanEat || autoCleanEat, auto: autoCleanEat && !cleanEat, toggle: () => { setCleanEat(!cleanEat); persist({ cleanEat: !cleanEat }); } },
+    { key: "move", head: "운", label: "운동했어요", checked: exercised || autoExercised, auto: autoExercised && !exercised, toggle: () => { setExercised(!exercised); persist({ exercised: !exercised }); } },
+  ];
+  const done = rows.filter(r => r.checked).length;
+
+  return (
+    <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-6">
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-lg md:text-xl font-semibold">오늘의 따·잠·마·음·운</h2>
+        <span className="text-sm text-muted-foreground tabular-nums"><b className="text-primary">{done}</b> / 5</span>
+      </div>
+      <ul className="divide-y divide-border">
+        {rows.map(r => (
+          <li key={r.key} className="py-2.5 flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={r.toggle}
+              disabled={!r.toggle}
+              className={cn(
+                "w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
+                r.checked ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/50",
+              )}
+              aria-label={r.label}
+            >
+              {r.checked && <span className="text-sm font-bold leading-none">✓</span>}
+            </button>
+            <span className="w-6 text-primary font-bold">{r.head}</span>
+            <span className={cn("text-sm", r.checked ? "text-foreground" : "text-muted-foreground")}>{r.label}</span>
+            {r.auto && <span className="text-[10px] text-primary/80">인증 자동 체크</span>}
+            {r.key === "mind" && (
+              <div className="flex gap-1 ml-auto">
+                {MOODS.map(m => (
+                  <button
+                    key={m.v}
+                    type="button"
+                    onClick={() => { setMood(m.v); persist({ mood: m.v }); }}
+                    className={cn(
+                      "px-2 py-1 rounded-full text-xs border transition-colors",
+                      mood === m.v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/60",
+                    )}
+                  >
+                    {m.emoji} {m.short}
+                  </button>
+                ))}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /* ----------------- Happy Diary Section (행복 한 줄 일기) ----------------- */
 // 근거: Three Good Things(Seligman 2005), 감사 일기(Emmons & McCullough 2003), 감정에 이름 붙이기(Lieberman 2007)
 const MOODS = [
-  { v: 4, emoji: "😊", label: "행복했어요" },
-  { v: 3, emoji: "🙂", label: "괜찮았어요" },
-  { v: 2, emoji: "😐", label: "그저 그랬어요" },
-  { v: 1, emoji: "😔", label: "힘들었어요" },
+  { v: 4, emoji: "😊", label: "행복했어요", short: "행복해요" },
+  { v: 3, emoji: "🙂", label: "괜찮았어요", short: "괜찮아요" },
+  { v: 2, emoji: "😐", label: "그저 그랬어요", short: "그저 그래요" },
+  { v: 1, emoji: "😔", label: "힘들었어요", short: "힘들어요" },
 ];
 
 function HappyDiarySection({ date }: { date: string }) {
@@ -1626,11 +1702,11 @@ function HappyDiarySection({ date }: { date: string }) {
   });
 
   return (
-    <section className="py-10 border-b hairline">
+    <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-4">
           <div className="editorial-eyebrow text-primary mb-2">01 · HAPPY NOTE</div>
-          <h2 className="editorial-h2 text-3xl md:text-4xl">행복 한 줄 일기</h2>
+          <h2 className="text-xl md:text-2xl font-semibold">행복 한 줄 일기</h2>
           <p className="mt-3 text-muted-foreground text-sm leading-relaxed">
             10초면 끝나요. 좋았던 일을 적고 기분에 이름을 붙이면 마음이 가벼워진다는 연구가 있어요.
           </p>
@@ -1755,11 +1831,11 @@ function SeasonPhotosSection() {
   };
 
   return (
-    <section className="py-10 border-b hairline">
+    <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-4">
           <div className="editorial-eyebrow text-muted-foreground mb-2">02 · TRANSFORMATION</div>
-          <h2 className="editorial-h2 text-3xl md:text-4xl">비포 / 애프터</h2>
+          <h2 className="text-xl md:text-2xl font-semibold">비포 / 애프터</h2>
           <p className="mt-3 font-serif italic text-muted-foreground text-sm leading-relaxed">
             챌린지 시작과 끝에 같은 자세로 촬영해 주세요.
             <br />
@@ -2100,7 +2176,7 @@ function WaterSection({ date, waterCount, userName, onShare }: { date: string; w
   return (
     <div className="grid grid-cols-12 gap-6">
       <div className="col-span-12 md:col-span-4">
-        <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
+        <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
           {userName ? `${userName} 물 기록` : "물 기록"}
           {((waterCount ?? items.length) > 0) && (
             <span className="text-base font-sans font-normal text-primary tabular-nums">{waterCount ?? items.length}회</span>

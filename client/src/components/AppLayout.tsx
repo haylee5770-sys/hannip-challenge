@@ -11,6 +11,7 @@ import {
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 
 const NAV_ITEMS = [
   // 2026-11-20 방장 요청: 피드·순위·리포트 메뉴 빼고(리포트는 대시보드로 합침) 구매하기 추가
@@ -25,6 +26,29 @@ const NAV_ITEMS = [
 const ADMIN_ITEMS = [
   { label: "ADMIN", path: "/admin", korean: "관리" },
 ];
+
+function YearProgressBar() {
+  const q = trpc.happy.yearProgress.useQuery(undefined, { retry: false, refetchOnWindowFocus: true });
+  const days = q.data?.days ?? 0;
+  const total = q.data?.total ?? 365;
+  const pct = Math.min(100, (days / total) * 100);
+  return (
+    <div className="container pb-4">
+      <div className="relative h-5 flex items-center">
+        <div className="absolute inset-x-0 h-1.5 rounded-full bg-secondary" />
+        <div className="absolute left-0 h-1.5 rounded-full bg-primary/60" style={{ width: `${pct}%` }} />
+        <div
+          className="absolute h-4 w-4 rounded-full bg-primary shadow-[0_0_10px_rgba(182,242,74,0.7)] -translate-x-1/2 transition-all duration-700"
+          style={{ left: `${Math.max(1, pct)}%` }}
+        />
+      </div>
+      <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
+        <span>나의 {q.data?.year ?? new Date().getFullYear()}년</span>
+        <span>올해 <b className="text-primary">{days}</b>일 기록했어요 · {total}일</span>
+      </div>
+    </div>
+  );
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -43,10 +67,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-8">
               <Link href="/today">
                 <div className="flex flex-col items-start">
-                  <span className="editorial-eyebrow text-muted-foreground">EST.2022/5/9</span>
+                  <span className="text-xs md:text-sm text-primary font-medium">인생을 바꾸는 가장 쉬운 방법</span>
                   <span className="editorial-h2 text-2xl md:text-3xl tracking-tight">
                     super hannip <span className="italic font-serif font-light">Challenge</span>
                   </span>
+                  <span className="text-[11px] text-muted-foreground mt-0.5">Since 2022.5.9</span>
                 </div>
               </Link>
             </div>
@@ -105,6 +130,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
+
+        {/* 1년 진행 막대 — 기록한 날만큼 연두 동그라미가 오른쪽으로 (2026-11-20) */}
+        {user && <YearProgressBar />}
 
         {/* Mobile drawer */}
         {mobileOpen && (

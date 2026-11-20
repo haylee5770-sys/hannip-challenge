@@ -1459,6 +1459,24 @@ const happyRouter = router({
   recent: approvedProcedure
     .input(z.object({ since: dateString, until: dateString }))
     .query(async ({ ctx, input }) => db.listHappyNotes(ctx.user.id, input.since, input.until)),
+  /** 따·잠·마·음·운 체크 저장 */
+  saveChecks: approvedProcedure
+    .input(z.object({
+      date: dateString,
+      mood: z.number().int().min(0).max(4),
+      warm: z.boolean(), slept: z.boolean(), cleanEat: z.boolean(), exercised: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await db.upsertHappyChecks(ctx.user.id, input.date, input);
+      return { ok: true };
+    }),
+  /** 1년 진행 막대: 올해 기록한 날 수 */
+  yearProgress: protectedProcedure.query(async ({ ctx }) => {
+    const year = new Date(Date.now() + 9 * 3600 * 1000).getUTCFullYear();
+    const days = await db.countRecordDaysInYear(ctx.user.id, year);
+    const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    return { year, days, total: isLeap ? 366 : 365 };
+  }),
   upsert: approvedProcedure
     .input(z.object({
       date: dateString,
