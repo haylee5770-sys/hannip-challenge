@@ -43,6 +43,7 @@ export async function ensureRoundSchema() {
 }
 
 /* ---------- 회차 범위 ---------- */
+export const APP_RESTART_DATE = "2026-11-20";
 export async function activeRound() {
   const s = await db.getActiveSeason().catch(() => null);
   return s ?? null;
@@ -52,7 +53,8 @@ export async function countRange(): Promise<{ since: string; until: string; seas
   const s = await activeRound();
   const today = kstToday();
   if (s) return { since: String(s.startDate).slice(0, 10), until: today, seasonId: s.id, name: s.name };
-  return { since: today.slice(0, 4) + "-01-01", until: today, seasonId: null, name: null };
+  // 진행 중 회차가 없을 때: 새 앱을 다시 연 날(2026-11-20)부터 센다. (올해 상반기 예전 기록이 섞여 번호가 어긋났던 문제, 2026-11-21)
+  return { since: APP_RESTART_DATE, until: today, seasonId: null, name: null };
 }
 
 /* ---------- 항목별 인증 번호 ---------- */
