@@ -97,7 +97,7 @@ function ArchiveDetail({ seasonId, onBack }: { seasonId: number; onBack: () => v
           {season.startDate} → {season.endDate} · 총 {season.totalDays ?? 13}일
         </div>
         {champion && (
-          <div className="mt-6 inline-flex items-center gap-3 border hairline px-4 py-3 bg-amber-50">
+          <div className="mt-6 inline-flex items-center gap-3 border hairline px-4 py-3 bg-amber-400/10">
             <Trophy className="h-5 w-5 text-amber-600" />
             <div>
               <div className="editorial-eyebrow text-muted-foreground">CHAMPION · 인증 1등</div>

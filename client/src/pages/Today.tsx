@@ -232,7 +232,7 @@ export default function Today() {
       {(weeklyNudge.data || (myStreak.data?.streak ?? 0) >= 2) && (
         <div className={cn(
           "mb-4 px-5 py-3 flex items-start gap-3 border hairline",
-          weeklyNudge.data?.type === "praise" ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"
+          weeklyNudge.data?.type === "praise" ? "bg-primary/10 border-primary/40" : "bg-amber-400/10 border-amber-400/40"
         )}>
           <span className="text-xl mt-0.5">
             {weeklyNudge.data?.type === "praise" ? "🌟" : "💪"}
