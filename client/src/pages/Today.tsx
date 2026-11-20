@@ -1445,12 +1445,13 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
   return (
     <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
       <div className="mb-3">
+        <div className="flex items-center justify-between gap-3"><div className="flex-1">
         <SectionTitle extra={recent.length > 0 ? (
           <div className="flex items-center gap-1 mt-1" title="최근 7일">
             <span className="text-[10px] text-muted-foreground mr-1">최근 7일</span>
             {recent.map(s => <span key={s.id} className={cn("w-2 h-2 rounded-full", dotColor(s.durationMinutes))} />)}
           </div>
-        ) : undefined}>수면 기록</SectionTitle>
+        ) : undefined}>수면 기록</SectionTitle></div><div className="relative w-12 h-12 mr-1"><CountBox n={sleepCount} /></div></div>
       </div>
       {/* 취침 한 줄 (밤 8시~새벽 2시) */}
       <div className="flex items-center gap-2 mb-2">
@@ -1459,7 +1460,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
           {SLEEP_BED_CHOICES.map(h => (
             <button key={h} type="button" onClick={() => { setBedHour(h); setBedMinute(0); }}
               className={cn("rounded-lg py-2 text-xs tabular-nums border transition-colors",
-                bedHour === h ? "bg-primary text-primary-foreground border-primary font-semibold" : "border-border text-muted-foreground")}>
+                bedHour === h ? "glass-fill font-semibold" : "border-border text-muted-foreground")}>
               {short(h)}
             </button>
           ))}
@@ -1472,7 +1473,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
           {SLEEP_WAKE_CHOICES.map(h => (
             <button key={h} type="button" onClick={() => { setWakeHour(h); setWakeMinute(0); }}
               className={cn("rounded-lg py-2 text-xs tabular-nums border transition-colors",
-                wakeHour === h ? "bg-primary text-primary-foreground border-primary font-semibold" : "border-border text-muted-foreground")}>
+                wakeHour === h ? "glass-fill font-semibold" : "border-border text-muted-foreground")}>
               {short(h)}
             </button>
           ))}
@@ -1502,7 +1503,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
         </span>
       </div>
       <div className={cn(ACTIONS_ROW, "items-center")}>
-        <div className="mr-auto"><CountBox n={sleepCount} /></div>
+        
         <Button onClick={handleSave} disabled={upsertSleep.isPending} className={BRAG_BTN}>
           {upsertSleep.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>
@@ -1672,7 +1673,7 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
           <span className="text-sm tabular-nums text-primary font-bold">5 / 5 ✨</span>
         </div>
         <div className="grid grid-cols-5 gap-1.5">
-          {rows.map(r => <div key={r.key} className="rounded-xl bg-primary text-primary-foreground text-center py-2 font-bold">{r.head}</div>)}
+          {rows.map(r => <div key={r.key} className="glass-fill rounded-xl border text-center py-2 font-bold">{r.head}</div>)}
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">지금 내 컨디션 {co?.emoji} {co?.label} · 누르면 펼쳐져요</p>
       </section>
@@ -1697,7 +1698,7 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
               disabled={!r.toggle}
               className={cn(
                 "w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
-                r.checked ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/50",
+                r.checked ? "glass-fill" : "border-muted-foreground/50",
               )}
               aria-label={r.label}
             >
@@ -1751,7 +1752,7 @@ function FourChoice<T extends string | number>({ value, options, onPick }: { val
       {options.map(o => (
         <button key={String(o.v)} type="button" onClick={() => onPick(o.v)}
           className={cn("rounded-2xl border py-2 flex flex-col items-center justify-center gap-0.5 transition-colors",
-            value === o.v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/60")}>
+            value === o.v ? "glass-fill" : "border-border text-muted-foreground hover:border-primary/60")}>
           <span className="text-lg leading-none">{o.emoji}</span>
           <span className="text-[11px] leading-tight whitespace-nowrap">{o.label}</span>
         </button>
@@ -2288,7 +2289,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
         {WATER_VOLUME_OPTIONS.map((v) => (
           <button key={v} type="button" onClick={() => setVolumeMl(v)}
             className={cn("rounded-lg border py-2 text-xs tabular-nums whitespace-nowrap transition-colors",
-              volumeMl === v ? "bg-primary text-primary-foreground border-primary font-semibold" : "border-border text-muted-foreground")}>
+              volumeMl === v ? "glass-fill font-semibold" : "border-border text-muted-foreground")}>
             {v}ml
           </button>
         ))}

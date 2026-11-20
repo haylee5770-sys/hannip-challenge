@@ -308,3 +308,16 @@
 .neon-orb small { font-size: 8px !important; color: rgba(255,255,255,.75) !important; position: relative; z-index: 1; }
 .neon-orb b { font-size: .95rem !important; color: #f4fff7 !important; background: none !important; -webkit-background-clip: border-box !important; background-clip: border-box !important; position: relative; z-index: 1; }
 .glass-pill { padding-right: 3.8rem !important; }
+
+/* 색 채운 버튼은 모두 유리처럼 (2026-11-21): 고른 상태 버튼·접힌 따잠마음운 칸 등 */
+.glass-fill {
+  position: relative; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 78%, transparent), color-mix(in srgb, var(--primary) 52%, transparent)) !important;
+  border-color: color-mix(in srgb, var(--primary) 85%, white) !important;
+  color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 0 1px rgba(255,255,255,.14), 0 4px 12px rgba(0,0,0,.25);
+}
+.glass-fill::after {
+  content: ""; position: absolute; left: 12%; right: 12%; top: 2px; height: 40%; border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0)); pointer-events: none;
+}
