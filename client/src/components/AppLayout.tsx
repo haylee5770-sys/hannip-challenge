@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { label: "REVEAL", path: "/reveal", korean: "결산" },
   { label: "ARCHIVE", path: "/archive", korean: "역대 챌린지" },
   { label: "SHOP", path: "/shop", korean: "구매하기" },
+  { label: "STYLE", path: "/decor", korean: "꾸미기" },
 ];
 
 const ADMIN_ITEMS = [

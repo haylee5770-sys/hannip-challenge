@@ -1,0 +1,75 @@
+// 꾸미기 — 색 10가지 · 글씨체 10가지 · 배경 무늬 (2026-11-20)
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { COLORS, FONTS, PATTERNS, DEFAULT_DECOR, loadDecor, saveDecor, type Decor as DecorT } from "@/lib/decor";
+
+export default function Decor() {
+  const [d, setD] = useState<DecorT>(() => loadDecor());
+  const set = (patch: Partial<DecorT>) => { const n = { ...d, ...patch }; setD(n); saveDecor(n); };
+
+  return (
+    <div>
+      <section className="pb-6">
+        <div className="editorial-eyebrow text-primary mb-2">STYLE · 꾸미기</div>
+        <h1 className="text-3xl md:text-5xl font-semibold">내 앱 꾸미기</h1>
+        <p className="mt-2 text-sm text-muted-foreground">고르는 즉시 바뀌어요. 이 휴대폰에만 저장돼요. 인증 화면을 캡처하면 나만의 느낌으로 올라가요.</p>
+      </section>
+
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+        <h2 className="text-lg font-semibold mb-3">색깔</h2>
+        <div className="grid grid-cols-5 gap-3">
+          {COLORS.map(c => (
+            <button key={c.id} type="button" onClick={() => set({ color: c.id })} className="flex flex-col items-center gap-1">
+              <span
+                className={cn("w-10 h-10 rounded-full border-2 transition-transform", d.color === c.id ? "border-foreground scale-110" : "border-transparent")}
+                style={{ background: c.hex }}
+              />
+              <span className={cn("text-[11px]", d.color === c.id ? "text-foreground" : "text-muted-foreground")}>{c.name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+        <h2 className="text-lg font-semibold mb-3">글씨체</h2>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {FONTS.map(f => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => set({ font: f.id })}
+              className={cn("rounded-xl border px-3 py-3 text-base transition-colors", d.font === f.id ? "border-primary bg-primary/15" : "border-border hover:border-primary/60")}
+              style={f.family ? { fontFamily: `${f.family}, sans-serif` } : undefined}
+            >
+              {f.name}
+              <div className="text-xs text-muted-foreground mt-0.5" style={f.family ? { fontFamily: `${f.family}, sans-serif` } : undefined}>나를 칭찬해요</div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+        <h2 className="text-lg font-semibold mb-3">배경 무늬</h2>
+        <div className="grid grid-cols-5 gap-2">
+          {PATTERNS.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => set({ pattern: p.id })}
+              className={cn("rounded-xl border h-16 text-xs flex items-end justify-center pb-1.5 transition-colors", d.pattern === p.id ? "border-primary" : "border-border")}
+              style={{ background: p.css !== "none" ? `${p.css}, var(--background)` : "var(--background)" }}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="text-right">
+        <button type="button" onClick={() => { setD(DEFAULT_DECOR); saveDecor(DEFAULT_DECOR); }} className="text-sm text-muted-foreground underline">
+          처음 모습으로 되돌리기
+        </button>
+      </div>
+    </div>
+  );
+}

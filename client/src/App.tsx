@@ -13,6 +13,9 @@ import Members from "./pages/Members";
 import Profile from "./pages/Profile";
 import Admin from "@/pages/Admin";
 import Shop from "./pages/Shop";
+import Decor from "./pages/Decor";
+import { applyDecor, loadDecor } from "./lib/decor";
+applyDecor(loadDecor());
 import Invite from "@/pages/Invite";
 import Ranking from "@/pages/Ranking";
 import Reveal from "@/pages/Reveal";
@@ -45,6 +48,7 @@ function Router() {
               <Route path="/profile" component={Profile} />
               <Route path="/admin" component={Admin} />
           <Route path="/shop" component={Shop} />
+          <Route path="/decor" component={Decor} />
               <Route path="/404" component={NotFound} />
               <Route component={NotFound} />
             </Switch>
