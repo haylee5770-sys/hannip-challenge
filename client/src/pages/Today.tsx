@@ -56,15 +56,15 @@ export default function Today() {
   const myCounts = trpc.rounds.myCounts.useQuery();
   const kakaoShareText: string | null = null;
   /** 새 자랑하기: 이번 회차 안 항목별 번호 + 내 사진 + 피드백 (2026-11-20) */
-  const bragItem: BragFn = async (p) => {
+  // 2026-11-21: 자랑하기를 누른 '그 순간' 바로 공유창을 연다 (휴대폰은 누른 직후에만 공유창을 허락함).
+  // 그래서 저장을 기다리지 않고, 화면에 이미 있는 누적 숫자 + 이번에 더하는 개수로 번호를 정한다. 저장은 뒤에서 같이 진행.
+  const bragItem: BragFn = (p) => {
     let n: number | undefined;
-    // 2026-11-21: 식단은 일반식+스무디를 합친 누적 번호 (금 6회 → 토 첫 인증 7)
-    try {
-      await utils.rounds.myCounts.invalidate();
-      const r = await utils.rounds.myCounts.fetch();
-      const c = r.counts as any;
-      n = p.item === "meal" || p.item === "smoothie" ? (c.meal ?? 0) + (c.smoothie ?? 0) : c[p.item];
-    } catch {}
+    const c = myCounts.data?.counts as any;
+    if (c) {
+      const base = p.item === "meal" || p.item === "smoothie" ? (c.meal ?? 0) + (c.smoothie ?? 0) : (c[p.item] ?? 0);
+      n = base + (p.add ?? 1);
+    }
     const time = new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
     const card: ProofCard = { emoji: p.emoji, title: p.label, lines: [], userName, date, count: n, photo: p.photo, itemLabel: p.label, feedback: p.feedback, time, avatar: (user as any)?.avatarUrl ?? null };
     utils.happy.yearProgress.invalidate();
@@ -464,15 +464,16 @@ function WeightSection({ date, userName, onBrag }: { date: string; userName?: st
     if (!photo) return toast.error("체중계 사진을 올려 주세요. 사진 인증이 필수예요.");
     if (!Number.isFinite(kg)) return toast.error("체중을 입력해 주세요.");
     const s = parseFloat(smm), b = parseFloat(bf);
-    try {
-      await save.mutateAsync({ recordedDate: date, weightKg: kg, skeletalMuscleKg: Number.isFinite(s) ? s : null, bodyFatPercent: Number.isFinite(b) ? b : null, inbodyPhotoBase64: photo });
-    } catch { return; }
-    utils.weights.myHistory.invalidate(); utils.wellness.weighIn.invalidate(); utils.wellness.intake.invalidate(); utils.rounds.myCounts.invalidate();
+    // 누른 순간 바로 카톡 공유창 (저장은 뒤에서). 같은 날 다시 재면 번호는 그대로
     const diff = prev ? Math.round((kg - prev.weightKg) * 10) / 10 : null;
     onBrag?.({
-      item: "weight", label: "체중", emoji: "⚖️", photo,
+      item: "weight", label: "체중", emoji: "⚖️", photo, add: list.some(x => x.recordedDate === date) ? 0 : 1,
       feedback: [`${kg}kg`, Number.isFinite(s) ? `골격근 ${s}kg` : null, Number.isFinite(b) ? `체지방률 ${b}%` : null, diff != null ? `지난번보다 ${diff > 0 ? "+" : ""}${diff}kg` : null].filter(Boolean).join(" · "),
     });
+    try {
+      await save.mutateAsync({ recordedDate: date, weightKg: kg, skeletalMuscleKg: Number.isFinite(s) ? s : null, bodyFatPercent: Number.isFinite(b) ? b : null, inbodyPhotoBase64: photo });
+    } catch { toast.error("저장이 안 됐어요. 기록이 남지 않았으니 다시 눌러 주세요."); return; }
+    utils.weights.myHistory.invalidate(); utils.wellness.weighIn.invalidate(); utils.wellness.intake.invalidate(); utils.rounds.myCounts.invalidate();
     setOpen(false); setPhoto(null); setW(""); setSmm(""); setBf(""); setNotes([]);
   };
 
@@ -587,7 +588,8 @@ function MealsSection({
           date={date}
           mealsToday={meals.map(m => ({ category: m.category, carbsG: m.carbsG, proteinG: m.proteinG, fatG: m.fatG, vegetableG: m.vegetableG, waterMl: m.waterMl }))}
           onCancel={() => setCreating(false)}
-          onCreated={(b) => { setCreating(false); onChange(); if (b) onBrag?.(b); }}
+          onBragNow={onBrag}
+          onCreated={() => { setCreating(false); onChange(); }}
         />
       )}
       {/* 오늘 기록: 메달 (누르면 자세히 · 코멘트 · 삭제) */}
@@ -609,6 +611,7 @@ function MealForm({
   mealsToday,
   onCancel,
   onCreated,
+  onBragNow,
 }: {
   date: string;
   mealsToday: Array<{
@@ -616,7 +619,8 @@ function MealForm({
     carbsG: number; proteinG: number; fatG: number; vegetableG: number; waterMl: number;
   }>;
   onCancel: () => void;
-  onCreated: (brag?: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string }) => void;
+  onCreated: () => void;
+  onBragNow?: BragFn;
 }) {
   const [category, setCategory] = useState<MealCategory>("regular");
   const isSmoothie = category === "smoothie";
@@ -831,6 +835,13 @@ function MealForm({
                 toast.error("스무디 사진을 1장 이상 첨부해 주세요");
                 return;
               }
+              // 누른 순간 바로 카톡 공유창 (저장은 뒤에서)
+              onBragNow?.({
+                item: "smoothie", label: "스무디", emoji: "🥤", photo: photos[0], add: pickedList.length || photos.length,
+                feedback: pickedList.length
+                  ? `${pickedList.map(p => p.name).join(" · ")} · 탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g`
+                  : "오늘도 스무디로 몸을 챙겼어요",
+              });
               try {
                 if (pickedList.length > 0) {
                   // 고른 스무디 1개 = 인증 1회. 사진은 순서대로 붙이고 남는 사진은 첫 기록에 붙인다.
@@ -851,14 +862,9 @@ function MealForm({
                     await create.mutateAsync({ recordedDate: date, category: "smoothie", photoBase64: [p] });
                   }
                 }
-                onCreated({
-                  item: "smoothie", label: "스무디", emoji: "🥤", photo: photos[0],
-                  feedback: pickedList.length
-                    ? `${pickedList.map(p => p.name).join(" · ")} · 탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g`
-                    : "오늘도 스무디로 몸을 챙겼어요",
-                });
+                onCreated();
               } catch (e) {
-                // create.onError가 토스트 표시 처리
+                toast.error("저장이 안 됐어요. 기록이 남지 않았으니 다시 눌러 주세요.");
                 return;
               }
               return;
@@ -868,6 +874,10 @@ function MealForm({
               toast.error("식단 사진을 1장 이상 첨부해 주세요");
               return;
             }
+            onBragNow?.({
+              item: "meal", label: "일반식", emoji: "🥗", photo: photos[0],
+              feedback: `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g`,
+            });
             try {
               await create.mutateAsync({
                 recordedDate: date,
@@ -876,11 +886,8 @@ function MealForm({
                 ...numbers,
                 photoBase64: photos,
               });
-            } catch { return; }
-            onCreated({
-              item: "meal", label: "일반식", emoji: "🥗", photo: photos[0],
-              feedback: `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g`,
-            });
+            } catch { toast.error("저장이 안 됐어요. 기록이 남지 않았으니 다시 눌러 주세요."); return; }
+            onCreated();
           }}
           disabled={create.isPending}
           className={BRAG_BTN}
@@ -1113,7 +1120,6 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
   const create = trpc.wellness.createExercise.useMutation({
     onSuccess: (r) => {
       setLastComment({ text: r.comment, warn: r.warn }); setAdding(false);
-      onBrag?.({ item: "exercise", label: "운동", emoji: "💪", photo: photo ?? undefined, feedback: `${r.what} · ${r.comment.replace(/^⚠️\s*/, "")}` });
       reset(); onChange();
     },
     onError: (e) => toast.error(e.message),
@@ -1140,6 +1146,13 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
     const m = parseInt(minutes);
     if (!m) { toast.error("운동한 시간(분)을 입력해 주세요"); return; }
     if (!photo) { toast.error("운동 사진(또는 워치 캡처)을 1장 올려 주세요"); return; }
+    // 누른 순간 바로 카톡 공유창 (저장·코멘트는 뒤에서)
+    const sportName = sports.data?.find(s => s.id === sport)?.name ?? "운동";
+    const feelLabel = FEEL_OPTS.find(o => o.v === feel)?.label ?? "";
+    onBrag?.({
+      item: "exercise", label: "운동", emoji: "💪", photo,
+      feedback: [sportName, km ? `${km}${kind === "swim" ? "m" : "km"}` : null, `${m}분`, kind === "distance" && pace ? `페이스 ${pace}` : null, feelLabel, sweat ? "땀 폭발 💦" : null].filter(Boolean).join(" · "),
+    });
     create.mutate({
       recordedDate: date, sport, minutes: m, feel, sweat, photoBase64: photo,
       distanceKm: kind === "swim" ? (numOrNull(km) ? numOrNull(km)! / 1000 : null) : numOrNull(km),
@@ -1394,15 +1407,18 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
       utils.sleep.byDate.invalidate();
       utils.sleep.list.invalidate();
       utils.seasons.myProgress.invalidate();
-      utils.happy.yearProgress.invalidate();
-      const d = computeSleepMin(bedHour, bedMinute, wakeHour, wakeMinute);
-      onBrag?.({ item: "wake", label: "기상", emoji: "☀️", photo: wakePhoto ?? undefined, feedback: `${fmtClock(bedHour)} 취침 · ${fmtClock(wakeHour)} 기상 · ${Math.floor(d / 60)}시간${d % 60 ? ` ${d % 60}분` : ""} · ${evaluateSleepClient(bedHour, bedMinute, wakeHour, wakeMinute).message}` });
+      utils.happy.yearProgress.invalidate(); utils.rounds.myCounts.invalidate();
       setWakePhoto(null); if (wakeRef.current) wakeRef.current.value = "";
     },
+    onError: () => toast.error("저장이 안 됐어요. 기록이 남지 않았으니 다시 눌러 주세요."),
   });
 
   const handleSave = () => {
     if (!wakePhoto) { toast.error("아침 따뜻한 물 한 잔 사진을 올려 주세요"); return; }
+    // 누른 순간 바로 카톡 공유창 (오늘 이미 기록이 있으면 번호는 그대로)
+    const d = computeSleepMin(bedHour, bedMinute, wakeHour, wakeMinute);
+    onBrag?.({ item: "wake", label: "기상", emoji: "☀️", photo: wakePhoto, add: todaySleep.data ? 0 : 1,
+      feedback: `${fmtClock(bedHour)} 취침 · ${fmtClock(wakeHour)} 기상 · ${Math.floor(d / 60)}시간${d % 60 ? ` ${d % 60}분` : ""} · ${evalResult.message}` });
     upsertSleep.mutate({
       photoBase64: wakePhoto,
       recordedDate: date,
@@ -1499,7 +1515,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
 
 /* ----------------- 공통: 자랑하기 형식 · 큰 횟수 배지 · 메달 · 팝업 (2026-11-20) ----------------- */
 export type BragItem = "meal" | "smoothie" | "water" | "exercise" | "wake" | "weight";
-export type BragFn = (p: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string }) => void;
+export type BragFn = (p: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string; add?: number }) => void;
 
 function CountBadge({ n }: { n?: number | null }) {
   if (n == null) return null;
@@ -2195,9 +2211,6 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
       utils.seasons.myProgress.invalidate();
       toast.success(`물 ${res.count}회 기록되었습니다 (${(volumeMl * res.count).toLocaleString()}ml)`);
       setAdding(false);
-      const newTotal = totalMl + volumeMl * res.count;
-      onBrag?.({ item: "water", label: "물", emoji: "💧", photo: lastPhotos.current[0],
-        feedback: `${volumeMl}ml · 오늘 ${newTotal.toLocaleString()}ml (목표의 ${Math.min(100, Math.round(newTotal / WATER_DAILY_TARGET_ML * 100))}%)` });
       setPhotos([]);
       if (fileRef.current) fileRef.current.value = "";
     },
@@ -2284,6 +2297,9 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
           onClick={() => {
             if (photos.length === 0) { toast.error("물 사진을 1장 이상 첨부해 주세요"); return; }
             lastPhotos.current = photos;
+            const newTotal = totalMl + volumeMl * photos.length;
+            onBrag?.({ item: "water", label: "물", emoji: "💧", photo: photos[0], add: photos.length,
+              feedback: `${volumeMl}ml · 오늘 ${newTotal.toLocaleString()}ml (목표의 ${Math.min(100, Math.round(newTotal / WATER_DAILY_TARGET_ML * 100))}%)` });
             create.mutate({ recordedDate: date, volumeMl, photoBase64: photos });
           }}
           disabled={create.isPending}
