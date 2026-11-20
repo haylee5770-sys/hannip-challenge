@@ -1566,7 +1566,7 @@ function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone }: {
           <button key={it.k} type="button" onClick={() => setTab(it.k)}
             className={cn("rounded-xl border py-2 flex flex-col items-center justify-center leading-tight transition-colors",
               // 아직 안 한 칸(–)도 색이 빠지지 않게 같은 연두 테두리 (2026-11-21, 수면만 회색으로 보이던 문제)
-              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/60 bg-primary/[0.04] text-primary")}>
+              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/60 bg-primary/10 text-primary")}>
             <span className="text-sm font-bold">{it.label}</span>
             <span className="text-[10px] mt-0.5 opacity-80 tabular-nums">{it.sub}</span>
           </button>
@@ -1664,11 +1664,20 @@ function DailyLines({ date }: { date: string }) {
   if (!showQuote && !prefs.coach) return null;
   const qt = quoteOf(date);
   return (
-    <div className="text-center text-xs leading-snug text-muted-foreground max-w-[20rem] mx-auto px-2">
-      {showQuote && <div className="break-keep py-2">“{qt.text}”<div className="opacity-70 mt-0.5">— {qt.by}</div></div>}
-      {prefs.coach && (q.isLoading || q.data?.coach) && <div className="mb-2 h-px w-10 mx-auto bg-border" />}
-      {prefs.coach && q.isLoading && <div className="pb-3">어제 기록을 돌아보고 있어요…</div>}
-      {prefs.coach && q.data?.coach && <div className="break-keep pb-3 text-foreground/85">🌱 {q.data.coach}</div>}
+    // 시안 2 (2026-11-21): 테두리 없는 중간 회색 줄, 왼쪽 은은한 '명언'·'응원', 작은 글씨 2줄까지
+    <div className="mb-4 space-y-1.5">
+      {showQuote && (
+        <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.03] px-3 py-2">
+          <span className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[9px] text-primary/70">명언</span>
+          <p className="line-clamp-2 break-keep text-[10px] leading-relaxed text-muted-foreground">{qt.text.replace(/^[“"']|[”"']$/g, "")} <span className="whitespace-nowrap opacity-60">{qt.by}</span></p>
+        </div>
+      )}
+      {prefs.coach && (q.isLoading || q.data?.coach) && (
+        <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.03] px-3 py-2">
+          <span className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[9px] text-primary/70">응원</span>
+          <p className="line-clamp-2 break-keep text-[10px] leading-relaxed text-foreground/80">{q.data?.coach ?? "어제 기록을 돌아보고 있어요…"}</p>
+        </div>
+      )}
     </div>
   );
 }
