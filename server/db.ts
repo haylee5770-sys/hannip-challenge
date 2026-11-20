@@ -71,6 +71,45 @@ export async function getDb() {
   }
 }
 
+/**
+ * 서버가 켜질 때 시즌 관련 표/칸이 빠져 있으면 채운다.
+ * (운영 DB의 seasons 표가 예전 모양이라 시즌 조회·생성이 실패하던 문제 대응. 이미 있으면 아무 일도 안 함)
+ */
+export async function ensureSchema() {
+  const conn = await getDb();
+  if (!conn) return;
+  const stmts: Array<[string, string]> = [
+    [`CREATE TABLE IF NOT EXISTS seasons (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      seasonNumber INT NOT NULL DEFAULT 1,
+      totalDays INT NOT NULL DEFAULT 13,
+      name VARCHAR(128) NOT NULL,
+      startDate DATE NOT NULL,
+      endDate DATE NOT NULL,
+      status ENUM('upcoming','active','ended') NOT NULL DEFAULT 'active',
+      seasonCode VARCHAR(64) NOT NULL DEFAULT '',
+      createdByUserId INT NOT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`, "seasons"],
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS seasonNumber INT NOT NULL DEFAULT 1", "seasons.seasonNumber"],
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS totalDays INT NOT NULL DEFAULT 13", "seasons.totalDays"],
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS seasonCode VARCHAR(64) NOT NULL DEFAULT ''", "seasons.seasonCode"],
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS createdByUserId INT NOT NULL DEFAULT 0", "seasons.createdByUserId"],
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP", "seasons.updatedAt"],
+    ["ALTER TABLE seasonReports ADD COLUMN IF NOT EXISTS sleepCount INT NOT NULL DEFAULT 0", "seasonReports.sleepCount"],
+    ["ALTER TABLE seasonReports ADD COLUMN IF NOT EXISTS waterCount INT NOT NULL DEFAULT 0", "seasonReports.waterCount"],
+  ];
+  for (const [stmt, label] of stmts) {
+    try {
+      await conn.execute(sql.raw(stmt));
+      console.log("[ensureSchema] ok", label);
+    } catch (e: any) {
+      console.warn("[ensureSchema] skip", label, "-", (e?.cause?.message ?? e?.message ?? String(e)).slice(0, 160));
+    }
+  }
+}
+
 async function db() {
   const conn = await getDb();
   if (!conn) throw new Error("Database not available");

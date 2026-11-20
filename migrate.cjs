@@ -156,6 +156,12 @@ async function main() {
     ["ALTER TABLE meals ADD COLUMN IF NOT EXISTS aiCommentAt TIMESTAMP NULL", "meals.aiCommentAt"],
     ["ALTER TABLE exercises ADD COLUMN IF NOT EXISTS photoKey VARCHAR(512)", "exercises.photoKey"],
     ["ALTER TABLE exercises ADD COLUMN IF NOT EXISTS photoUrl TEXT", "exercises.photoUrl"],
+    // 시즌 표가 예전(0003) 모양으로 먼저 만들어진 경우 빠진 칸을 채운다 — 시즌 생성 실패 원인 후보
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS seasonNumber INT NOT NULL DEFAULT 1", "seasons.seasonNumber"],
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS totalDays INT NOT NULL DEFAULT 13", "seasons.totalDays"],
+    ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS seasonCode VARCHAR(64) NOT NULL DEFAULT ''", "seasons.seasonCode"],
+    ["ALTER TABLE seasonReports ADD COLUMN IF NOT EXISTS sleepCount INT NOT NULL DEFAULT 0", "seasonReports.sleepCount"],
+    ["ALTER TABLE seasonReports ADD COLUMN IF NOT EXISTS waterCount INT NOT NULL DEFAULT 0", "seasonReports.waterCount"],
   ];
 
   for (const [sql, label] of tables) await run(conn, sql, label);
