@@ -1536,35 +1536,22 @@ function SectionTitle({ children, extra }: { children: React.ReactNode; extra?: 
     </div>
   );
 }
-/** '＋ ○○ 기록 추가' 버튼 + 오른쪽에 누적 칸 (누를 때마다 숫자가 올라감) (2026-11-21) */
+/** '＋ ○○ 기록 추가' — 아이폰 유리 버튼(E-1) + 오른쪽 끝 블랙 네온 '누적' 동그라미 (2026-11-21) */
 function AddButton({ label, onClick, count }: { label: string; onClick: () => void; count?: number | null }) {
   return (
-    <div className="flex items-stretch gap-2">
-      <Button onClick={onClick} className="flex-1 rounded-xl h-12">
-        <Plus className="h-4 w-4 mr-2" /> {label}
-      </Button>
-      <CountBox n={count} />
-    </div>
+    <button type="button" onClick={onClick} className="glass-pill">
+      <span className="gp-text"><Plus className="h-4 w-4" /> {label}</span>
+      <span className="neon-orb"><small>누적</small><b>{count ?? "–"}회</b></span>
+    </button>
   );
 }
 function CountBox({ n }: { n?: number | null }) {
   return (
-    <div className="w-16 h-12 rounded-xl border border-primary/70 bg-primary/10 flex flex-col items-center justify-center leading-none shrink-0">
-      <span className="text-[10px] text-muted-foreground">누적</span>
-      <span className="text-lg font-black text-primary tabular-nums mt-0.5">{n ?? "–"}<span className="text-xs font-bold">회</span></span>
-    </div>
-  );
-}/** 칸 오른쪽 위 모서리 탭: 칸의 둥근 모서리를 그대로 살리고, 왼쪽·아래는 직선 */
-function CornerCount({ n }: { n?: number | null }) {
-  if (n == null) return null;
-  return (
-    <div className="absolute top-0 right-0 rounded-tr-2xl rounded-bl-2xl bg-primary text-primary-foreground px-4 py-1.5 text-center leading-none shadow-[0_0_12px_var(--primary-glow,rgba(182,242,74,0.45))]">
-      <div className="text-[10px] font-semibold opacity-80">누적</div>
-      <div className="text-xl font-black tabular-nums mt-0.5">{n}회</div>
-    </div>
+    <span className="neon-orb" style={{ position: "relative", right: "auto", top: "auto", transform: "none" }}>
+      <small>누적</small><b>{n ?? "–"}회</b>
+    </span>
   );
 }
-
 /** 오늘 메달(1회·2회…, 날마다 새로 시작) — 누적은 모서리 탭으로 옮김 (2026-11-21) */
 function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: string; sub?: string }>; onOpen: (id: number) => void; total?: number }) {
   if (!items.length && total == null) return null;
@@ -1572,7 +1559,7 @@ function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: st
     <div className="grid grid-cols-5 gap-2">
       {items.map(it => (
         <button key={it.id} type="button" onClick={() => onOpen(it.id)}
-          className="aspect-square rounded-full border-2 border-primary/70 bg-primary/10 flex flex-col items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+          className="aspect-square rounded-full border border-primary/70 bg-primary/[0.07] flex flex-col items-center justify-center text-primary hover:bg-primary/15 transition-colors">
           <span className="text-sm font-bold leading-none">{it.label}</span>
           {it.sub && <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">{it.sub}</span>}
         </button>
