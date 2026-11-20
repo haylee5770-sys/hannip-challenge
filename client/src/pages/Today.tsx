@@ -1618,21 +1618,11 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
             <span className={cn("text-sm", r.checked ? "text-foreground" : "text-muted-foreground")}>{r.label}</span>
             {r.auto && <span className="text-[10px] text-primary/80">인증 자동 체크</span>}
             {r.key === "mind" && (
-              <div className="flex gap-1 ml-auto">
-                {MOODS.map(m => (
-                  <button
-                    key={m.v}
-                    type="button"
-                    onClick={() => { setMood(m.v); persist({ mood: m.v }); }}
-                    className={cn(
-                      "px-2 py-1 rounded-full text-xs border transition-colors",
-                      mood === m.v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/60",
-                    )}
-                  >
-                    {m.emoji} {m.short}
-                  </button>
-                ))}
-              </div>
+              <FourChoice
+                value={mood}
+                options={MOODS.map(m => ({ v: m.v, emoji: m.emoji, label: m.short }))}
+                onPick={(v) => { setMood(v); persist({ mood: v }); }}
+              />
             )}
           </li>
         ))}
@@ -1660,15 +1650,23 @@ function ConditionCheck({ date }: { date: string }) {
   return (
     <div className="pt-3 mt-1 border-t border-border">
       <div className="text-sm font-semibold text-primary mb-2">컨디션 체크 <span className="text-[11px] font-normal text-muted-foreground">오늘 내 몸은</span></div>
-      <div className="flex flex-wrap gap-1">
-        {CONDITION_OPTS.map(o => (
-          <button key={o.v} type="button" onClick={() => set.mutate({ date, level: o.v })}
-            className={cn("px-2 py-1 rounded-full text-xs border transition-colors",
-              cur === o.v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/60")}>
-            {o.emoji} {o.label}
-          </button>
-        ))}
-      </div>
+      <FourChoice value={cur ?? null} options={CONDITION_OPTS.map(o => ({ v: o.v, emoji: o.emoji, label: o.label }))} onPick={(v) => set.mutate({ date, level: v as any })} />
+    </div>
+  );
+}
+
+/** 마음·컨디션 공통 버튼 (2026-11-21): 한 줄에 4개, 모두 같은 크기, 위 이모지 · 아래 글씨(줄바꿈 없이) */
+function FourChoice<T extends string | number>({ value, options, onPick }: { value: T | null; options: Array<{ v: T; emoji: string; label: string }>; onPick: (v: T) => void }) {
+  return (
+    <div className="grid grid-cols-4 gap-1.5 w-full mt-1">
+      {options.map(o => (
+        <button key={String(o.v)} type="button" onClick={() => onPick(o.v)}
+          className={cn("rounded-2xl border py-2 flex flex-col items-center justify-center gap-0.5 transition-colors",
+            value === o.v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/60")}>
+          <span className="text-lg leading-none">{o.emoji}</span>
+          <span className="text-[11px] leading-tight whitespace-nowrap">{o.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
