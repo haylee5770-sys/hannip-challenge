@@ -20,6 +20,16 @@ import { evaluateSleep, computeSleepMinutes } from "./sleep";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { parse as parseCookie } from "cookie";
 
+/** 모든 시즌 공통 입장코드 (2026-11-20 방장 지정). 대소문자·띄어쓰기 무시. Railway 변수 ENTRY_CODE로 바꿀 수 있음 */
+export const COMMON_ENTRY_CODE = (process.env.ENTRY_CODE || "SUPERHAPPY2027").trim();
+const normCode = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, "").toLowerCase();
+function entryCodeMatches(input: string, seasonCode?: string | null): boolean {
+  const v = normCode(input);
+  if (!v) return false;
+  if (v === normCode(COMMON_ENTRY_CODE)) return true;
+  return !!normCode(seasonCode) && v === normCode(seasonCode);
+}
+
 const dateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD format required");
@@ -1515,14 +1525,8 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "동의 항목을 모두 확인해 주세요." });
         }
         const season = await db.getActiveSeason();
-        if (!season) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "현재 진행 중인 시즌이 없어요. 방장에게 문의해 주세요." });
-        }
-        if (!season.seasonCode || season.seasonCode.trim() === "") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "시즌코드가 아직 설정되지 않았어요. 방장에게 문의해 주세요." });
-        }
-        if (input.seasonCode.trim().toLowerCase() !== season.seasonCode.trim().toLowerCase()) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "시즌코드가 올바르지 않아요. 방장에게 다시 확인해 주세요." });
+        if (!entryCodeMatches(input.seasonCode, season?.seasonCode)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "입장코드가 올바르지 않아요. 방장에게 다시 확인해 주세요." });
         }
         await db.completeOnboarding(ctx.user.id, {
           realName: input.realName,
@@ -1530,7 +1534,7 @@ export const appRouter = router({
           joinPurpose: input.joinPurpose,
           agreedToTerms: true,
         });
-        await db.grantSeasonToken(ctx.user.id, season.id);
+        if (season) await db.grantSeasonToken(ctx.user.id, season.id);
         return { ok: true };
       }),
 
@@ -1539,16 +1543,10 @@ export const appRouter = router({
       .input(z.object({ seasonCode: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
         const season = await db.getActiveSeason();
-        if (!season) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "현재 진행 중인 시즌이 없어요. 방장에게 문의해 주세요." });
+        if (!entryCodeMatches(input.seasonCode, season?.seasonCode)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "입장코드가 올바르지 않아요. 방장에게 다시 확인해 주세요." });
         }
-        if (!season.seasonCode || season.seasonCode.trim() === "") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "시즌코드가 아직 설정되지 않았어요. 방장에게 문의해 주세요." });
-        }
-        if (input.seasonCode.trim().toLowerCase() !== season.seasonCode.trim().toLowerCase()) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "시즌코드가 올바르지 않아요. 방장에게 다시 확인해 주세요." });
-        }
-        await db.grantSeasonToken(ctx.user.id, season.id);
+        if (season) await db.grantSeasonToken(ctx.user.id, season.id);
         return { ok: true };
       }),
 

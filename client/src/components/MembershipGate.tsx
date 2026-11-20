@@ -135,7 +135,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
 
-  // 기존 멤버 시즌코드 입력
+  // 기존 멤버 입장코드 입력
   const [returningCode, setReturningCode] = useState("");
   const [returningError, setReturningError] = useState<string | null>(null);
 
@@ -227,7 +227,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
             </Button>
             {authError && <p className="text-xs text-destructive text-center">{authError}</p>}
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              시즌코드는 방장에게 받으세요.
+              입장코드는 방장에게 받으세요.
             </p>
           </div>
         </div>
@@ -248,12 +248,12 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     );
   }
 
-  // ── 신규 멤버 (pending) — 온보딩 + 시즌코드 ──
+  // ── 신규 멤버 (pending) — 온보딩 + 입장코드 ──
   if (user.status !== "approved") {
     const handleCodeNext = (e: React.FormEvent) => {
       e.preventDefault();
       setFormError(null);
-      if (!seasonCode.trim()) { setFormError("시즌코드를 입력해 주세요."); return; }
+      if (!seasonCode.trim()) { setFormError("입장코드를 입력해 주세요."); return; }
       setOnboardStep("form");
     };
     const handleOnboardSubmit = (e: React.FormEvent) => {
@@ -271,7 +271,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
         <div className="max-w-sm w-full">
           <div className="text-center mb-8">
             <div className="editorial-eyebrow text-muted-foreground mb-3">
-              {onboardStep === "code" ? "STEP 1 · 시즌코드" : "STEP 2 · 기본 정보"}
+              {onboardStep === "code" ? "STEP 1 · 입장코드" : "STEP 2 · 기본 정보"}
             </div>
             <h1 className="editorial-h1 text-3xl md:text-4xl mb-2">
               {onboardStep === "code" ? "이번 시즌 코드를 입력해 주세요" : "거의 다 됐어요"}
@@ -287,7 +287,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
             <form onSubmit={handleCodeNext} className="border hairline p-6 space-y-4">
               <input
                 type="text"
-                placeholder="시즌코드"
+                placeholder="입장코드"
                 value={seasonCode}
                 onChange={e => setSeasonCode(e.target.value)}
                 className="w-full border border-foreground/30 bg-background px-3 py-2 text-sm outline-none focus:border-foreground tracking-widest uppercase placeholder:tracking-normal placeholder:normal-case"
@@ -371,7 +371,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
             onSubmit={e => {
               e.preventDefault();
               setReturningError(null);
-              if (!returningCode.trim()) { setReturningError("시즌코드를 입력해 주세요."); return; }
+              if (!returningCode.trim()) { setReturningError("입장코드를 입력해 주세요."); return; }
               enterSeasonCode.mutate({ seasonCode: returningCode });
             }}
             className="border hairline p-6 space-y-4"

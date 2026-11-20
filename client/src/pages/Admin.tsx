@@ -192,8 +192,13 @@ function EntryCodeAdmin() {
       {/* 시즌코드 설정 */}
       <div>
         <h3 className="editorial-h2 text-2xl mb-1">시즌코드 설정</h3>
+        <div className="border border-foreground p-4 mb-4">
+          <div className="text-xs text-muted-foreground mb-1">모든 시즌 공통 입장코드</div>
+          <div className="font-mono text-2xl tracking-widest">SUPERHAPPY2027</div>
+          <div className="text-xs text-muted-foreground mt-1">대소문자·띄어쓰기 상관없이 들어올 수 있어요. 시즌이 바뀌어도 그대로예요.</div>
+        </div>
         <p className="text-sm text-muted-foreground mb-6">
-          시즌별로 코드를 설정하세요. 멤버는 이 코드를 입력해야 해당 시즌에 활동할 수 있어요.
+          아래 시즌별 코드는 따로 쓰고 싶을 때만 넣으세요. 넣지 않아도 공통 코드로 들어올 수 있어요.
         </p>
         {seasonList.isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin" />
