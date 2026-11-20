@@ -55,7 +55,7 @@ export default function Today() {
     if (!text) return;
     const parts = text.replace(/#super_hannip_challenge/g, "").split("\n").map(s => s.trim()).filter(Boolean);
     const first = parts[0] ?? "";
-    const m = first.match(/^(\S+)\s+(.*?)(?:\s*완료!?)?$/u);
+    const m = first.match(/^(\S+)\s+(.*?)(?:\s*완료!?)?$/);
     const card: ProofCard = {
       emoji: m?.[1] ?? "💚",
       title: (m?.[2] ?? first).replace(/인증$/, "").trim() + " 인증",

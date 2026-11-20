@@ -1,7 +1,7 @@
 // 꾸미기 — 색 10가지 · 글씨체 10가지 · 배경 무늬 (2026-11-20)
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { COLORS, FONTS, PATTERNS, DEFAULT_DECOR, loadDecor, saveDecor, type Decor as DecorT } from "@/lib/decor";
+import { COLORS, BACKGROUNDS, FONTS, PATTERNS, DEFAULT_DECOR, loadDecor, saveDecor, type Decor as DecorT } from "@/lib/decor";
 
 export default function Decor() {
   const [d, setD] = useState<DecorT>(() => loadDecor());
@@ -16,7 +16,8 @@ export default function Decor() {
       </section>
 
       <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <h2 className="text-lg font-semibold mb-3">색깔</h2>
+        <h2 className="text-lg font-semibold mb-1">포인트 색</h2>
+        <p className="text-xs text-muted-foreground mb-3">체크·버튼·강조 글씨 색이에요. 테두리에도 아주 연하게 비쳐요.</p>
         <div className="grid grid-cols-5 gap-3">
           {COLORS.map(c => (
             <button key={c.id} type="button" onClick={() => set({ color: c.id })} className="flex flex-col items-center gap-1">
@@ -30,6 +31,21 @@ export default function Decor() {
         </div>
       </section>
 
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+        <h2 className="text-lg font-semibold mb-1">배경 색</h2>
+        <p className="text-xs text-muted-foreground mb-3">칸 바깥 바탕색이에요. 칸은 자동으로 조금 더 밝게 맞춰져요.</p>
+        <div className="grid grid-cols-5 gap-3">
+          {BACKGROUNDS.map(b => (
+            <button key={b.id} type="button" onClick={() => set({ bg: b.id })} className="flex flex-col items-center gap-1">
+              <span
+                className={cn("w-10 h-10 rounded-full border-2 transition-transform", d.bg === b.id ? "border-primary scale-110" : "border-white/20")}
+                style={{ background: b.hex }}
+              />
+              <span className={cn("text-[11px]", d.bg === b.id ? "text-foreground" : "text-muted-foreground")}>{b.name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
       <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <h2 className="text-lg font-semibold mb-3">글씨체</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -49,7 +65,8 @@ export default function Decor() {
       </section>
 
       <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <h2 className="text-lg font-semibold mb-3">배경 무늬</h2>
+        <h2 className="text-lg font-semibold mb-1">배경 무늬</h2>
+        <p className="text-xs text-muted-foreground mb-3">칸 바깥 바탕에 깔려요.</p>
         <div className="grid grid-cols-5 gap-2">
           {PATTERNS.map(p => (
             <button

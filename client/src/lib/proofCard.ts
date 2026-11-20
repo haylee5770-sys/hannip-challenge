@@ -77,7 +77,7 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
 }
 
 /** 이미지 만들어 공유창 열기. 안 되는 환경이면 이미지 저장 + 문구 복사. 결과를 문자열로 돌려준다. */
-export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "downloaded"> {
+export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded"> {
   const text = `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
   const blob = await makeProofImage(card);
   const file = new File([blob], `hannip_${card.date}.png`, { type: "image/png" });
@@ -86,8 +86,9 @@ export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled
     try {
       await nav.share({ files: [file], text });
       return "shared";
-    } catch {
-      return "cancelled";
+    } catch (e: any) {
+      // 저장하느라 시간이 걸려 '누른 직후'가 아니면 브라우저가 막는다 → 버튼 한 번 더 누르게
+      return e?.name === "NotAllowedError" ? "blocked" : "cancelled";
     }
   }
   // 공유 불가(PC·카톡 안 브라우저 등): 이미지 저장 + 문구 복사
