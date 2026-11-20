@@ -20,11 +20,9 @@ export const FONTS = [
   { id: "gowunbatang", name: "고운바탕", family: "'Gowun Batang'" },
   { id: "jua", name: "주아", family: "'Jua'" },
   { id: "dohyeon", name: "도현", family: "'Do Hyeon'" },
-  { id: "sunflower", name: "해바라기", family: "'Sunflower'" },
-  { id: "gaegu", name: "개구쟁이", family: "'Gaegu'" },
-  { id: "pen", name: "손글씨", family: "'Nanum Pen Script'" },
   { id: "myeongjo", name: "명조", family: "'Nanum Myeongjo'" },
-  { id: "blackhan", name: "굵은 제목", family: "'Black Han Sans'" },
+  { id: "plex", name: "단정체", family: "'IBM Plex Sans KR'" },
+  { id: "hahmlet", name: "함렛", family: "'Hahmlet'" },
 ];
 
 export const PATTERNS = [

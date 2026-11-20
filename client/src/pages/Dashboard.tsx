@@ -1,3 +1,4 @@
+import PageTitle from "@/components/PageTitle";
 import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -132,14 +133,9 @@ export default function Dashboard() {
   return (
     <div>
       {/* Cover */}
-      <section className="grid grid-cols-12 gap-6 items-end pb-10 border-b hairline">
-        <div className="col-span-12 md:col-span-7">
-          <div className="editorial-eyebrow text-muted-foreground mb-3">PERSONAL</div>
-          <h1 className="editorial-h1 text-5xl md:text-7xl">
-            나의 <span className="italic font-serif font-light">변화</span>
-          </h1>
-        </div>
-        <div className="col-span-12 md:col-span-5 flex md:justify-end gap-1">
+      <section className="pb-6 border-b hairline">
+        <PageTitle eyebrow="DASHBOARD" title="나의 변화" />
+        <div className="mt-3 flex justify-center gap-1">
           {ranges.map(r => (
             <button
               key={r.label}

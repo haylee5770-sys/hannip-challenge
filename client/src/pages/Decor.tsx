@@ -1,3 +1,4 @@
+import PageTitle from "@/components/PageTitle";
 // 꾸미기 — 색 10가지 · 글씨체 10가지 · 배경 무늬 (2026-11-20)
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -9,11 +10,7 @@ export default function Decor() {
 
   return (
     <div>
-      <section className="pb-6">
-        <div className="editorial-eyebrow text-primary mb-2">STYLE · 꾸미기</div>
-        <h1 className="text-3xl md:text-5xl font-semibold">내 앱 꾸미기</h1>
-        <p className="mt-2 text-sm text-muted-foreground">고르는 즉시 바뀌어요. 이 휴대폰에만 저장돼요. 인증 화면을 캡처하면 나만의 느낌으로 올라가요.</p>
-      </section>
+      <div className="pb-6"><PageTitle eyebrow="STYLE" title="내 앱 꾸미기" sub="고르는 즉시 바뀌고, 이 휴대폰에만 저장돼요." /></div>
 
       <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <h2 className="text-lg font-semibold mb-1">포인트 색</h2>

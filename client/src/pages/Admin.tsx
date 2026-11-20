@@ -1,3 +1,4 @@
+import PageTitle from "@/components/PageTitle";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { todayLocal } from "@shared/utils";
@@ -67,13 +68,8 @@ export default function Admin() {
 
   return (
     <div>
-      <section className="grid grid-cols-12 gap-6 items-end pb-10 border-b hairline">
-        <div className="col-span-12">
-          <div className="editorial-eyebrow text-muted-foreground mb-3">ADMIN</div>
-          <h1 className="editorial-h1 text-5xl md:text-7xl">
-            관리 <span className="italic font-serif font-light">콘솔</span>
-          </h1>
-        </div>
+      <section className="pb-4 mb-4 border-b hairline">
+        <PageTitle eyebrow="ADMIN" title="관리" />
       </section>
 
       <RoundControl />
