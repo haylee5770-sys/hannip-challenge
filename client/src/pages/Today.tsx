@@ -1610,7 +1610,7 @@ function DailyLines({ date }: { date: string }) {
   const qt = quoteOf(date);
   return (
     <div className="mt-1 space-y-1 text-xs leading-snug text-muted-foreground max-w-[18rem] mx-auto">
-      {showQuote && <div>“{qt.text}” <span className="opacity-70">— {qt.by}</span></div>}
+      {showQuote && <div className="break-keep">“{qt.text}”<div className="opacity-70 mt-0.5">— {qt.by}</div></div>}
       {prefs.coach && q.isLoading && <div>어제 기록을 돌아보고 있어요…</div>}
       {prefs.coach && q.data?.coach && <div className="text-foreground/85">🌱 {q.data.coach}</div>}
     </div>
