@@ -1640,10 +1640,10 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
 
   const rows: Array<{ key: string; head: string; label: string; checked: boolean; auto?: boolean; toggle?: () => void }> = [
     { key: "warm", head: "따", label: "어제 나는 몸을 따뜻하게 했어요", checked: warm, toggle: () => { setWarm(!warm); persist({ warm: !warm }); } },
-    { key: "slept", head: "잠", label: "어제 나는 푹 잤어요", checked: slept || autoSlept, auto: autoSlept && !slept, toggle: () => { setSlept(!slept); persist({ slept: !slept }); } },
-    { key: "mind", head: "마", label: "어제 내 마음 알아차리기 (어제 나의 기분은)", checked: mood > 0 },
-    { key: "eat", head: "음", label: "어제 나는 한 끼 이상 클린하게 먹었어요", checked: cleanEat || autoCleanEat, auto: autoCleanEat && !cleanEat, toggle: () => { setCleanEat(!cleanEat); persist({ cleanEat: !cleanEat }); } },
-    { key: "move", head: "운", label: "어제 나는 운동을 했어요", checked: exercised || autoExercised, auto: autoExercised && !exercised, toggle: () => { setExercised(!exercised); persist({ exercised: !exercised }); } },
+    { key: "slept", head: "잠", label: "어제 나는 푹 잤어요", checked: slept, toggle: () => { setSlept(!slept); persist({ slept: !slept }); } },
+    { key: "mind", head: "마", label: "마음 알아차리기 (어제 나의 기분)", checked: mood > 0 },
+    { key: "eat", head: "음", label: "어제 나는 한 끼 이상 클린하게 먹었어요", checked: cleanEat, toggle: () => { setCleanEat(!cleanEat); persist({ cleanEat: !cleanEat }); } },
+    { key: "move", head: "운", label: "어제 나는 운동을 했어요", checked: exercised, toggle: () => { setExercised(!exercised); persist({ exercised: !exercised }); } },
   ];
   const done = rows.filter(r => r.checked).length;
 
@@ -1670,7 +1670,7 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
             </button>
             <span className="w-6 text-primary font-bold">{r.head}</span>
             <span className={cn("text-sm", r.checked ? "text-foreground" : "text-muted-foreground")}>{r.label}</span>
-            {r.auto && <span className="text-[10px] text-primary/80">인증 자동 체크</span>}
+
             {r.key === "mind" && (
               <FourChoice
                 value={mood}
@@ -1703,7 +1703,7 @@ function ConditionCheck({ date }: { date: string }) {
   const cur = set.isPending ? set.variables?.level : q.data;
   return (
     <div className="pt-3 mt-1 border-t border-border">
-      <div className="text-sm font-semibold text-primary mb-2">컨디션 체크 <span className="text-[11px] font-normal text-muted-foreground">오늘 내 몸은</span></div>
+      <div className="text-sm font-semibold text-primary mb-2">지금 내 컨디션 체크 <span className="text-[11px] font-normal text-muted-foreground">지금 느껴지는 내 컨디션은</span></div>
       <FourChoice value={cur ?? null} options={CONDITION_OPTS.map(o => ({ v: o.v, emoji: o.emoji, label: o.label }))} onPick={(v) => set.mutate({ date, level: v as any })} />
     </div>
   );
