@@ -37,7 +37,9 @@ export default function Awards() {
     <div className="space-y-4">
       <section className="text-center pb-2">
         <div className="editorial-eyebrow text-primary mb-1">{d.status === "live" ? "LIVE · 진행 중" : "AWARDS · 최종 발표"}</div>
-        <h1 className="text-3xl md:text-4xl font-semibold">🏆 {d.season?.name} 시상식</h1>
+        {/* 회차 이름이 길어져도 '시상식'이 어색하게 잘리지 않게: 회차 이름 한 줄 + 시상식 한 줄 (2026-11-21) */}
+        <div className="text-lg md:text-xl font-semibold text-foreground/85 break-keep">{d.season?.name}</div>
+        <h1 className="text-3xl md:text-4xl font-semibold">🏆 시상식</h1>
         <p className="text-sm text-muted-foreground mt-1">{d.season?.startDate}{d.season?.endDate ? ` ~ ${d.season.endDate}` : " ~ 진행 중"}</p>
       </section>
       <Podium title="이게돼 챔피언" sub="이게돼를 가장 많이 쓴 크루" list={d.byItge as W[]} unit="개" />
