@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { quoteOf } from "@/lib/quotes";
+import { Link } from "wouter";
 import { shareProof, type ProofCard } from "@/lib/proofCard";
 import { loadDecor } from "@/lib/decor";
 import { Streamdown } from "streamdown";
@@ -510,16 +511,36 @@ function WeightSection({ date, userName, onBrag }: { date: string; userName?: st
           </div>
         </div>
       )}
-      {list.length > 0 && (
-        <div className="flex flex-wrap gap-2 text-xs">
-          {list.slice(-6).map(x => (
-            <span key={x.id} className="px-2 py-1 rounded-lg bg-background/50 border border-border">
-              {x.recordedDate.slice(2).replace(/-/g, ".")} <b className="text-primary">{x.weightKg}kg</b>
-              {x.skeletalMuscleKg != null ? ` · 골격근 ${x.skeletalMuscleKg}` : ""}{x.bodyFatPercent != null ? ` · 체지방 ${x.bodyFatPercent}%` : ""}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* 가장 최근 기록 하나 + 지난번보다 변화 (전체는 대시보드) (2026-11-21) */}
+      {list.length > 0 && (() => {
+        const last = list[list.length - 1];
+        const before = list.length > 1 ? list[list.length - 2] : null;
+        const d = (a: number | null, b: number | null | undefined) => (a != null && b != null ? Math.round((a - b) * 10) / 10 : null);
+        const fmt = (v: number | null, unit: string, goodDown: boolean) => v == null || v === 0 ? null
+          : <span className={(v < 0) === goodDown ? "text-primary" : "text-rose-300"}>{v > 0 ? "+" : ""}{v}{unit}</span>;
+        const dw = d(last.weightKg, before?.weightKg);
+        const dm = d(last.skeletalMuscleKg, before?.skeletalMuscleKg);
+        const df = d(last.bodyFatPercent, before?.bodyFatPercent);
+        return (
+          <div className="rounded-xl bg-background/50 border border-border px-3 py-2.5 text-sm">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs text-muted-foreground">최근 기록 · {last.recordedDate.slice(2).replace(/-/g, ".")}</span>
+              <Link href="/dashboard" className="text-xs text-muted-foreground underline shrink-0">전체 보기 →</Link>
+            </div>
+            <div className="mt-1">
+              <b className="text-primary text-lg">{last.weightKg}kg</b>
+              {last.skeletalMuscleKg != null ? <span> · 골격근 {last.skeletalMuscleKg}kg</span> : null}
+              {last.bodyFatPercent != null ? <span> · 체지방률 {last.bodyFatPercent}%</span> : null}
+            </div>
+            {before && (dw || dm || df) ? (
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                지난번보다 {[fmt(dw, "kg", true), dm ? <>골격근 {fmt(dm, "kg", false)}</> : null, df ? <>체지방률 {fmt(df, "%", true)}</> : null]
+                  .filter(Boolean).map((el, i) => <span key={i}>{i > 0 ? " · " : ""}{el}</span>)}
+              </div>
+            ) : null}
+          </div>
+        );
+      })()}
     </div>
   );
 }
