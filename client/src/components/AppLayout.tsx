@@ -57,8 +57,8 @@ function KakaoInAppNotice() {
   return (
     <div className="container pt-2">
       <div className="rounded-xl border border-primary/50 bg-primary/10 px-3 py-2 flex items-center gap-2 text-xs">
-        <span className="flex-1">카톡 안에서 열면 인증 사진이 바로 안 보내져요.</span>
-        <button type="button" onClick={openInExternalBrowser} className="font-semibold text-primary underline">크롬으로 열기</button>
+        <span className="flex-1">카톡 안에서는 인증 사진이 바로 안 보내져요. 크롬에서 열고 <b>홈 화면에 추가</b>해 두세요.</span>
+        <button type="button" onClick={openInExternalBrowser} className="shrink-0 rounded-full bg-primary text-primary-foreground font-semibold px-3 py-1.5">{/iPhone|iPad/i.test(navigator.userAgent) ? "사파리로 열기" : "크롬으로 열기"}</button>
         <button type="button" onClick={() => setHide(true)} className="text-muted-foreground">✕</button>
       </div>
     </div>

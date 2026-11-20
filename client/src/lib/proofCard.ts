@@ -113,7 +113,15 @@ export function isKakaoInApp(): boolean {
 
 /** 카톡 안 브라우저에서 휴대폰 기본 브라우저(크롬·삼성인터넷)로 다시 열기 */
 export function openInExternalBrowser() {
-  location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(location.href);
+  const url = location.href;
+  if (/Android/i.test(navigator.userAgent)) {
+    // 안드로이드: 크롬을 콕 집어서 연다. 크롬이 없으면 기본 브라우저로.
+    const noScheme = url.replace(/^https?:\/\//, "");
+    location.href = `intent://${noScheme}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end`;
+    return;
+  }
+  // 아이폰 등: 카톡이 기본 브라우저(사파리)로 열어 준다
+  location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
 }
 
 function blobToDataUrl(b: Blob): Promise<string> {
