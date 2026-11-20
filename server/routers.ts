@@ -16,6 +16,7 @@ import { storagePut } from "./storage";
 import { generateAutoFeedback } from "./feedback";
 import { analyzeInbodyImage } from "./inbody";
 import { analyzeMealImage } from "./mealVision";
+import { getDailyLines } from "./dailyLines";
 import { syncSeasonBaselineForUser, computeLeaderboard, getMyCounts, dayNumber, totalDays, generateSeasonReports } from "./seasons";
 import { evaluateSleep, computeSleepMinutes } from "./sleep";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
@@ -1470,6 +1471,10 @@ const happyRouter = router({
       await db.upsertHappyChecks(ctx.user.id, input.date, input);
       return { ok: true };
     }),
+  /** 날짜 아래 한 줄: 오늘의 운세(재미용)·어제 돌아보기 한마디 */
+  dailyLines: approvedProcedure
+    .input(z.object({ date: dateString, birthDate: dateString.optional(), fortune: z.boolean(), coach: z.boolean() }))
+    .query(async ({ ctx, input }) => getDailyLines(ctx.user.id, input.date, input)),
   /** 1년 진행 막대: 올해 기록한 날 수 */
   yearProgress: protectedProcedure.query(async ({ ctx }) => {
     const year = new Date(Date.now() + 9 * 3600 * 1000).getUTCFullYear();

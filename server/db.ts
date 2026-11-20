@@ -117,6 +117,16 @@ export async function ensureSchema() {
     ["ALTER TABLE happyNotes ADD COLUMN IF NOT EXISTS cleanEat BOOLEAN NOT NULL DEFAULT false", "happyNotes.cleanEat"],
     ["ALTER TABLE happyNotes ADD COLUMN IF NOT EXISTS exercised BOOLEAN NOT NULL DEFAULT false", "happyNotes.exercised"],
     ["ALTER TABLE happyNotes MODIFY COLUMN mood TINYINT NOT NULL DEFAULT 0", "happyNotes.mood default 0"],
+    // 날짜 아래 한 줄(운세·코칭) 하루 1번 저장 (2026-11-20)
+    [`CREATE TABLE IF NOT EXISTS dailyLines (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      recordedDate DATE NOT NULL,
+      kind VARCHAR(64) NOT NULL,
+      text VARCHAR(300) NOT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY dailyLines_u (userId, recordedDate, kind)
+    )`, "dailyLines"],
   ];
   for (const [stmt, label] of stmts) {
     try {

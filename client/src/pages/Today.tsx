@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { shareProof, type ProofCard } from "@/lib/proofCard";
+import { loadDecor } from "@/lib/decor";
 import { Streamdown } from "streamdown";
 import { shareKakao, isKakaoReady } from "@/lib/kakao";
 
@@ -256,9 +257,7 @@ export default function Today() {
       )}
 
       {/* 우리 방 모토 한 줄 (주간 안내 대신, 2026-11-20) */}
-      <p className="mb-5 text-center text-primary text-2xl md:text-3xl leading-snug" style={{ fontFamily: "'Nanum Brush Script', 'Nanum Pen Script', cursive" }}>
-        꾸준함이 자존감이 되고,<br />자존감이 인생을 바꾼다
-      </p>
+
       {/* Season banner */}
       {seasonProgress.data?.season && (
         <section className="mb-4 rounded-2xl bg-card border border-border px-5 py-4 md:px-6">
@@ -311,10 +310,14 @@ export default function Today() {
       <div className="flex items-center justify-between rounded-2xl bg-card border border-border px-3 py-2 mb-4">
         <button type="button" onClick={() => setDate(shiftDate(date, -1))} className="px-3 py-2 text-xl text-muted-foreground hover:text-primary" aria-label="이전 날">‹</button>
         <div className="text-center">
-          <div className="text-lg md:text-xl font-semibold">{formatKoDate(date)}</div>
-          {date !== todayLocal()
-            ? <button type="button" onClick={() => setDate(todayLocal())} className="text-xs text-primary underline">오늘로 돌아가기</button>
-            : <div className="text-xs text-primary">오늘</div>}
+          <div className="text-lg md:text-xl font-semibold tabular-nums">
+            {date === todayLocal() && <span className="text-primary mr-1.5">오늘</span>}
+            {formatShortDate(date)}
+          </div>
+          {date !== todayLocal() && (
+            <button type="button" onClick={() => setDate(todayLocal())} className="text-[11px] text-muted-foreground underline">오늘로</button>
+          )}
+          <DailyLines date={date} />
         </div>
         <button
           type="button"
@@ -1535,6 +1538,30 @@ function shiftDate(d: string, days: number): string {
   const t = new Date(Date.UTC(y, m - 1, dd + days));
   return t.toISOString().slice(0, 10);
 }
+function formatShortDate(d: string): string {
+  const [y, m, dd] = d.split("-").map(Number);
+  const w = ["일", "월", "화", "수", "목", "금", "토"][new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
+  return `${m}/${dd}(${w})`;
+}
+
+/** 날짜 아래 두 줄: 오늘의 운세(재미용) · 어제 돌아보기 코칭 — 꾸미기에서 켠 것만 */
+function DailyLines({ date }: { date: string }) {
+  const prefs = loadDecor();
+  const want = (prefs.fortune && !!prefs.birthDate) || prefs.coach;
+  const q = trpc.happy.dailyLines.useQuery(
+    { date, birthDate: prefs.fortune ? prefs.birthDate || undefined : undefined, fortune: !!(prefs.fortune && prefs.birthDate), coach: !!prefs.coach },
+    { enabled: want, staleTime: 6 * 3600_000, retry: false, refetchOnWindowFocus: false },
+  );
+  if (!want) return null;
+  return (
+    <div className="mt-1 space-y-0.5 text-xs leading-snug text-muted-foreground max-w-[17rem] mx-auto">
+      {q.isLoading && <div>오늘의 한 줄을 준비하고 있어요…</div>}
+      {q.data?.fortune && <div>🔮 {q.data.fortune}</div>}
+      {q.data?.coach && <div className="text-foreground/85">🌱 {q.data.coach}</div>}
+    </div>
+  );
+}
+
 function formatKoDate(d: string): string {
   const [y, m, dd] = d.split("-").map(Number);
   const w = ["일", "월", "화", "수", "목", "금", "토"][new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];

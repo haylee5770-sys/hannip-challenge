@@ -12,6 +12,8 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useEffect } from "react";
+import { isKakaoInApp, openInExternalBrowser } from "@/lib/proofCard";
 
 const NAV_ITEMS = [
   // 2026-11-20 방장 요청: 피드·순위·리포트 메뉴 빼고(리포트는 대시보드로 합침) 구매하기 추가
@@ -27,6 +29,41 @@ const NAV_ITEMS = [
 const ADMIN_ITEMS = [
   { label: "ADMIN", path: "/admin", korean: "관리" },
 ];
+
+/** 카톡 안 브라우저일 때: 인증 사진을 화면에 띄워 길게 눌러 저장 + 크롬으로 열기 안내 */
+function ProofPreview() {
+  const [img, setImg] = useState<string | null>(null);
+  useEffect(() => {
+    const h = (e: Event) => setImg((e as CustomEvent).detail?.dataUrl ?? null);
+    window.addEventListener("hannip-proof-preview", h);
+    return () => window.removeEventListener("hannip-proof-preview", h);
+  }, []);
+  if (!img) return null;
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center p-5 gap-3" onClick={() => setImg(null)}>
+      <img src={img} alt="인증 사진" className="w-full max-w-sm rounded-2xl" onClick={e => e.stopPropagation()} />
+      <p className="text-sm text-white text-center leading-relaxed">사진을 <b>길게 눌러 저장</b>한 뒤 카톡방에 올려 주세요.<br />문구는 복사돼 있어요.</p>
+      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+        <Button onClick={openInExternalBrowser} className="rounded-full">크롬으로 열면 한 번에 보내져요</Button>
+        <Button variant="outline" onClick={() => setImg(null)} className="rounded-full">닫기</Button>
+      </div>
+    </div>
+  );
+}
+
+function KakaoInAppNotice() {
+  const [hide, setHide] = useState(false);
+  if (!isKakaoInApp() || hide) return null;
+  return (
+    <div className="container pt-2">
+      <div className="rounded-xl border border-primary/50 bg-primary/10 px-3 py-2 flex items-center gap-2 text-xs">
+        <span className="flex-1">카톡 안에서 열면 인증 사진이 바로 안 보내져요.</span>
+        <button type="button" onClick={openInExternalBrowser} className="font-semibold text-primary underline">크롬으로 열기</button>
+        <button type="button" onClick={() => setHide(true)} className="text-muted-foreground">✕</button>
+      </div>
+    </div>
+  );
+}
 
 function YearProgressBar() {
   const q = trpc.happy.yearProgress.useQuery(undefined, { retry: false, refetchOnWindowFocus: true });
@@ -47,6 +84,7 @@ function YearProgressBar() {
         <span>나의 {q.data?.year ?? new Date().getFullYear()}년</span>
         <span>올해 <b className="text-primary">{days}</b>일 기록했어요 · {total}일</span>
       </div>
+      <p className="mt-3 text-sm text-primary/90">꾸준함이 자존감이 되고, 자존감이 인생을 바꾼다</p>
     </div>
   );
 }
@@ -134,6 +172,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* 1년 진행 막대 — 기록한 날만큼 연두 동그라미가 오른쪽으로 (2026-11-20) */}
         {user && <YearProgressBar />}
+        <KakaoInAppNotice />
+        <ProofPreview />
 
         {/* Mobile drawer */}
         {mobileOpen && (

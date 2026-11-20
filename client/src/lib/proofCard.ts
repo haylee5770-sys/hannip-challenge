@@ -77,12 +77,12 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
 }
 
 /** 이미지 만들어 공유창 열기. 안 되는 환경이면 이미지 저장 + 문구 복사. 결과를 문자열로 돌려준다. */
-export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded"> {
+export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
   const text = `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
   const blob = await makeProofImage(card);
   const file = new File([blob], `hannip_${card.date}.png`, { type: "image/png" });
   const nav = navigator as any;
-  if (nav.canShare && nav.canShare({ files: [file] })) {
+  if (!isKakaoInApp() && nav.canShare && nav.canShare({ files: [file] })) {
     try {
       await nav.share({ files: [file], text });
       return "shared";
@@ -91,11 +91,31 @@ export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled
       return e?.name === "NotAllowedError" ? "blocked" : "cancelled";
     }
   }
-  // 공유 불가(PC·카톡 안 브라우저 등): 이미지 저장 + 문구 복사
+  // 카톡 안 브라우저: 공유·다운로드가 막혀 있음 → 사진을 화면에 띄워 '길게 눌러 저장'하게
+  if (isKakaoInApp()) {
+    try { await navigator.clipboard.writeText(text); } catch {}
+    const dataUrl = await blobToDataUrl(blob);
+    window.dispatchEvent(new CustomEvent("hannip-proof-preview", { detail: { dataUrl, text } }));
+    return "preview";
+  }
+  // 공유 불가(PC 등): 이미지 저장 + 문구 복사
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
   try { await navigator.clipboard.writeText(text); } catch {}
   return "downloaded";
+}
+
+export function isKakaoInApp(): boolean {
+  return typeof navigator !== "undefined" && /KAKAOTALK/i.test(navigator.userAgent);
+}
+
+/** 카톡 안 브라우저에서 휴대폰 기본 브라우저(크롬·삼성인터넷)로 다시 열기 */
+export function openInExternalBrowser() {
+  location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(location.href);
+}
+
+function blobToDataUrl(b: Blob): Promise<string> {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = rej; r.readAsDataURL(b); });
 }

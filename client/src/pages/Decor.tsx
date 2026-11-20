@@ -83,6 +83,33 @@ export default function Decor() {
         </div>
       </section>
 
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+        <h2 className="text-lg font-semibold mb-1">날짜 아래 한 줄</h2>
+        <p className="text-xs text-muted-foreground mb-3">켠 것만 오늘 날짜 아래에 작게 보여요. 둘 다 켜도 되고 하나만 켜도 돼요.</p>
+        <label className="flex items-start gap-3 py-2 border-b border-border">
+          <input type="checkbox" className="mt-1 w-5 h-5 accent-[var(--primary)]" checked={!!d.fortune} onChange={e => set({ fortune: e.target.checked })} />
+          <span className="flex-1">
+            <span className="font-semibold">🔮 오늘의 운세</span> <span className="text-xs text-primary">재미용</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">생년월일로 띠와 별자리를 보고 응원 한 줄을 보여 줘요. 재미로만 봐 주세요.</span>
+            {d.fortune && (
+              <span className="flex items-center gap-2 mt-2">
+                <span className="text-xs">생년월일</span>
+                <input type="date" value={d.birthDate || ""} max="2015-12-31" min="1930-01-01"
+                  onChange={e => set({ birthDate: e.target.value })}
+                  className="bg-background border border-border rounded-lg px-2 py-1 text-sm" />
+              </span>
+            )}
+            {d.fortune && <span className="block text-[11px] text-muted-foreground mt-1">입력한 생년월일은 이 휴대폰에만 저장되고, 재미용 운세를 만들 때만 쓰여요.</span>}
+          </span>
+        </label>
+        <label className="flex items-start gap-3 py-2">
+          <input type="checkbox" className="mt-1 w-5 h-5 accent-[var(--primary)]" checked={!!d.coach} onChange={e => set({ coach: e.target.checked })} />
+          <span className="flex-1">
+            <span className="font-semibold">🌱 어제 돌아보기 한마디</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">어제 기록(수면·식단·물·운동·마음)을 보고 오늘 챙기면 좋을 것을 AI가 한 줄로 알려 줘요.</span>
+          </span>
+        </label>
+      </section>
       <div className="text-right">
         <button type="button" onClick={() => { setD(DEFAULT_DECOR); saveDecor(DEFAULT_DECOR); }} className="text-sm text-muted-foreground underline">
           처음 모습으로 되돌리기
