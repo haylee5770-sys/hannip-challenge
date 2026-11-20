@@ -851,7 +851,7 @@ function MealForm({
             >
               {analyze.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI가 보는 중…</> : <><Sparkles className="h-4 w-4 mr-2" />사진으로 자동 채우기</>}
             </Button>
-            <span className="text-xs text-muted-foreground">아래에 사진을 먼저 올리고 누르세요. 대략값이라 고쳐도 돼요.</span>
+            <span className="text-xs text-muted-foreground leading-relaxed">아래에 사진을 먼저 올리고 누르세요.<br /><b className="text-primary">AI 인식은 오류가 있을 수 있어요.</b> 숫자는 직접 고쳐도 되고, <b className="text-foreground">직접 기입이 가장 정확해요.</b></span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
