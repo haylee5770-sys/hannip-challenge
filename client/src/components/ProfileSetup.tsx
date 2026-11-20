@@ -86,8 +86,8 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
       <section className="space-y-2">
         <div className="text-sm font-semibold">프로필 사진 <span className="text-primary">(필수)</span></div>
         <div className="flex items-center gap-4">
-          <button type="button" onClick={() => fileRef.current?.click()} className="w-20 h-20 rounded-[28%] overflow-hidden border-2 border-dashed border-primary/60 flex items-center justify-center bg-card shrink-0">
-            {shownAvatar ? <img src={shownAvatar} alt="" className="w-full h-full object-cover" /> : <Camera className="h-6 w-6 text-muted-foreground" />}
+          <button type="button" onClick={() => fileRef.current?.click()} className="w-20 h-20 rounded-[28%] overflow-hidden border border-primary/70 hover:bg-primary/10 flex items-center justify-center shrink-0 transition-colors">
+            {shownAvatar ? <img src={shownAvatar} alt="" className="w-full h-full object-cover" /> : <Camera className="h-6 w-6 text-primary" />}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (f) setAvatar(await squareDataUrl(f)); }} />
           <p className="text-xs leading-relaxed text-rose-300">⚠️ <b>카톡방 프로필 사진과 똑같은 사진</b>을 넣어 주세요.<br />같아야 누가 올렸는지 매칭돼요.</p>

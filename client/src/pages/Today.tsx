@@ -488,11 +488,12 @@ function WeightSection({ date, userName, onBrag }: { date: string; userName?: st
             일반 체중계는 체중만 읽혀요. AI 인식은 오류가 있을 수 있으니 숫자를 꼭 확인하고, 직접 고쳐도 돼요.
           </p>
           <div className="flex items-center gap-3">
-            {photo ? <img src={photo} alt="" className="w-20 h-20 rounded-lg object-cover border border-border" /> : null}
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
-            <Button type="button" variant="outline" onClick={() => fileRef.current?.click()} disabled={analyze.isPending} className="rounded-xl">
-              {analyze.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI가 읽는 중</> : <><Camera className="h-4 w-4 mr-2" />{photo ? "다른 사진" : "사진 올리기"}</>}
-            </Button>
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={analyze.isPending}
+              className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors overflow-hidden">
+              {analyze.isPending ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <Camera className="h-6 w-6 text-primary" />}
+            </button>
+            <span className="text-[11px] text-muted-foreground">{analyze.isPending ? "AI가 읽는 중…" : photo ? "누르면 다른 사진으로 바꿔요" : "체중계 사진 (필수)"}</span>
           </div>
           {notes.length > 0 && <div className="space-y-1">{notes.map((n, i) => <p key={i} className="text-[11px] text-amber-200">ⓘ {n}</p>)}</div>}
           <div className="grid grid-cols-3 gap-2">
@@ -797,9 +798,9 @@ function MealForm({
             </div>
           ))}
           {photos.length < (isSmoothie ? 8 : 4) && (
-            <label className="w-16 h-16 rounded-lg border-dashed border-2 border-foreground/20 hover:border-foreground/50 flex items-center justify-center cursor-pointer transition-colors">
+            <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
               <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-              <Plus className="h-5 w-5 text-muted-foreground" />
+              <Camera className="h-6 w-6 text-primary" />
             </label>
           )}
         </div>
@@ -1153,9 +1154,9 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
             <button type="button" onClick={() => { setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; }} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
           </div>
         ) : (
-          <label className="w-16 h-16 rounded-lg border-dashed border-2 border-foreground/20 flex flex-col items-center justify-center cursor-pointer shrink-0">
+          <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
             <input ref={exFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleExPhoto(e.target.files[0])} />
-            <Camera className="h-5 w-5 text-muted-foreground" />
+            <Camera className="h-6 w-6 text-primary" />
           </label>
         )}
         <div className="flex-1 min-w-0">
@@ -1450,9 +1451,9 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
             <button type="button" onClick={() => { setWakePhoto(null); if (wakeRef.current) wakeRef.current.value = ""; }} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
           </div>
         ) : (
-          <label className="w-14 h-14 rounded-lg border-dashed border-2 border-primary/50 flex items-center justify-center cursor-pointer">
+          <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
             <input ref={wakeRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const fl = e.target.files?.[0]; if (!fl) return; const r = new FileReader(); r.onload = () => setWakePhoto(String(r.result)); r.readAsDataURL(fl); }} />
-            <Camera className="h-5 w-5 text-primary" />
+            <Camera className="h-6 w-6 text-primary" />
           </label>
         )}
         <span className="text-xs text-muted-foreground">☀️ 기상 인증 · 아침을 깨우는 <b className="text-foreground">따뜻한 물 한 잔</b> 사진 (필수)</span>
@@ -1987,16 +1988,15 @@ function ProgressBlock({
               if (ref.current) ref.current.value = "";
             }}
           />
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
             disabled={disabled || uploading}
             onClick={() => ref.current?.click()}
-            className="rounded-none uppercase tracking-wider"
+            className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors disabled:opacity-40"
+            aria-label="사진 추가"
           >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Camera className="h-4 w-4 mr-2" />사진 추가</>}
-          </Button>
+            {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Camera className="h-6 w-6 text-primary" />}
+          </button>
         </div>
       </div>
       {photos.length === 0 ? (
@@ -2088,7 +2088,7 @@ function PhotoPicker({
           disabled={disabled || uploading}
           onClick={() => ref.current?.click()}
           className={cn(
-            "aspect-[3/4] w-full border hairline border-dashed flex flex-col items-center justify-center gap-2 text-muted-foreground transition-colors",
+            "aspect-[3/4] w-full rounded-lg border border-primary/70 flex flex-col items-center justify-center gap-2 text-primary transition-colors",
             !disabled && "hover:bg-secondary/40 hover:text-foreground cursor-pointer",
             disabled && "cursor-not-allowed",
           )}
@@ -2217,9 +2217,9 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
           </div>
         ))}
         {photos.length < 8 && (
-          <label className="w-14 h-14 rounded-lg border-dashed border-2 border-foreground/20 flex items-center justify-center cursor-pointer">
+          <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-            <Plus className="h-5 w-5 text-muted-foreground" />
+            <Camera className="h-6 w-6 text-primary" />
           </label>
         )}
         <Button
