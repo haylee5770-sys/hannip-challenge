@@ -49,41 +49,41 @@
 }
 
 :root {
-  /* Editorial cream palette — warm cream paper, deep ink, bronze accent */
-  --background: oklch(0.965 0.022 80);          /* cream paper */
-  --foreground: oklch(0.18 0.012 50);           /* deep ink */
-  --card: oklch(0.98 0.012 80);                 /* slightly lighter cream card */
-  --card-foreground: oklch(0.18 0.012 50);
-  --popover: oklch(0.98 0.012 80);
-  --popover-foreground: oklch(0.18 0.012 50);
-  --primary: oklch(0.22 0.02 50);               /* near-black ink */
-  --primary-foreground: oklch(0.965 0.022 80);
-  --secondary: oklch(0.92 0.022 80);            /* faded cream */
-  --secondary-foreground: oklch(0.28 0.015 50);
-  --muted: oklch(0.92 0.018 80);
-  --muted-foreground: oklch(0.45 0.018 50);     /* muted ink */
-  --accent: oklch(0.62 0.09 60);                /* bronze accent */
-  --accent-foreground: oklch(0.98 0.012 80);
-  --destructive: oklch(0.50 0.18 28);
-  --destructive-foreground: oklch(0.98 0.012 80);
-  --border: oklch(0.85 0.014 70);               /* hairline */
-  --input: oklch(0.88 0.014 70);
-  --ring: oklch(0.42 0.02 50);
+  /* 차콜 그레이 + 연두(라임) 포인트 — 2026-11-20 방장 요청 (팀보드 회색 느낌) */
+  --background: #2b2d31;
+  --foreground: #ececea;
+  --card: #34363b;
+  --card-foreground: #ececea;
+  --popover: #34363b;
+  --popover-foreground: #ececea;
+  --primary: #b6f24a;                 /* 연두 포인트 */
+  --primary-foreground: #1d1f22;
+  --secondary: #3a3d42;
+  --secondary-foreground: #ececea;
+  --muted: #3a3d42;
+  --muted-foreground: #a6a9ae;
+  --accent: #b6f24a;
+  --accent-foreground: #1d1f22;
+  --destructive: #ff6b6b;
+  --destructive-foreground: #1d1f22;
+  --border: #4a4d53;
+  --input: #4a4d53;
+  --ring: #b6f24a;
 
-  --chart-1: oklch(0.22 0.02 50);               /* ink */
-  --chart-2: oklch(0.62 0.09 60);               /* bronze */
-  --chart-3: oklch(0.45 0.04 60);               /* taupe */
-  --chart-4: oklch(0.75 0.06 70);               /* sand */
-  --chart-5: oklch(0.55 0.06 50);
+  --chart-1: #b6f24a;                 /* 연두 */
+  --chart-2: #03c75a;                 /* 네이버 초록 */
+  --chart-3: #ffd84d;                 /* 노랑 */
+  --chart-4: #7cc4ff;                 /* 하늘 */
+  --chart-5: #ff8a7a;                 /* 산호 */
 
-  --sidebar: oklch(0.93 0.02 80);
-  --sidebar-foreground: oklch(0.18 0.012 50);
-  --sidebar-primary: oklch(0.22 0.02 50);
-  --sidebar-primary-foreground: oklch(0.98 0.012 80);
-  --sidebar-accent: oklch(0.88 0.018 70);
-  --sidebar-accent-foreground: oklch(0.18 0.012 50);
-  --sidebar-border: oklch(0.85 0.014 70);
-  --sidebar-ring: oklch(0.42 0.02 50);
+  --sidebar: #26282c;
+  --sidebar-foreground: #ececea;
+  --sidebar-primary: #b6f24a;
+  --sidebar-primary-foreground: #1d1f22;
+  --sidebar-accent: #3a3d42;
+  --sidebar-accent-foreground: #ececea;
+  --sidebar-border: #4a4d53;
+  --sidebar-ring: #b6f24a;
 
   --radius: 0.25rem;
 }

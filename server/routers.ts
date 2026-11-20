@@ -15,6 +15,7 @@ import * as db from "./db";
 import { storagePut } from "./storage";
 import { generateAutoFeedback } from "./feedback";
 import { analyzeInbodyImage } from "./inbody";
+import { analyzeMealImage } from "./mealVision";
 import { syncSeasonBaselineForUser, computeLeaderboard, getMyCounts, dayNumber, totalDays, generateSeasonReports } from "./seasons";
 import { evaluateSleep, computeSleepMinutes } from "./sleep";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
@@ -329,6 +330,22 @@ const mealsRouter = router({
       generateMealAiComment(mealId).catch(e => console.warn("[AI comment failed]", e));
 
       return { id: mealId };
+    }),
+
+  /** 식단 사진 AI 분석: 무엇을 먹었는지 + 탄·단·지·채소 대략값 (2026-11-20) */
+  analyzePhoto: approvedProcedure
+    .input(z.object({ photoBase64: z.array(z.string().min(20)).min(1).max(4) }))
+    .mutation(async ({ ctx, input }) => {
+      const urls: string[] = [];
+      for (let i = 0; i < input.photoBase64.length; i++) {
+        const m = input.photoBase64[i].match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        if (!m) continue;
+        const ext = m[1].split("/")[1].replace("+xml", "");
+        const { url } = await storagePut(`meal-ai-tmp/${ctx.user.id}/${Date.now()}_${i}.${ext}`, Buffer.from(m[2], "base64"), m[1]);
+        urls.push(url);
+      }
+      if (!urls.length) throw new TRPCError({ code: "BAD_REQUEST", message: "사진 형식이 올바르지 않아요." });
+      return analyzeMealImage(urls);
     }),
 
   delete: approvedProcedure
@@ -1103,7 +1120,13 @@ const seasonsRouter = router({
     // 인증 총합 + 감량 % 기준 시상용 두 가지 랭킹
     const byTotal = [...entries].sort((a, b) => b.counts.total - a.counts.total);
     const byLoss = [...entries].sort((a, b) => b.lossPercent - a.lossPercent);
-    return { season: target, locked: false, entries, byTotal, byLoss };
+    // 이게돼 챔피언 (2026-11-20): 시즌 동안 행복 한 줄 일기를 가장 많이 쓴 사람
+    let happyCounts: Array<{ userId: number; count: number }> = [];
+    try { happyCounts = await db.happyNoteCountsByUser(target.startDate, target.endDate); } catch (e) { console.warn("[reveal] happy counts failed", e); }
+    const byHappy = happyCounts
+      .filter(h => entries.some(e => e.userId === h.userId))
+      .map(h => ({ userId: h.userId, name: byId.get(h.userId)?.name ?? "멤버", count: h.count }));
+    return { season: target, locked: false, entries, byTotal, byLoss, byHappy };
   }),
 
   /* ============== Season photos (Before / Progress / After) ============== */
@@ -1428,6 +1451,30 @@ const waterVolumeSchema = z.number().int().refine(
   { message: "물 용량은 300~1000ml 범위의 100ml 단위로만 선택할 수 있습니다" }
 );
 
+/** 행복 한 줄 일기 — 어제 기분 / 나를 위해 한 좋은 일 / 오늘 나에게 하는 약속 */
+const happyRouter = router({
+  byDate: approvedProcedure
+    .input(z.object({ date: dateString }))
+    .query(async ({ ctx, input }) => db.getHappyNote(ctx.user.id, input.date)),
+  recent: approvedProcedure
+    .input(z.object({ since: dateString, until: dateString }))
+    .query(async ({ ctx, input }) => db.listHappyNotes(ctx.user.id, input.since, input.until)),
+  upsert: approvedProcedure
+    .input(z.object({
+      date: dateString,
+      mood: z.number().int().min(1).max(4),
+      goodThing: z.string().max(300),
+      promise: z.string().max(300),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (!input.goodThing.trim() && !input.promise.trim()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "한 줄만이라도 적어 주세요." });
+      }
+      await db.upsertHappyNote(ctx.user.id, input.date, input.mood, input.goodThing.trim(), input.promise.trim());
+      return { ok: true };
+    }),
+});
+
 const watersRouter = router({
   byDate: approvedProcedure
     .input(z.object({ date: dateString }))
@@ -1572,6 +1619,7 @@ export const appRouter = router({
   seasons: seasonsRouter,
   sleep: sleepRouter,
   waters: watersRouter,
+  happy: happyRouter,
 });
 
 export type AppRouter = typeof appRouter;

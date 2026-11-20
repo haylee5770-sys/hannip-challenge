@@ -99,6 +99,18 @@ export async function ensureSchema() {
     ["ALTER TABLE seasons ADD COLUMN IF NOT EXISTS updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP", "seasons.updatedAt"],
     ["ALTER TABLE seasonReports ADD COLUMN IF NOT EXISTS sleepCount INT NOT NULL DEFAULT 0", "seasonReports.sleepCount"],
     ["ALTER TABLE seasonReports ADD COLUMN IF NOT EXISTS waterCount INT NOT NULL DEFAULT 0", "seasonReports.waterCount"],
+    // 행복 한 줄 일기 (2026-11-20)
+    [`CREATE TABLE IF NOT EXISTS happyNotes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      recordedDate DATE NOT NULL,
+      mood TINYINT NOT NULL DEFAULT 3,
+      goodThing TEXT,
+      promise TEXT,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY happyNotes_user_date (userId, recordedDate)
+    )`, "happyNotes"],
   ];
   for (const [stmt, label] of stmts) {
     try {
@@ -870,6 +882,39 @@ export async function countSleepDaysInRange(userId: number, since: string, until
   return set.size;
 }
 
+
+/* -------- Happy notes (행복 한 줄 일기) -------- */
+
+export type HappyNote = { id: number; userId: number; recordedDate: string; mood: number; goodThing: string | null; promise: string | null };
+
+function rowsOf(res: any): any[] {
+  return Array.isArray(res) && Array.isArray(res[0]) ? res[0] : Array.isArray(res) ? res : [];
+}
+
+export async function getHappyNote(userId: number, date: string): Promise<HappyNote | null> {
+  const conn = await db();
+  const res = await conn.execute(sql`SELECT id, userId, DATE_FORMAT(recordedDate, '%Y-%m-%d') AS recordedDate, mood, goodThing, promise FROM happyNotes WHERE userId = ${userId} AND recordedDate = ${date} LIMIT 1`);
+  return (rowsOf(res)[0] as HappyNote) ?? null;
+}
+
+export async function upsertHappyNote(userId: number, date: string, mood: number, goodThing: string, promise: string) {
+  const conn = await db();
+  await conn.execute(sql`INSERT INTO happyNotes (userId, recordedDate, mood, goodThing, promise) VALUES (${userId}, ${date}, ${mood}, ${goodThing}, ${promise})
+    ON DUPLICATE KEY UPDATE mood = VALUES(mood), goodThing = VALUES(goodThing), promise = VALUES(promise)`);
+}
+
+export async function listHappyNotes(userId: number, since: string, until: string): Promise<HappyNote[]> {
+  const conn = await db();
+  const res = await conn.execute(sql`SELECT id, userId, DATE_FORMAT(recordedDate, '%Y-%m-%d') AS recordedDate, mood, goodThing, promise FROM happyNotes WHERE userId = ${userId} AND recordedDate BETWEEN ${since} AND ${until} ORDER BY recordedDate DESC`);
+  return rowsOf(res) as HappyNote[];
+}
+
+/** 기간 안 사람별 행복 일기 쓴 날 수 (이게돼 챔피언용) */
+export async function happyNoteCountsByUser(since: string, until: string): Promise<Array<{ userId: number; count: number }>> {
+  const conn = await db();
+  const res = await conn.execute(sql`SELECT userId, COUNT(*) AS cnt FROM happyNotes WHERE recordedDate BETWEEN ${since} AND ${until} GROUP BY userId ORDER BY cnt DESC`);
+  return rowsOf(res).map((r: any) => ({ userId: Number(r.userId), count: Number(r.cnt) }));
+}
 
 /* -------- Waters -------- */
 

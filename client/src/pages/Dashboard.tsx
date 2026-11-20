@@ -11,6 +11,7 @@ import { todayLocal } from "@shared/utils";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import SeasonReport from "./SeasonReport";
 
 const ranges = [
   { label: "7D", days: 7 },
@@ -381,6 +382,11 @@ export default function Dashboard() {
             </ResponsiveContainer>
           )}
         </div>
+      </section>
+
+      {/* 시즌 리포트 — 대시보드에 합침 (2026-11-20: 한 달의 변화를 한곳에서) */}
+      <section className="py-10 border-t hairline mt-10">
+        <SeasonReport />
       </section>
     </div>
   );

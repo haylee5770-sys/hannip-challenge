@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { Streamdown } from "streamdown";
 import { shareKakao, isKakaoReady } from "@/lib/kakao";
 
@@ -299,41 +300,86 @@ export default function Today() {
       )}
 
       {/* Editorial cover */}
-      <section className="grid grid-cols-12 gap-6 items-end pb-10 border-b hairline">
-        <div className="col-span-12 md:col-span-7">
-          <div className="editorial-eyebrow text-muted-foreground mb-3">
-            VOL. {new Date().getFullYear()} · TODAY
-          </div>
-          <h1 className="editorial-h1 text-5xl md:text-7xl lg:text-8xl">
-            오늘, <span className="italic font-serif font-light">행복의 결과</span>
-          </h1>
-          <p className="mt-4 font-serif italic text-lg md:text-xl text-muted-foreground">
-            {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
+      <section className="pb-10 border-b hairline">
+        {/* 우리 방 모토 — 맨 위 */}
+        <div className="border-l-4 border-primary pl-4 mb-8">
+          <div className="editorial-eyebrow text-primary mb-1">OUR MOTTO</div>
+          <p className="text-2xl md:text-4xl font-semibold leading-snug">
+            나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.
           </p>
         </div>
-        <div className="col-span-12 md:col-span-5 md:text-right">
-          <div className="editorial-eyebrow text-muted-foreground mb-2">OUR MOTTO</div>
-          <p className="font-serif text-2xl md:text-3xl leading-snug">
-            나를 칭찬하는 순간,<br />우리 모두가 1등이 됩니다.
-          </p>
+        <div className="editorial-eyebrow text-muted-foreground mb-3">
+          VOL. {new Date().getFullYear()} · TODAY
         </div>
+        <h1 className="editorial-h1 text-5xl md:text-7xl lg:text-8xl">
+          오늘, <span className="italic font-serif font-light text-primary">행복의 결과</span>
+        </h1>
+        <p className="mt-4 font-serif italic text-lg md:text-xl text-muted-foreground">
+          {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
+        </p>
       </section>
 
-      {/* Weight quick input */}
+      {/* 행복 한 줄 일기 — 맨 처음 */}
+      <HappyDiarySection date={date} />
+
+      {/* Sleep — 수면 기록 */}
+      <SleepSection date={date} sleepCount={seasonProgress.data?.counts.sleep} />
+
+
+      {/* Meals — 식단 기록 (독립 섹션) */}
+      <section className="py-10 border-b hairline">
+        <div className="editorial-eyebrow text-muted-foreground mb-6">03 · MEALS</div>
+        <MealsSection
+          date={date}
+          meals={myMealsToday.data ?? []}
+          mealCount={seasonProgress.data?.counts.meal ?? myMealsToday.data?.length}
+          userName={userName}
+          onChange={() => {
+            utils.meals.byMeDate.invalidate();
+            utils.feed.today.invalidate();
+            utils.seasons.myProgress.invalidate();
+          }}
+          onShare={setKakaoShareText}
+        />
+      </section>
+
+      {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
+      <section className="py-10 border-b hairline">
+        <div className="editorial-eyebrow text-muted-foreground mb-6">04 · WATER</div>
+        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} onShare={setKakaoShareText} />
+      </section>
+
+      {/* Exercise — 운동 기록 */}
+      <section className="py-10 border-b hairline">
+        <div className="editorial-eyebrow text-muted-foreground mb-6">05 · EXERCISE</div>
+        <ExerciseSection
+          date={date}
+          exercises={myExercisesToday.data ?? []}
+          exerciseCount={seasonProgress.data?.counts.exercise ?? myExercisesToday.data?.length}
+          userName={userName}
+          onChange={() => {
+            utils.exercises.byMeDate.invalidate();
+            utils.feed.today.invalidate();
+            utils.seasons.myProgress.invalidate();
+          }}
+          onShare={setKakaoShareText}
+        />
+      </section>
+      {/* 체중 — 한 달에 한 번 (2026-11-20 매일 → 월 1회) */}
       <section className="py-10 border-b hairline">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-4">
-            <div className="editorial-eyebrow text-muted-foreground mb-2">01 · WEIGHT</div>
+            <div className="editorial-eyebrow text-muted-foreground mb-2">06 · MONTHLY WEIGHT</div>
             <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
-              {userName ? `${userName} 체중 기록` : "체중 기록"}
+              {userName ? `${userName} 한 달 체중` : "한 달 체중"}
               {seasonProgress.data?.counts.weight != null && (
-                <span className="text-base font-sans font-normal text-blue-500 tabular-nums">
+                <span className="text-base font-sans font-normal text-primary tabular-nums">
                   {seasonProgress.data.counts.weight}회
                 </span>
               )}
             </h2>
             <p className="mt-3 font-serif italic text-muted-foreground text-sm">
-              사진 업로드 필수. 매일 같은 시간에 측정하면 더 정확해요.
+              체중은 한 달에 한 번만 재요. 매달 같은 날, 아침 공복에 재면 가장 정확해요.
             </p>
           </div>
           <div className="col-span-12 md:col-span-8 space-y-6">
@@ -507,8 +553,8 @@ export default function Today() {
               <div className={cn(
                 "border hairline px-4 py-3 flex items-center gap-3 text-sm",
                 weightDeltaInfo.tone === "loss"
-                  ? "bg-emerald-50/60 border-emerald-200 text-emerald-900"
-                  : "bg-rose-50/60 border-rose-200 text-rose-900",
+                  ? "bg-primary/10 border-primary/40 text-primary"
+                  : "bg-rose-500/10 border-rose-400/40 text-rose-300",
               )}>
                 <span className="editorial-eyebrow">
                   {weightDeltaInfo.tone === "loss" ? "YESTERDAY → TODAY" : "YESTERDAY → TODAY"}
@@ -528,51 +574,8 @@ export default function Today() {
         </div>
       </section>
 
-      {/* Sleep — 수면 기록 (체중 아래) */}
-      <SleepSection date={date} sleepCount={seasonProgress.data?.counts.sleep} />
-
-      {/* Season photos (Before / Progress / After) */}
+      {/* Season photos (Before / After) — 맨 아래 */}
       <SeasonPhotosSection />
-
-      {/* Meals — 식단 기록 (독립 섹션) */}
-      <section className="py-10 border-b hairline">
-        <div className="editorial-eyebrow text-muted-foreground mb-6">02 · MEALS</div>
-        <MealsSection
-          date={date}
-          meals={myMealsToday.data ?? []}
-          mealCount={seasonProgress.data?.counts.meal ?? myMealsToday.data?.length}
-          userName={userName}
-          onChange={() => {
-            utils.meals.byMeDate.invalidate();
-            utils.feed.today.invalidate();
-            utils.seasons.myProgress.invalidate();
-          }}
-          onShare={setKakaoShareText}
-        />
-      </section>
-
-      {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
-      <section className="py-10 border-b hairline">
-        <div className="editorial-eyebrow text-muted-foreground mb-6">03 · WATER</div>
-        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} onShare={setKakaoShareText} />
-      </section>
-
-      {/* Exercise — 운동 기록 (식단·물과 동일 위계의 독립 섹션) */}
-      <section className="py-10">
-        <div className="editorial-eyebrow text-muted-foreground mb-6">04 · EXERCISE</div>
-        <ExerciseSection
-          date={date}
-          exercises={myExercisesToday.data ?? []}
-          exerciseCount={seasonProgress.data?.counts.exercise ?? myExercisesToday.data?.length}
-          userName={userName}
-          onChange={() => {
-            utils.exercises.byMeDate.invalidate();
-            utils.feed.today.invalidate();
-            utils.seasons.myProgress.invalidate();
-          }}
-          onShare={setKakaoShareText}
-        />
-      </section>
     </div>
   );
 }
@@ -614,11 +617,11 @@ function MealsSection({
         <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
           {userName ? `${userName} 식단 기록` : "식단 기록"}
           {mealCount != null && (
-            <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{mealCount}회</span>
+            <span className="text-base font-sans font-normal text-primary tabular-nums">{mealCount}회</span>
           )}
         </h2>
         <p className="mt-3 font-serif italic text-muted-foreground text-sm">
-          탄·단·지·채소·물을 직접 입력하면 즉시 피드백을 드려요.
+          일반식은 사진을 올리면 AI가 채워 주고, 스무디는 버튼만 누르면 돼요.
         </p>
         {!creating && (
           <Button
@@ -662,6 +665,9 @@ function MealsSection({
         {meals.map((meal) => (
           <MealCard key={meal.id} meal={meal} onChange={onChange} />
         ))}
+
+        {/* 오늘 하루 영양 합계 (2026-11-20) */}
+        <DailyNutritionTotals meals={meals} />
       </div>
     </div>
   );
@@ -690,6 +696,17 @@ function MealForm({
   const [vegetableG, setVegetableG] = useState("");
   const [waterMl, setWaterMl] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  // 스무디·퓨레 버튼으로 고른 개수 (id → 개수)
+  const [picked, setPicked] = useState<Record<string, number>>({});
+  const pickedList = PRODUCTS.flatMap(p => Array.from({ length: picked[p.id] ?? 0 }, () => p));
+  const analyze = trpc.meals.analyzePhoto.useMutation({
+    onSuccess: (r) => {
+      if (r.foods) setDescription(r.foods);
+      setCarbsG(String(r.carbsG)); setProteinG(String(r.proteinG)); setFatG(String(r.fatG)); setVegetableG(String(r.vegetableG));
+      toast.success("AI가 사진을 분석했어요. 숫자는 고칠 수 있어요.");
+    },
+    onError: (e) => toast.error(e.message || "분석에 실패했어요. 숫자를 직접 넣어 주세요."),
+  });
 
   const numbers = useMemo(() => ({
     carbsG: parseInt(carbsG) || 0,
@@ -768,10 +785,52 @@ function MealForm({
         </div>
         {isSmoothie && (
           <p className="mt-2 font-serif italic text-xs text-muted-foreground">
-            스무디는 사진만 올려도 인증이 됩니다. 사진 1장당 인증 1회로 자동 집계되어요.
+            먹은 스무디를 눌러 고르세요. 누를 때마다 1개씩 늘어나고, 영양소가 자동으로 더해져요.
           </p>
         )}
       </div>
+
+      {/* 스무디·퓨레 버튼 (2026-11-20) */}
+      {isSmoothie && (
+        <div className="mb-5 space-y-3">
+          {PRODUCT_ROWS.map(row => (
+            <div key={row}>
+              <div className="editorial-eyebrow text-muted-foreground mb-1.5">{row}</div>
+              <div className="grid grid-cols-3 gap-2">
+                {PRODUCTS.filter(p => p.row === row).map(p => {
+                  const n = picked[p.id] ?? 0;
+                  return (
+                    <div key={p.id} className={cn("relative border transition-colors", n > 0 ? "border-primary bg-primary/15" : "border-border")}>
+                      <button
+                        type="button"
+                        onClick={() => setPicked(prev => ({ ...prev, [p.id]: (prev[p.id] ?? 0) + 1 }))}
+                        className="w-full px-2 py-3 text-sm flex items-center justify-center gap-1.5"
+                      >
+                        <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
+                        {p.name}
+                        {n > 0 && <span className="ml-1 font-bold text-primary tabular-nums">×{n}</span>}
+                      </button>
+                      {n > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setPicked(prev => ({ ...prev, [p.id]: Math.max(0, (prev[p.id] ?? 0) - 1) }))}
+                          className="absolute -top-2 -right-2 bg-background border border-border rounded-full w-5 h-5 text-xs leading-none"
+                          aria-label="하나 빼기"
+                        >−</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {pickedList.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              고른 것 {pickedList.length}개 · 탄 {pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 {pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 {pickedList.reduce((a, p) => a + p.fatG, 0)}g
+            </div>
+          )}
+        </div>
+      )}
 
       {!isSmoothie && (
         <>
@@ -784,6 +843,20 @@ function MealForm({
               className="rounded-none border-foreground/30 font-serif"
               rows={2}
             />
+          </div>
+
+          {/* 사진 AI 분석 (2026-11-20) */}
+          <div className="mb-4 flex items-center gap-3 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={photos.length === 0 || analyze.isPending}
+              onClick={() => analyze.mutate({ photoBase64: photos.slice(0, 4) })}
+              className="rounded-none border-primary text-primary"
+            >
+              {analyze.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI가 보는 중…</> : <><Sparkles className="h-4 w-4 mr-2" />사진으로 자동 채우기</>}
+            </Button>
+            <span className="text-xs text-muted-foreground">아래에 사진을 먼저 올리고 누르세요. 대략값이라 고쳐도 돼요.</span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -839,14 +912,25 @@ function MealForm({
                 toast.error("스무디 사진을 1장 이상 첨부해 주세요");
                 return;
               }
-              // 스무디: 사진 N장 = 인증 N회 → 각 사진마다 meal 레코드 별도 생성
               try {
-                for (const p of photos) {
-                  await create.mutateAsync({
-                    recordedDate: date,
-                    category: "smoothie",
-                    photoBase64: [p],
-                  });
+                if (pickedList.length > 0) {
+                  // 고른 스무디 1개 = 인증 1회. 사진은 순서대로 붙이고 남는 사진은 첫 기록에 붙인다.
+                  for (let i = 0; i < pickedList.length; i++) {
+                    const p = pickedList[i];
+                    const ph = i === 0 ? [photos[0], ...photos.slice(pickedList.length)] : photos[i] ? [photos[i]] : [];
+                    await create.mutateAsync({
+                      recordedDate: date,
+                      category: "smoothie",
+                      description: p.name,
+                      carbsG: p.carbsG, proteinG: p.proteinG, fatG: p.fatG, vegetableG: p.vegetableG,
+                      photoBase64: ph.filter(Boolean).slice(0, 8),
+                    });
+                  }
+                } else {
+                  // 버튼을 안 고른 경우: 예전처럼 사진 N장 = 인증 N회
+                  for (const p of photos) {
+                    await create.mutateAsync({ recordedDate: date, category: "smoothie", photoBase64: [p] });
+                  }
                 }
                 onCreated(`🥤 스무디 인증 완료! #super_hannip_challenge`);
               } catch (e) {
@@ -874,6 +958,43 @@ function MealForm({
           {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "인증하기"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function DailyNutritionTotals({ meals }: { meals: MealRow[] }) {
+  const sum = meals.reduce(
+    (a, m) => ({ carbsG: a.carbsG + (m.carbsG || 0), proteinG: a.proteinG + (m.proteinG || 0), fatG: a.fatG + (m.fatG || 0), vegetableG: a.vegetableG + (m.vegetableG || 0) }),
+    { carbsG: 0, proteinG: 0, fatG: 0, vegetableG: 0 },
+  );
+  const rows: Array<{ k: keyof typeof sum; label: string }> = [
+    { k: "carbsG", label: "탄수화물" },
+    { k: "proteinG", label: "단백질" },
+    { k: "fatG", label: "지방" },
+    { k: "vegetableG", label: "채소" },
+  ];
+  return (
+    <div className="border border-border bg-card p-5">
+      <div className="editorial-eyebrow text-primary mb-3">TODAY TOTAL · 오늘 먹은 양</div>
+      <div className="space-y-3">
+        {rows.map(r => {
+          const v = sum[r.k];
+          const target = DAILY_TARGET[r.k];
+          const pct = Math.min(100, Math.round((v / target) * 100));
+          return (
+            <div key={r.k}>
+              <div className="flex justify-between text-sm mb-1">
+                <span>{r.label}</span>
+                <span className="tabular-nums"><b className={v >= target ? "text-primary" : ""}>{v}g</b><span className="text-muted-foreground"> / {target}g</span></span>
+              </div>
+              <div className="h-2 bg-secondary">
+                <div className="h-2 bg-primary transition-all" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[11px] text-muted-foreground">목표량은 하루 권장 기준(탄 130 · 단 100 · 지 42 · 채소 300g)이에요.</p>
     </div>
   );
 }
@@ -1039,7 +1160,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
         <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
           {userName ? `${userName} 운동 기록` : "운동 기록"}
           {exerciseCount != null && (
-            <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{exerciseCount}회</span>
+            <span className="text-base font-sans font-normal text-primary tabular-nums">{exerciseCount}회</span>
           )}
         </h2>
         <p className="mt-3 font-serif italic text-muted-foreground text-sm">
@@ -1215,6 +1336,13 @@ const BED_HOUR_VALUES = [
   7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
 ];
 const MINUTE_VALUES = Array.from({ length: 6 }, (_, i) => i * 10);
+const SLEEP_BED_CHOICES = [20, 21, 22, 23, 0, 1, 2];
+const SLEEP_WAKE_CHOICES = [4, 5, 6, 7, 8, 9];
+function fmtClock(h: number): string {
+  if (h === 0) return "밤 12시";
+  if (h < 12) return `${h <= 5 ? "새벽" : "아침"} ${h}시`;
+  return `밤 ${h - 12}시`;
+}
 
 function WheelPicker({
   values,
@@ -1346,7 +1474,7 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
           <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
             수면 기록
             {sleepCount != null && (
-              <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{sleepCount}회</span>
+              <span className="text-base font-sans font-normal text-primary tabular-nums">{sleepCount}회</span>
             )}
           </h2>
           <p className="mt-3 font-serif italic text-muted-foreground text-sm">
@@ -1354,23 +1482,42 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
           </p>
         </div>
         <div className="col-span-12 md:col-span-8 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* 취침 */}
+          {/* 2026-11-20: 드래그 대신 정시 버튼 클릭 (취침 밤 8시~새벽 2시 / 기상 새벽 4시~아침 9시) */}
+          <div className="space-y-5">
             <div>
               <div className="editorial-eyebrow text-muted-foreground mb-2">취침</div>
-              <div className="flex items-center gap-2">
-                <WheelPicker values={BED_HOUR_VALUES} value={bedHour} onChange={setBedHour} format={fmtBedH} />
-                <span className="font-serif text-2xl text-muted-foreground">:</span>
-                <WheelPicker values={MINUTE_VALUES} value={bedMinute} onChange={setBedMinute} format={fmtM} />
+              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                {SLEEP_BED_CHOICES.map(h => (
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => { setBedHour(h); setBedMinute(0); }}
+                    className={cn(
+                      "border px-2 py-3 text-sm tabular-nums transition-colors",
+                      bedHour === h ? "bg-primary text-primary-foreground border-primary font-semibold" : "border-border hover:border-primary/60",
+                    )}
+                  >
+                    {fmtClock(h)}
+                  </button>
+                ))}
               </div>
             </div>
-            {/* 기상 */}
             <div>
               <div className="editorial-eyebrow text-muted-foreground mb-2">기상</div>
-              <div className="flex items-center gap-2">
-                <WheelPicker values={HOUR_VALUES} value={wakeHour} onChange={setWakeHour} format={fmtH} />
-                <span className="font-serif text-2xl text-muted-foreground">:</span>
-                <WheelPicker values={MINUTE_VALUES} value={wakeMinute} onChange={setWakeMinute} format={fmtM} />
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {SLEEP_WAKE_CHOICES.map(h => (
+                  <button
+                    key={h}
+                    type="button"
+                    onClick={() => { setWakeHour(h); setWakeMinute(0); }}
+                    className={cn(
+                      "border px-2 py-3 text-sm tabular-nums transition-colors",
+                      wakeHour === h ? "bg-primary text-primary-foreground border-primary font-semibold" : "border-border hover:border-primary/60",
+                    )}
+                  >
+                    {fmtClock(h)}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -1378,7 +1525,7 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
           {/* Result */}
           <div className={cn(
             "border hairline px-4 py-4 flex flex-wrap items-center gap-x-6 gap-y-2",
-            evalResult.status === "danger" && "bg-rose-50/70 border-rose-200",
+            evalResult.status === "danger" && "bg-rose-500/10 border-rose-400/50",
           )}>
             <div>
               <div className="editorial-eyebrow text-muted-foreground">수면 시간</div>
@@ -1389,10 +1536,10 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
             {evalResult.message && (
               <p className={cn(
                 "font-serif italic text-sm md:text-base flex-1 min-w-[220px]",
-                evalResult.status === "danger" ? "text-rose-900"
-                : evalResult.status === "warning" ? "text-amber-700"
-                : evalResult.status === "good" ? "text-emerald-700"
-                : evalResult.status === "over" ? "text-purple-700"
+                evalResult.status === "danger" ? "text-rose-300"
+                : evalResult.status === "warning" ? "text-amber-300"
+                : evalResult.status === "good" ? "text-primary"
+                : evalResult.status === "over" ? "text-purple-300"
                 : "text-foreground",
               )}>
                 {evalResult.message}
@@ -1443,6 +1590,103 @@ function SleepSection({ date, sleepCount }: { date: string; sleepCount?: number 
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ----------------- Happy Diary Section (행복 한 줄 일기) ----------------- */
+// 근거: Three Good Things(Seligman 2005), 감사 일기(Emmons & McCullough 2003), 감정에 이름 붙이기(Lieberman 2007)
+const MOODS = [
+  { v: 4, emoji: "😊", label: "행복했어요" },
+  { v: 3, emoji: "🙂", label: "괜찮았어요" },
+  { v: 2, emoji: "😐", label: "그저 그랬어요" },
+  { v: 1, emoji: "😔", label: "힘들었어요" },
+];
+
+function HappyDiarySection({ date }: { date: string }) {
+  const utils = trpc.useUtils();
+  const note = trpc.happy.byDate.useQuery({ date });
+  const [mood, setMood] = useState<number>(0);
+  const [goodThing, setGoodThing] = useState("");
+  const [promise, setPromise] = useState("");
+  const initRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (initRef.current === date || note.isLoading) return;
+    initRef.current = date;
+    setMood(note.data?.mood ?? 0);
+    setGoodThing(note.data?.goodThing ?? "");
+    setPromise(note.data?.promise ?? "");
+  }, [note.data, note.isLoading, date]);
+
+  const save = trpc.happy.upsert.useMutation({
+    onSuccess: () => { utils.happy.byDate.invalidate(); toast.success("오늘의 한 줄이 저장됐어요 💚"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <section className="py-10 border-b hairline">
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 md:col-span-4">
+          <div className="editorial-eyebrow text-primary mb-2">01 · HAPPY NOTE</div>
+          <h2 className="editorial-h2 text-3xl md:text-4xl">행복 한 줄 일기</h2>
+          <p className="mt-3 text-muted-foreground text-sm leading-relaxed">
+            10초면 끝나요. 좋았던 일을 적고 기분에 이름을 붙이면 마음이 가벼워진다는 연구가 있어요.
+          </p>
+        </div>
+        <div className="col-span-12 md:col-span-8 space-y-5">
+          <div>
+            <div className="editorial-eyebrow text-muted-foreground mb-2">어제 내 기분은?</div>
+            <div className="grid grid-cols-4 gap-2">
+              {MOODS.map(m => (
+                <button
+                  key={m.v}
+                  type="button"
+                  onClick={() => setMood(m.v)}
+                  className={cn(
+                    "border py-3 flex flex-col items-center gap-1 transition-colors",
+                    mood === m.v ? "border-primary bg-primary/15" : "border-border hover:border-primary/60",
+                  )}
+                >
+                  <span className="text-2xl">{m.emoji}</span>
+                  <span className="text-[11px] text-muted-foreground">{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="editorial-eyebrow text-muted-foreground mb-2">어제 나를 위해 한 좋은 일 한 줄</div>
+            <Input
+              value={goodThing}
+              maxLength={300}
+              onChange={e => setGoodThing(e.target.value)}
+              placeholder="예: 물 2리터 마셨다 / 아이랑 산책했다"
+              className="rounded-none bg-transparent h-12"
+            />
+          </div>
+          <div>
+            <div className="editorial-eyebrow text-muted-foreground mb-2">오늘 나에게 해 줄 칭찬이나 작은 약속</div>
+            <Input
+              value={promise}
+              maxLength={300}
+              onChange={e => setPromise(e.target.value)}
+              placeholder="예: 오늘은 밤 11시 전에 자기"
+              className="rounded-none bg-transparent h-12"
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={() => {
+                if (!mood) { toast.error("어제 기분을 먼저 골라 주세요."); return; }
+                save.mutate({ date, mood, goodThing, promise });
+              }}
+              disabled={save.isPending}
+              className="rounded-none px-8 h-12"
+            >
+              {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : note.data ? "수정" : "저장"}
+            </Button>
+          </div>
         </div>
       </div>
     </section>
@@ -1859,7 +2103,7 @@ function WaterSection({ date, waterCount, userName, onShare }: { date: string; w
         <h2 className="editorial-h2 text-3xl md:text-4xl flex items-baseline gap-3">
           {userName ? `${userName} 물 기록` : "물 기록"}
           {((waterCount ?? items.length) > 0) && (
-            <span className="text-base font-sans font-normal text-blue-500 tabular-nums">{waterCount ?? items.length}회</span>
+            <span className="text-base font-sans font-normal text-primary tabular-nums">{waterCount ?? items.length}회</span>
           )}
         </h2>
         <p className="mt-3 font-serif italic text-muted-foreground text-sm">

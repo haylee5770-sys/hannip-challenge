@@ -13,14 +13,13 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
 const NAV_ITEMS = [
+  // 2026-11-20 방장 요청: 피드·순위·리포트 메뉴 빼고(리포트는 대시보드로 합침) 구매하기 추가
   { label: "TODAY", path: "/today", korean: "오늘" },
-  { label: "FEED", path: "/feed", korean: "피드" },
-  { label: "RANKING", path: "/ranking", korean: "순위" },
   { label: "DASHBOARD", path: "/dashboard", korean: "대시보드" },
   { label: "MEMBERS", path: "/members", korean: "멤버" },
   { label: "REVEAL", path: "/reveal", korean: "결산" },
-  { label: "REPORT", path: "/season-report", korean: "리포트" },
   { label: "ARCHIVE", path: "/archive", korean: "역대 챌린지" },
+  { label: "SHOP", path: "/shop", korean: "구매하기" },
 ];
 
 const ADMIN_ITEMS = [

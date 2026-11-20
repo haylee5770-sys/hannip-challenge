@@ -71,8 +71,9 @@ export default function Reveal() {
     );
   }
 
-  const byLoss = data.byLoss ?? [];
   const byTotal = data.byTotal ?? [];
+  const byLoss = data.byLoss ?? [];
+  const byHappy = (data as any).byHappy as Array<{ userId: number; name: string; count: number }> ?? [];
 
   return (
     <div className="space-y-14">
@@ -93,23 +94,28 @@ export default function Reveal() {
         </div>
       </section>
 
-      {/* Loss % winners */}
+      {/* 이게돼 챔피언 — 감량률 챔피언 대신 (2026-11-20) */}
       <section className="space-y-6">
         <div className="flex items-baseline gap-3">
-          <Award className="h-5 w-5 text-amber-600" />
+          <Award className="h-5 w-5 text-primary" />
           <div>
-            <div className="editorial-eyebrow text-muted-foreground">CATEGORY · 감량 % 1등</div>
-            <h2 className="editorial-h2 text-3xl md:text-4xl">감량률 챔피언</h2>
+            <div className="editorial-eyebrow text-primary">CATEGORY · 행복 한 줄 일기 1등</div>
+            <h2 className="editorial-h2 text-3xl md:text-4xl">이게돼 챔피언</h2>
+            <p className="text-sm text-muted-foreground mt-1">나를 가장 많이 칭찬한 사람. 나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.</p>
           </div>
         </div>
-        <div className="grid md:grid-cols-3 gap-4">
-          {byLoss.slice(0, 3).map((e, i) => (
-            <PodiumCard key={e.userId} rank={i + 1} title={e.name} highlight={user?.id === e.userId}
-              big={formatPct(e.lossPercent)}
-              detail={e.lossKg !== null ? `${e.lossKg > 0 ? "−" : "+"}${Math.abs(e.lossKg).toFixed(2)}kg` : "기록 없음"}
-            />
-          ))}
-        </div>
+        {byHappy.length === 0 ? (
+          <p className="text-muted-foreground text-sm">아직 행복 한 줄 일기 기록이 없어요.</p>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-4">
+            {byHappy.slice(0, 3).map((e, i) => (
+              <PodiumCard key={e.userId} rank={i + 1} title={e.name} highlight={user?.id === e.userId}
+                big={`${e.count}일`}
+                detail="행복 한 줄 일기를 쓴 날"
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Certifications winners */}
@@ -125,7 +131,7 @@ export default function Reveal() {
           {byTotal.slice(0, 3).map((e, i) => (
             <PodiumCard key={e.userId} rank={i + 1} title={e.name} highlight={user?.id === e.userId}
               big={`${e.counts.total}`}
-              detail={`기상 ${e.counts.weight} · 식단 ${e.counts.meal} · 운동 ${e.counts.exercise}`}
+              detail={`식단 ${e.counts.meal} · 운동 ${e.counts.exercise} · 수면 ${(e.counts as any).sleep ?? 0} · 물 ${(e.counts as any).water ?? 0}`}
             />
           ))}
         </div>
