@@ -404,7 +404,7 @@ function InvitesAdmin() {
               }}>
                 <Copy className="h-3.5 w-3.5" />
               </Button>
-              <Button size="sm" variant="ghost" className="rounded-none" onClick={() => del.mutate({ id: inv.id })}>
+              <Button size="sm" variant="ghost" className="rounded-none" onClick={() => { if (confirm("이 초대 링크를 삭제할까요?")) del.mutate({ id: inv.id }); }}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -444,7 +444,7 @@ function SchedulesAdmin() {
         defaultHelp="매일 오전 8시 (한국 시간)"
         existing={(list.data ?? []).find(j => j?.jobKey === "dailyReminder.morning") ?? null}
         onSave={(cron) => upsert.mutate({ slot: "morning", cron, enabled: true })}
-        onDelete={() => remove.mutate({ slot: "morning" })}
+        onDelete={() => { if (confirm("아침 알림을 삭제할까요?")) remove.mutate({ slot: "morning" }); }}
         loading={upsert.isPending}
       />
       <ReminderRow
@@ -454,7 +454,7 @@ function SchedulesAdmin() {
         defaultHelp="매일 저녁 9시 (한국 시간)"
         existing={(list.data ?? []).find(j => j?.jobKey === "dailyReminder.evening") ?? null}
         onSave={(cron) => upsert.mutate({ slot: "evening", cron, enabled: true })}
-        onDelete={() => remove.mutate({ slot: "evening" })}
+        onDelete={() => { if (confirm("저녁 알림을 삭제할까요?")) remove.mutate({ slot: "evening" }); }}
         loading={upsert.isPending}
       />
     </div>

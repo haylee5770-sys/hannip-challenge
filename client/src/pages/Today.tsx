@@ -330,7 +330,7 @@ export default function Today() {
       )}
 
       {/* 우리 방 모토 — 오늘 칸 위, 가운데 */}
-      <p className="text-center text-sm md:text-base text-primary mb-3">꾸준함이 자존감이 되고, 자존감이 인생을 바꾼다</p>
+      <p className="text-center text-sm md:text-base text-primary mb-3">{(["꾸|준함이 ", "자|존감이 되고, ", "자|존감이 ", "인|생을 바꾼다"]).map((s, i) => { const [h, r] = s.split("|"); return <span key={i}><span className="underline decoration-2 underline-offset-4 font-semibold">{h}</span>{r}</span>; })}</p>
 
       {/* 날짜 앞뒤로 보기 (팀보드처럼) */}
       <div className="flex items-center justify-between rounded-2xl bg-card border border-border px-3 py-2 mb-4">
@@ -998,7 +998,7 @@ function MealCard({ meal, onChange }: { meal: MealRow; onChange: () => void }) {
           <div className="editorial-eyebrow text-muted-foreground">{cat?.caption}</div>
           <h3 className="editorial-h2 text-2xl mt-1">{cat?.label}</h3>
         </div>
-        <button onClick={() => del.mutate({ id: meal.id })} className="text-muted-foreground hover:text-destructive">
+        <button onClick={() => { if (confirm("이 식단 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id: meal.id }); }} className="text-muted-foreground hover:text-destructive">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
@@ -1245,7 +1245,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
             </div>
             {openedD?.comment && <div className="text-sm">{openedD.comment}</div>}
             {opened.note && <div className="text-sm">{opened.note}</div>}
-            <Button variant="outline" onClick={() => { del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
+            <Button variant="outline" onClick={() => { if (!confirm("이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) return; del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
               <Trash2 className="h-4 w-4 mr-1" /> 삭제
             </Button>
           </div>
@@ -1909,7 +1909,7 @@ function SeasonPhotosSection() {
             front={findOne("before", "front")}
             side={findOne("before", "side")}
             onPick={(angle, file) => handleFile(file, "before", angle)}
-            onDelete={(id) => del.mutate({ id })}
+            onDelete={(id) => { if (confirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
             uploading={upload.isPending}
             forceShow={beforePhotos.length > 0 || isDay1}
           />
@@ -1918,7 +1918,7 @@ function SeasonPhotosSection() {
           <ProgressBlock
             photos={progressPhotos}
             onPick={(angle, file) => handleFile(file, "progress", angle)}
-            onDelete={(id) => del.mutate({ id })}
+            onDelete={(id) => { if (confirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
             uploading={upload.isPending}
             disabled={!day}
           />
@@ -1931,7 +1931,7 @@ function SeasonPhotosSection() {
             front={findOne("after", "front")}
             side={findOne("after", "side")}
             onPick={(angle, file) => handleFile(file, "after", angle)}
-            onDelete={(id) => del.mutate({ id })}
+            onDelete={(id) => { if (confirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
             uploading={upload.isPending}
             forceShow={afterPhotos.length > 0 || isLastDay}
           />
@@ -2302,7 +2302,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
             <img src={opened.photoUrl} alt="" className="w-full rounded-xl object-cover max-h-[60vh]" />
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold tabular-nums">{opened.volumeMl}ml</span>
-              <Button variant="outline" onClick={() => { del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
+              <Button variant="outline" onClick={() => { if (!confirm("이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) return; del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
                 <Trash2 className="h-4 w-4 mr-1" /> 삭제
               </Button>
             </div>

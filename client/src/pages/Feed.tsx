@@ -294,7 +294,7 @@ function FeedItem(props: {
                   <div className="font-serif text-sm leading-relaxed">{c.body}</div>
                 </div>
                 {c.userId === props.me && (
-                  <button onClick={() => delComment.mutate({ id: c.id })}>
+                  <button onClick={() => { if (confirm("이 댓글을 삭제할까요?")) delComment.mutate({ id: c.id }); }}>
                     <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                   </button>
                 )}
