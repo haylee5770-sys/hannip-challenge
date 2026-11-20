@@ -11,11 +11,12 @@ const FLAG: Record<string, string> = { diabetes: "당뇨·혈당약", kidney: "�
 
 export default function MemberDetail() {
   const [, params] = useRoute("/member/:id");
-  const id = Number(params?.id);
-  const q = trpc.wellness.memberDetail.useQuery({ userId: id }, { enabled: !!id, retry: false });
-  if (q.isLoading) return <div className="py-20 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  // 주소에서 번호를 못 읽는 경우가 있어 주소창에서 한 번 더 읽는다 (2026-11-21 오류 고침)
+  const id = Number(params?.id ?? window.location.pathname.match(/\/member\/(\d+)/)?.[1]);
+  const q = trpc.wellness.memberDetail.useQuery({ userId: id }, { enabled: Number.isFinite(id) && id > 0, retry: false });
   if (q.error) return <p className="py-20 text-center text-muted-foreground">{q.error.message}</p>;
-  const d = q.data!;
+  if (!q.data) return <div className="py-20 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  const d = q.data;
   const p = d.profile;
   const ws = d.weights;
   return (
