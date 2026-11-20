@@ -51,11 +51,18 @@ export default function Today() {
   const userName = user?.name ?? "";
   // 자랑하기: 저장 후 인증 카드 이미지를 만들어 공유창(카톡)으로 (2026-11-20)
   const [bragCard, setBragCard] = useState<ProofCard | null>(null);
+  const myCounts = trpc.rounds.myCounts.useQuery();
   const kakaoShareText: string | null = null;
   /** 새 자랑하기: 이번 회차 안 항목별 번호 + 내 사진 + 피드백 (2026-11-20) */
   const bragItem: BragFn = async (p) => {
     let n: number | undefined;
-    try { await utils.rounds.myCounts.invalidate(); const r = await utils.rounds.myCounts.fetch(); n = (r.counts as any)[p.item]; } catch {}
+    // 2026-11-21: 식단은 일반식+스무디를 합친 누적 번호 (금 6회 → 토 첫 인증 7)
+    try {
+      await utils.rounds.myCounts.invalidate();
+      const r = await utils.rounds.myCounts.fetch();
+      const c = r.counts as any;
+      n = p.item === "meal" || p.item === "smoothie" ? (c.meal ?? 0) + (c.smoothie ?? 0) : c[p.item];
+    } catch {}
     const time = new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
     const card: ProofCard = { emoji: p.emoji, title: p.label, lines: [], userName, date, count: n, photo: p.photo, itemLabel: p.label, feedback: p.feedback, time };
     utils.happy.yearProgress.invalidate();
@@ -361,9 +368,10 @@ export default function Today() {
         <MealsSection
           date={date}
           meals={myMealsToday.data ?? []}
-          mealCount={seasonProgress.data?.counts.meal ?? myMealsToday.data?.length}
+          mealCount={myCounts.data ? myCounts.data.counts.meal + myCounts.data.counts.smoothie : undefined}
           userName={userName}
           onChange={() => {
+            utils.rounds.myCounts.invalidate();
             utils.meals.byMeDate.invalidate();
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
@@ -374,7 +382,7 @@ export default function Today() {
 
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
       <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} onBrag={bragItem} />
+        <WaterSection date={date} waterCount={myCounts.data?.counts.water} userName={userName} onBrag={bragItem} />
       </section>
 
       {/* Exercise — 운동 기록 */}
@@ -382,9 +390,10 @@ export default function Today() {
         <ExerciseSection
           date={date}
           exercises={myExercisesToday.data ?? []}
-          exerciseCount={seasonProgress.data?.counts.exercise ?? myExercisesToday.data?.length}
+          exerciseCount={myCounts.data?.counts.exercise}
           userName={userName}
           onChange={() => {
+            utils.rounds.myCounts.invalidate();
             utils.exercises.byMeDate.invalidate();
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
@@ -644,7 +653,6 @@ function MealsSection({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 식단 기록` : "식단 기록"}</h2>
-        <CountBadge n={mealCount ?? meals.length} />
       </div>
       {!creating && (
         <Button onClick={() => setCreating(true)} className="w-full rounded-xl h-11">
@@ -661,8 +669,9 @@ function MealsSection({
       )}
       {/* 오늘 기록: 메달 (누르면 자세히 · 코멘트 · 삭제) */}
       <Medals
-        items={meals.slice().sort((a, b) => a.id - b.id).map((m, i) => ({ id: m.id, label: `${i + 1}회`, sub: m.category === "smoothie" ? "스무디" : "식사" }))}
+        items={meals.slice().sort((a, b) => a.id - b.id).map((m, i) => ({ id: m.id, label: `${i + 1}회`, sub: m.category === "smoothie" ? "스무디" : "일반식" }))}
         onOpen={setOpenId}
+        total={mealCount}
       />
       <DailyNutritionTotals meals={meals} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
@@ -780,7 +789,7 @@ function MealForm({
         </div>
         {isSmoothie && (
           <p className="mt-2 font-serif italic text-xs text-muted-foreground">
-            먹은 스무디를 눌러 고르세요. 누를 때마다 1개씩 늘어나고, 영양소가 자동으로 더해져요.
+            인증 한 번에 하나만 골라요. 영양소는 자동으로 들어가요.
           </p>
         )}
       </div>
@@ -796,23 +805,15 @@ function MealForm({
                   const n = picked[p.id] ?? 0;
                   return (
                     <div key={p.id} className={cn("relative rounded-lg border transition-colors", n > 0 ? "border-primary bg-primary/15" : "border-border")}>
+                      {/* 한 번 인증 = 한 개만 (2026-11-21): 다른 걸 누르면 바뀌고, 같은 걸 다시 누르면 취소 */}
                       <button
                         type="button"
-                        onClick={() => setPicked(prev => ({ ...prev, [p.id]: (prev[p.id] ?? 0) + 1 }))}
-                        className="w-full px-1 py-2 text-xs flex items-center justify-center gap-1"
+                        onClick={() => setPicked(prev => (prev[p.id] ? {} : { [p.id]: 1 }))}
+                        className="w-full h-full min-h-[44px] px-2 py-2 text-xs flex items-center justify-center gap-1.5"
                       >
-                        <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-                        {p.name}
-                        {n > 0 && <span className="ml-1 font-bold text-primary tabular-nums">×{n}</span>}
+                        <span className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
+                        <span className="text-left leading-tight break-keep">{p.name}</span>
                       </button>
-                      {n > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setPicked(prev => ({ ...prev, [p.id]: Math.max(0, (prev[p.id] ?? 0) - 1) }))}
-                          className="absolute -top-2 -right-2 bg-background border border-border rounded-full w-5 h-5 text-xs leading-none"
-                          aria-label="하나 빼기"
-                        >−</button>
-                      )}
                     </div>
                   );
                 })}
@@ -821,7 +822,7 @@ function MealForm({
           ))}
           {pickedList.length > 0 && (
             <div className="text-sm text-muted-foreground">
-              고른 것 {pickedList.length}개 · {pickedList.reduce((a, p) => a + p.kcal, 0)}kcal · 탄 {pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 {pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 {pickedList.reduce((a, p) => a + p.fatG, 0)}g
+              {pickedList.map(p => p.name).join("")} · 탄 {pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 {pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 {pickedList.reduce((a, p) => a + p.fatG, 0)}g
             </div>
           )}
         </div>
@@ -1166,7 +1167,6 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 운동 기록` : "운동 기록"}</h2>
-        <CountBadge n={exerciseCount ?? exercises.length} />
       </div>
       <div className="grid grid-cols-12 gap-2">
         <Input value={kind} onChange={(e) => setKind(e.target.value)} placeholder="운동 (예: 걷기, 요가)" className="col-span-6 rounded-lg bg-transparent h-10" />
@@ -1201,7 +1201,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
           {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>
       </div>
-      <Medals items={exercises.map((x, i) => ({ id: x.id, label: `${i + 1}회`, sub: `${x.durationMin}분` }))} onOpen={setOpenId} />
+      <Medals items={exercises.map((x, i) => ({ id: x.id, label: `${i + 1}회`, sub: `${x.durationMin}분` }))} onOpen={setOpenId} total={exerciseCount} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && (
           <div className="space-y-3">
@@ -1473,8 +1473,9 @@ function CountBadge({ n }: { n?: number | null }) {
   );
 }
 
-function Medals({ items, onOpen }: { items: Array<{ id: number; label: string; sub?: string }>; onOpen: (id: number) => void }) {
-  if (!items.length) return null;
+/** 오늘 메달(1회·2회…, 날마다 새로 시작) + 맨 끝에 '누적 N회' 동그라미 (2026-11-21) */
+function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: string; sub?: string }>; onOpen: (id: number) => void; total?: number }) {
+  if (!items.length && total == null) return null;
   return (
     <div className="grid grid-cols-5 gap-2">
       {items.map(it => (
@@ -1484,6 +1485,12 @@ function Medals({ items, onOpen }: { items: Array<{ id: number; label: string; s
           {it.sub && <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">{it.sub}</span>}
         </button>
       ))}
+      {total != null && (
+        <div className="aspect-square rounded-full bg-primary text-primary-foreground flex flex-col items-center justify-center shadow-[0_0_12px_var(--primary-glow,rgba(182,242,74,0.45))]">
+          <span className="text-[10px] font-semibold leading-none opacity-80">누적</span>
+          <span className="text-lg font-black leading-tight tabular-nums">{total}회</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -2072,7 +2079,6 @@ const WATER_VOLUME_OPTIONS = [300, 400, 500, 600, 700, 800, 900, 1000] as const;
 const WATER_DAILY_TARGET_ML = 2000;
 
 function WaterSection({ date, waterCount, userName, onBrag }: { date: string; waterCount?: number; userName?: string; onBrag?: BragFn }) {
-  void waterCount;
   const [openId, setOpenId] = useState<number | null>(null);
   const lastPhotos = useRef<string[]>([]);
   const utils = trpc.useUtils();
@@ -2087,7 +2093,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
 
   const create = trpc.waters.multiCreate.useMutation({
     onSuccess: (res) => {
-      utils.waters.byDate.invalidate();
+      utils.waters.byDate.invalidate(); utils.rounds.myCounts.invalidate();
       utils.seasons.myProgress.invalidate();
       toast.success(`물 ${res.count}회 기록되었습니다 (${(volumeMl * res.count).toLocaleString()}ml)`);
       const newTotal = totalMl + volumeMl * res.count;
@@ -2101,7 +2107,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
 
   const del = trpc.waters.delete.useMutation({
     onSuccess: () => {
-      utils.waters.byDate.invalidate();
+      utils.waters.byDate.invalidate(); utils.rounds.myCounts.invalidate();
       toast.success("삭제되었습니다");
     },
   });
@@ -2186,7 +2192,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
       <p className="text-[11px] text-muted-foreground -mt-2">사진 1장 = 1회 · 최대 8장</p>
 
       {/* 오늘 마신 물: 메달 (누르면 사진 · 삭제) */}
-      <Medals items={items.map((it, i) => ({ id: it.id, label: `${i + 1}회`, sub: `${it.volumeMl}ml` }))} onOpen={setOpenId} />
+      <Medals items={items.map((it, i) => ({ id: it.id, label: `${i + 1}회`, sub: `${it.volumeMl}ml` }))} onOpen={setOpenId} total={waterCount} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && (
           <div className="space-y-3">

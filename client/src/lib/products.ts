@@ -21,7 +21,7 @@ export const PRODUCTS: Product[] = [
   { id: "red-gwa",    row: "과일 스무디",   name: "레드 과스",   color: "#ff5a5f", kcal: 109, carbsG: 25, proteinG: 2,  fatG: 0,  vegetableG: 0 }, // 레드톡
   { id: "yellow-gwa", row: "과일 스무디",   name: "옐로우 과스", color: "#ffd84d", kcal: 126, carbsG: 30, proteinG: 1,  fatG: 0,  vegetableG: 0 }, // 옐로우톡
   { id: "green-gwa",  row: "과일 스무디",   name: "그린 과스",   color: "#7ed957", kcal: 212, carbsG: 16, proteinG: 2,  fatG: 16, vegetableG: 0 }, // 그린톡 (올리브오일)
-  { id: "hippo-puree", row: "퓨레",         name: "히포크라테스 퓨레", color: "#b6f24a", kcal: 66, carbsG: 14, proteinG: 2, fatG: 0, vegetableG: 0 }, // 150g
+  { id: "hippo-puree", row: "퓨레",         name: "히포크라테스 퓨레", color: "#ff8a1f", kcal: 66, carbsG: 14, proteinG: 2, fatG: 0, vegetableG: 0 }, // 150g
 ];
 
 export const PRODUCT_ROWS: Product["row"][] = ["단백질 스무디", "과일 스무디", "퓨레"];
