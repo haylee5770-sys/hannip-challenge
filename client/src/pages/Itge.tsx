@@ -82,7 +82,7 @@ export default function Itge() {
           placeholder="#이게돼 — 예) 스무디 3일 했더니 아침 붓기가 쏙 빠졌어요!" className="rounded-xl bg-transparent" />
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-muted-foreground">올리기 전까지만 고칠 수 있어요. 올리면 수정 불가.</span>
-          <Button className="ml-auto rounded-full px-6" disabled={create.isPending || text.trim().length < 2}
+          <Button className="ml-auto glass-btn h-11 px-7" disabled={create.isPending || text.trim().length < 2}
             onClick={() => create.mutate({ date: todayKst(), content: text.trim() })}>
             {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
           </Button>

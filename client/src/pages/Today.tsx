@@ -333,7 +333,7 @@ export default function Today() {
       )}
 
       {/* 우리 방 모토 — 오늘 칸 위, 가운데 */}
-      <p className="text-center text-sm md:text-base text-primary mb-3">{(["꾸|준함이 ", "자|존감이 되고, ", "자|존감이 ", "인|생을 바꾼다"]).map((s, i) => { const [h, r] = s.split("|"); return <span key={i}><span className="underline decoration-2 underline-offset-4 font-semibold">{h}</span>{r}</span>; })}</p>
+      <p className="text-center text-sm md:text-base text-primary mb-3 pt-1">{(["꾸|준함이 ", "자|존감이 되고, ", "자|존감이 ", "인|생을 바꾼다"]).map((s, i) => { const [h, r] = s.split("|"); return <span key={i}><span className="dot-mark">{h}</span>{r}</span>; })}</p>
 
       {/* 날짜 앞뒤로 보기 (팀보드처럼) */}
       <div className="flex items-center justify-between rounded-2xl bg-card border border-border px-3 py-2 mb-4">
@@ -1527,7 +1527,7 @@ function CountBadge({ n }: { n?: number | null }) {
 /* ---- 모든 기록 칸 공통 틀 (2026-11-21): 제목(왼쪽) · 누적 모서리 탭(오른쪽 위) · 큰 '＋ 기록 추가' · [취소][자랑하기] 오른쪽 아래 · 오늘 메달 ---- */
 const ACTIONS_ROW = "flex justify-end gap-2 pt-3 border-t border-border";
 const CANCEL_BTN = "rounded-xl h-11 px-5";
-const BRAG_BTN = "rounded-xl h-11 px-7 font-semibold";
+const BRAG_BTN = "glass-btn h-11 px-7";
 function SectionTitle({ children, extra }: { children: React.ReactNode; extra?: React.ReactNode }) {
   return (
     <div className="min-h-[2rem] flex flex-col justify-center">
