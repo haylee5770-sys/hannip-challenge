@@ -305,23 +305,17 @@ export default function Today() {
             VOL. {new Date().getFullYear()} · TODAY
           </div>
           <h1 className="editorial-h1 text-5xl md:text-7xl lg:text-8xl">
-            어제 <span className="italic font-serif font-light">노력의 결과</span>
+            오늘, <span className="italic font-serif font-light">행복의 결과</span>
           </h1>
           <p className="mt-4 font-serif italic text-lg md:text-xl text-muted-foreground">
             {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
           </p>
         </div>
         <div className="col-span-12 md:col-span-5 md:text-right">
-          <div className="editorial-eyebrow text-muted-foreground mb-2">TODAY'S WEIGHT</div>
-          <div className="number-display text-5xl md:text-6xl">
-            {todayWeight ? `${todayWeight.weightKg.toFixed(1)}` : "—"}
-            <span className="text-2xl text-muted-foreground ml-1">kg</span>
-          </div>
-          {goal.data && (
-            <div className="font-serif italic text-sm text-muted-foreground mt-1">
-              목표 {Number(goal.data.targetWeightKg).toFixed(1)} kg
-            </div>
-          )}
+          <div className="editorial-eyebrow text-muted-foreground mb-2">OUR MOTTO</div>
+          <p className="font-serif text-2xl md:text-3xl leading-snug">
+            나를 칭찬하는 순간,<br />우리 모두가 1등이 됩니다.
+          </p>
         </div>
       </section>
 
