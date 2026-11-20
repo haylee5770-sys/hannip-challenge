@@ -66,7 +66,9 @@ export default function Today() {
       n = base + (p.add ?? 1);
     }
     const time = new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
-    const card: ProofCard = { emoji: p.emoji, title: p.label, lines: [], userName, date, count: n, photo: p.photo, itemLabel: p.label, feedback: p.feedback, time, avatar: (user as any)?.avatarUrl ?? null };
+    // 카톡 자랑 사진에서는 일반식·스무디 모두 '식단'으로 (누적은 둘을 합친 숫자) (2026-11-21)
+    const shownLabel = p.item === "meal" || p.item === "smoothie" ? "식단" : p.label;
+    const card: ProofCard = { emoji: p.emoji, title: shownLabel, lines: [], userName, date, count: n, photo: p.photo, itemLabel: shownLabel, feedback: p.feedback, time, avatar: (user as any)?.avatarUrl ?? null };
     utils.happy.yearProgress.invalidate();
     shareProof(card)
       .then(r => {

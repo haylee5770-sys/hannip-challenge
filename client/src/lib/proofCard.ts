@@ -14,6 +14,8 @@ export type ProofCard = {
   body?: string;        // 사진 대신 글(이게돼)
   time?: string;        // 인증 시각 "오후 8:18"
   avatar?: string | null; // 카톡방과 같은 프로필 사진 (이름 앞 둥근 네모)
+  chatLines?: string[];   // 이게돼: 가운데 칸에 카톡 말풍선으로 넣을 줄들 (한 장 분량)
+  pageInfo?: { idx: number; total: number };
 };
 
 /** 카톡 프로필처럼 둥근 네모 사진 */
@@ -74,9 +76,32 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   g.fillStyle = "#ececea"; g.font = `600 40px ${bodyFont}`;
   g.fillText(`${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}`, 154, 298);
 
-  // 가운데: 사진 또는 글
+  // 가운데: 사진 또는 글 (이게돼는 카톡 대화 화면처럼)
   const bx = 90, by = 352, bw = W - 180, bh = 780;
-  if (card.photo) {
+  if (card.chatLines) {
+    // 연회색 바탕 + 프로필·이름 + 흰 말풍선 (2026-11-21)
+    g.save(); roundRect(g, bx, by, bw, bh, 32); g.clip();
+    g.fillStyle = "#dfe3e8"; g.fillRect(bx, by, bw, bh);
+    const av = 92, ax = bx + 30, ay = by + 34;
+    const firstPage = !card.pageInfo || card.pageInfo.idx === 0;
+    if (firstPage) {
+      await drawAvatar(g, card.avatar, ax, ay, av, name, accent);
+      g.textAlign = "left"; g.fillStyle = "#3b4048"; g.font = `600 34px ${bodyFont}`;
+      g.fillText(name, ax + av + 22, ay + 36);
+    }
+    const bubX = ax + av + 22, bubY = firstPage ? ay + 56 : by + 40, bubW = bw - (bubX - bx) - 30;
+    const FS = 40, LH = 60, padX = 32, padY = 28;
+    const bh2 = card.chatLines.length * LH + padY * 2;
+    g.fillStyle = "#ffffff"; roundRect(g, bubX, bubY, bubW, bh2, 28); g.fill();
+    if (firstPage) { g.beginPath(); g.moveTo(bubX + 2, bubY + 18); g.lineTo(bubX - 18, bubY + 8); g.lineTo(bubX + 2, bubY + 44); g.closePath(); g.fill(); }
+    g.fillStyle = "#1f2328"; g.font = `500 ${FS}px ${bodyFont}`; g.textAlign = "left";
+    card.chatLines.forEach((l, i) => g.fillText(l, bubX + padX, bubY + padY + FS + i * LH - 6));
+    if (card.pageInfo && card.pageInfo.total > 1) {
+      g.textAlign = "right"; g.fillStyle = "#6b7280"; g.font = `600 28px ${bodyFont}`;
+      g.fillText(card.pageInfo.idx < card.pageInfo.total - 1 ? `${card.pageInfo.idx + 1}/${card.pageInfo.total} · 다음 장에 계속 →` : `${card.pageInfo.idx + 1}/${card.pageInfo.total}`, bx + bw - 30, by + bh - 30);
+    }
+    g.restore();
+  } else if (card.photo) {
     try {
       const img = await loadImg(card.photo);
       g.save(); roundRect(g, bx, by, bw, bh, 32); g.clip();
@@ -189,65 +214,23 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
   g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
 }
 
-/** 이게돼 (2026-11-21): 카톡 대화 화면처럼. 4:5(캐러셀 비율) 그대로, 글이 넘치면 2장·3장으로 나눔 */
+/** 이게돼 (2026-11-21 고침): 바깥 틀은 다른 자랑 사진과 똑같고(프로필·이름 이게돼·인증 번호·시계),
+ *  가운데 사진 자리에 카톡 대화 화면(연회색 바탕 + 흰 말풍선)이 들어간다. 글이 길면 4:5 그대로 여러 장. */
 export async function makeItgeImages(card: ProofCard): Promise<Blob[]> {
-  const W = 1080, H = 1350;
   const bodyFont = getComputedStyle(document.body).fontFamily || "sans-serif";
   try { await (document as any).fonts?.ready; } catch {}
-  const KAKAO_BG = "#b2c7d9", INK = "#1f2328", GREEN = "#3f7d16";
-  const name = card.userName || "멤버";
-  const AV = 120, avX = 60, bubX = avX + AV + 24, bubW = W - bubX - 70;
-  const FS = 46, LH = 70, padX = 40, padY = 36;
-  // 줄 나누기
   const meas = document.createElement("canvas").getContext("2d")!;
-  meas.font = `500 ${FS}px ${bodyFont}`;
-  const lines = wrap(meas, (card.body ?? "").trim(), bubW - padX * 2);
-  const firstTop = 300, otherTop = 300, bottomLimit = H - 120;
-  const perPage = Math.max(1, Math.floor((bottomLimit - firstTop - padY * 2) / LH));
+  meas.font = `500 40px ${bodyFont}`;
+  // 가운데 칸 너비 900 - 말풍선 왼쪽 여백(30+92+22) - 오른쪽 30 - 안쪽 여백 64
+  const lines = wrap(meas, (card.body ?? "").trim(), 900 - 144 - 30 - 64);
+  const first = Math.floor((780 - 90 - 56 - 60) / 60), rest = Math.floor((780 - 40 - 56 - 60) / 60);
   const pages: string[][] = [];
-  for (let i = 0; i < lines.length; i += perPage) pages.push(lines.slice(i, i + perPage));
-  if (!pages.length) pages.push([""]);
+  let i = 0;
+  pages.push(lines.slice(0, first)); i = first;
+  while (i < lines.length) { pages.push(lines.slice(i, i + rest)); i += rest; }
   const out: Blob[] = [];
   for (let p = 0; p < pages.length; p++) {
-    const c = document.createElement("canvas"); c.width = W; c.height = H;
-    const g = c.getContext("2d")!;
-    g.fillStyle = KAKAO_BG; g.fillRect(0, 0, W, H);
-    // 프로필 + 이름 · 이게돼 (같은 글씨·크기·두께)
-    await drawAvatar(g, card.avatar, avX, 80, AV, name, GREEN);
-    const textX = bubX;
-    const hasCount = card.count != null;
-    let size = 64;
-    for (; size > 36; size -= 4) { g.font = `800 ${size}px ${bodyFont}`; if (g.measureText(`${name} 이게돼`).width <= W - textX - (hasCount ? 200 : 70)) break; }
-    g.textAlign = "left"; g.font = `800 ${size}px ${bodyFont}`;
-    g.fillStyle = INK; g.fillText(name, textX, 150);
-    const nw = g.measureText(name + " ").width;
-    g.fillStyle = GREEN; g.fillText("이게돼", textX + nw, 150);
-    // 날짜·시간
-    g.save(); g.strokeStyle = "#4b5560"; g.lineWidth = 4; g.lineCap = "round";
-    g.beginPath(); g.arc(textX + 18, 204, 17, 0, Math.PI * 2); g.stroke();
-    g.beginPath(); g.moveTo(textX + 18, 204); g.lineTo(textX + 18, 194); g.moveTo(textX + 18, 204); g.lineTo(textX + 26, 207); g.stroke(); g.restore();
-    g.fillStyle = "#4b5560"; g.font = `600 36px ${bodyFont}`;
-    g.fillText(`${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}${pages.length > 1 ? `   (${p + 1}/${pages.length})` : ""}`, textX + 48, 217);
-    // 오른쪽 동그라미: 이게돼 번호
-    if (hasCount) {
-      const cx = W - 130, cy = 140, r = 64;
-      g.fillStyle = "#ffffff"; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = GREEN; g.lineWidth = 6; g.stroke();
-      g.textAlign = "center"; g.fillStyle = GREEN; g.font = `900 64px ${bodyFont}`; g.fillText(String(card.count), cx, cy + 16);
-      g.font = `700 20px ${bodyFont}`; g.fillStyle = "#4b5560"; g.fillText("인증", cx, cy + 44);
-    }
-    // 말풍선 (카톡처럼 흰색 + 왼쪽 꼬리)
-    const top = p === 0 ? firstTop : otherTop;
-    const bh = pages[p].length * LH + padY * 2;
-    g.fillStyle = "#ffffff";
-    roundRect(g, bubX, top, bubW, bh, 26); g.fill();
-    if (p === 0) { g.beginPath(); g.moveTo(bubX + 2, top + 22); g.lineTo(bubX - 22, top + 12); g.lineTo(bubX + 2, top + 52); g.closePath(); g.fill(); }
-    g.textAlign = "left"; g.fillStyle = INK; g.font = `500 ${FS}px ${bodyFont}`;
-    pages[p].forEach((l, i) => g.fillText(l, bubX + padX, top + padY + FS + i * LH - 6));
-    if (p < pages.length - 1) { g.textAlign = "right"; g.fillStyle = "#4b5560"; g.font = `600 30px ${bodyFont}`; g.fillText("다음 장에 계속 →", W - 70, H - 80); }
-    g.textAlign = "center"; g.fillStyle = "rgba(31,35,40,0.28)"; g.font = `500 26px ${bodyFont}`;
-    g.fillText("super hannip Challenge", W / 2, H - 40);
-    out.push(await new Promise<Blob>((res) => c.toBlob(b => res(b!), "image/png")));
+    out.push(await makeProofImage2({ ...card, photo: undefined, feedback: "", chatLines: pages[p], pageInfo: { idx: p, total: pages.length } }));
   }
   return out;
 }
