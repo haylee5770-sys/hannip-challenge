@@ -934,7 +934,7 @@ function DailyNutritionTotals({ meals, date }: { meals: MealRow[]; date: string 
     { k: "vegetableG", label: "채소" },
   ];
   return (
-    <div className="border border-border bg-card p-5">
+    <div className="pt-2">
       <div className="editorial-eyebrow text-primary mb-3">TODAY TOTAL · 오늘 먹은 양</div>
       <div className="space-y-3">
         {rows.map(r => {
@@ -1730,7 +1730,7 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
         <div className="grid grid-cols-5 gap-1.5">
           {rows.map(r => <div key={r.key} className="glass-fill rounded-xl border text-center py-2 font-bold">{r.head}</div>)}
         </div>
-        <p className="mt-2 text-center text-xs text-muted-foreground">지금 내 컨디션 {co?.emoji} {co?.label} · 누르면 펼쳐져요</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">지금 내 컨디션 {co?.emoji} {co?.label} · 누르면 펼쳐져요 ▼</p>
       </section>
     );
   }
