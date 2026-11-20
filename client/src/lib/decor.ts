@@ -91,7 +91,7 @@ export function applyDecor(d: Decor) {
     style.id = "hannip-decor";
     document.head.appendChild(style);
   }
-  const fontCss = font.family ? `body, body * { font-family: ${font.family}, 'Pretendard', 'Noto Sans KR', sans-serif !important; }` : "";
+  const fontCss = font.family ? `body, body *:not([data-keep-font]):not([data-keep-font] *) { font-family: ${font.family}, 'Pretendard', 'Noto Sans KR', sans-serif !important; }` : "";
   const bgCss = pattern.css !== "none" ? `body, .paper-grain { background: ${pattern.css}, var(--background) !important; background-attachment: fixed !important; }` : "";
   style.textContent = `${fontCss}\n${bgCss}`;
 }

@@ -54,11 +54,12 @@ export default function Decor() {
               key={f.id}
               type="button"
               onClick={() => set({ font: f.id })}
+              data-keep-font=""
               className={cn("rounded-xl border px-3 py-3 text-base transition-colors", d.font === f.id ? "border-primary bg-primary/15" : "border-border hover:border-primary/60")}
-              style={f.family ? { fontFamily: `${f.family}, sans-serif` } : undefined}
+              style={{ fontFamily: `${f.family || "'Pretendard', 'Noto Sans KR'"}, sans-serif` }}
             >
               {f.name}
-              <div className="text-xs text-muted-foreground mt-0.5" style={f.family ? { fontFamily: `${f.family}, sans-serif` } : undefined}>나를 칭찬해요</div>
+              <div className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: `${f.family || "'Pretendard', 'Noto Sans KR'"}, sans-serif` }}>나를 칭찬해요</div>
             </button>
           ))}
         </div>
