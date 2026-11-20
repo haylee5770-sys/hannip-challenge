@@ -1,18 +1,19 @@
 {
-  "name": "Atelier Wellness",
-  "short_name": "Atelier",
-  "description": "초대된 멤버들이 함께 기록하고 응원하는 폐쇄형 헬스 커뮤니티",
-  "start_url": "/",
+  "name": "슈퍼한입 챌린지 보드",
+  "short_name": "챌린지 보드",
+  "description": "인생을 바꾸는 가장 쉬운 방법 — 슈퍼한입 챌린지",
+  "id": "/",
+  "start_url": "/today",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f5efe2",
-  "theme_color": "#f5efe2",
+  "background_color": "#2b2d31",
+  "theme_color": "#2b2d31",
   "orientation": "portrait",
   "icons": [
-    {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "lang": "ko"
 }
