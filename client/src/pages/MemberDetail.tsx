@@ -74,11 +74,10 @@ export default function MemberDetail() {
   );
 }
 
-/** 몸무게 변화 가로 그래프 (2026-11-21, 인바디 참고): 점 위에 kg, 점을 누르면 날짜, 오른쪽 위 '날짜 모두 보기' */
+/** 몸무게 변화 가로 그래프 (2026-11-21, 인바디 참고): 점 위에 kg, 아래에 날짜 항상 */
 function WeightChart({ data }: { data: Array<{ date: string; kg: number }> }) {
   const pts = data.filter(d => Number.isFinite(d.kg));
   const [sel, setSel] = useState(pts.length - 1);
-  const [allDates, setAllDates] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => { if (scroller.current) scroller.current.scrollLeft = scroller.current.scrollWidth; }, [pts.length]);
   if (!pts.length) return null;
@@ -96,9 +95,6 @@ function WeightChart({ data }: { data: Array<{ date: string; kg: number }> }) {
     <div>
       <div className="flex items-center justify-between mb-1">
         <h2 className="font-semibold">몸무게 변화</h2>
-        <button type="button" onClick={() => setAllDates(v => !v)} className={"text-xs rounded-full border px-2.5 py-1 " + (allDates ? "border-primary/60 text-primary bg-primary/10" : "border-white/15 text-muted-foreground")}>
-          {allDates ? "날짜 접기" : "날짜 모두 보기"}
-        </button>
       </div>
       <div className="text-xs text-muted-foreground mb-1">
         처음 {first}kg → 지금 <b className="text-foreground">{last}kg</b>
@@ -115,13 +111,12 @@ function WeightChart({ data }: { data: Array<{ date: string; kg: number }> }) {
                 <rect x={x(i) - STEP / 2} y={0} width={STEP} height={H} fill="transparent" />
                 <text x={x(i)} y={y(p.kg) - 12} textAnchor="middle" fontSize={on ? 13 : 11} fontWeight={on ? 700 : 400} fill={on ? "var(--primary)" : "rgba(255,255,255,0.7)"}>{p.kg}</text>
                 <circle cx={x(i)} cy={y(p.kg)} r={on ? 7 : 5} fill={on ? "var(--primary)" : "#2b2d30"} stroke="var(--primary)" strokeWidth={2} />
-                {(allDates || on) && <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={11} fill={on ? "var(--primary)" : "rgba(255,255,255,0.55)"}>{md(p.date)}</text>}
+                {<text x={x(i)} y={H - 6} textAnchor="middle" fontSize={11} fill={on ? "var(--primary)" : "rgba(255,255,255,0.55)"}>{md(p.date)}</text>}
               </g>
             );
           })}
         </svg>
       </div>
-      <div className="text-center text-xs text-muted-foreground mt-1">{pts[sel] && <>{pts[sel].date.slice(0, 10).replace(/-/g, ".")} · <b className="text-foreground">{pts[sel].kg}kg</b></>} · 동그라미를 누르면 날짜가 보여요</div>
     </div>
   );
 }
