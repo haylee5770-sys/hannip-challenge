@@ -1,0 +1,100 @@
+// 자랑하기 — 인증 카드 이미지를 만들어 휴대폰 공유창(카카오톡 등)으로 보낸다 (2026-11-20)
+// 특정 카톡방에 저절로 올리는 건 카카오가 막아서 불가 → 공유창에서 카카오톡 → 방만 고르면 됨.
+
+export type ProofCard = {
+  emoji: string;        // 큰 이모지
+  title: string;        // 예: "스무디 인증"
+  lines: string[];      // 예: ["레드 단스 · 옐로우 단스", "탄 43g · 단 33g · 지 6g"]
+  userName?: string;
+  date: string;         // YYYY-MM-DD
+  count?: number;       // 누적 횟수
+};
+
+function cssVar(name: string, fallback: string) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+function fmtDate(d: string) {
+  const [y, m, dd] = d.split("-").map(Number);
+  const w = ["일", "월", "화", "수", "목", "금", "토"][new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
+  return `${y}.${m}.${dd} (${w})`;
+}
+
+export async function makeProofImage(card: ProofCard): Promise<Blob> {
+  const W = 1080, H = 1080;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d")!;
+  const accent = cssVar("--primary", "#b6f24a");
+  const bodyFont = getComputedStyle(document.body).fontFamily || "sans-serif";
+  try { await (document as any).fonts?.ready; } catch {}
+
+  // 배경
+  g.fillStyle = "#2b2d31"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#383b41";
+  roundRect(g, 60, 60, W - 120, H - 120, 48); g.fill();
+  // 위 띠
+  g.fillStyle = accent; roundRect(g, 60, 60, W - 120, 14, 7); g.fill();
+
+  g.textAlign = "left";
+  g.fillStyle = accent; g.font = `500 34px ${bodyFont}`;
+  g.fillText("인생을 바꾸는 가장 쉬운 방법", 120, 150);
+  g.fillStyle = "#ececea"; g.font = `700 54px ${bodyFont}`;
+  g.fillText("super hannip Challenge", 120, 220);
+  g.fillStyle = "#a6a9ae"; g.font = `400 34px ${bodyFont}`;
+  g.fillText(`${fmtDate(card.date)}${card.userName ? ` · ${card.userName}` : ""}`, 120, 280);
+
+  // 본문
+  g.textAlign = "center";
+  g.font = `140px ${bodyFont}`;
+  g.fillText(card.emoji, W / 2, 500);
+  g.fillStyle = "#ececea"; g.font = `800 76px ${bodyFont}`;
+  g.fillText(card.title, W / 2, 620);
+  g.fillStyle = "#cfd2d6"; g.font = `500 40px ${bodyFont}`;
+  card.lines.slice(0, 3).forEach((l, i) => g.fillText(clip(g, l, W - 240), W / 2, 700 + i * 58));
+
+  if (card.count != null) {
+    g.fillStyle = accent; g.font = `800 44px ${bodyFont}`;
+    g.fillText(`누적 ${card.count}회`, W / 2, 900);
+  }
+  g.fillStyle = accent; g.font = `400 40px 'Nanum Brush Script', 'Nanum Pen Script', ${bodyFont}`;
+  g.fillText("꾸준함이 자존감이 되고, 자존감이 인생을 바꾼다", W / 2, 975);
+
+  return await new Promise<Blob>((res) => c.toBlob(b => res(b!), "image/png"));
+}
+
+function clip(g: CanvasRenderingContext2D, s: string, max: number) {
+  if (g.measureText(s).width <= max) return s;
+  while (s.length > 1 && g.measureText(s + "…").width > max) s = s.slice(0, -1);
+  return s + "…";
+}
+
+function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  g.beginPath();
+  g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+
+/** 이미지 만들어 공유창 열기. 안 되는 환경이면 이미지 저장 + 문구 복사. 결과를 문자열로 돌려준다. */
+export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "downloaded"> {
+  const text = `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
+  const blob = await makeProofImage(card);
+  const file = new File([blob], `hannip_${card.date}.png`, { type: "image/png" });
+  const nav = navigator as any;
+  if (nav.canShare && nav.canShare({ files: [file] })) {
+    try {
+      await nav.share({ files: [file], text });
+      return "shared";
+    } catch {
+      return "cancelled";
+    }
+  }
+  // 공유 불가(PC·카톡 안 브라우저 등): 이미지 저장 + 문구 복사
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  try { await navigator.clipboard.writeText(text); } catch {}
+  return "downloaded";
+}
