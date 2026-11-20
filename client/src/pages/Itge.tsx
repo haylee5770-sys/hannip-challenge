@@ -72,18 +72,19 @@ export default function Itge() {
   return (
     <div className="space-y-6">
       <section className="text-center">
-        <div className="editorial-eyebrow text-primary mb-1">#이게돼</div>
+        <div className="glass-fill inline-block rounded-full border px-5 py-1.5 text-lg font-black tracking-wide mb-3">#이게돼</div>
         <h1 className="text-3xl md:text-4xl font-semibold">이게 된다고?</h1>
-        <p className="mt-2 text-sm text-muted-foreground">나의 변화, 오늘의 작은 성공을 남겨 주세요. 올리면 카톡방에 자랑돼요.</p>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">나의 변화, 오늘의 작은 성공을 남겨 주세요.<br />올리면 카톡방에 자랑해 주세요.</p>
       </section>
 
       <section className="rounded-2xl bg-card border border-border p-4 space-y-3">
         <Textarea value={text} onChange={e => setText(e.target.value)} rows={5} maxLength={3000}
           placeholder="#이게돼 — 예) 스무디 3일 했더니 아침 붓기가 쏙 빠졌어요!" className="rounded-xl bg-transparent" />
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">올리기 전까지만 고칠 수 있어요. 올리면 수정 불가.</span>
-          <Button className="ml-auto glass-btn h-11 px-7" disabled={create.isPending || text.trim().length < 2}
-            onClick={() => create.mutate({ date: todayKst(), content: text.trim() })}>
+        <div className="flex items-center gap-2 pt-3 border-t border-border">
+          <span className="text-[11px] text-muted-foreground leading-relaxed">올리기 전까지만 수정할 수 있어요.<br />올리면 수정 불가.</span>
+          {/* 글을 쓰기 전에도 다른 자랑하기 버튼과 똑같이 보이게 (흐리게 막지 않음) */}
+          <Button className="ml-auto glass-btn h-11 px-7" disabled={create.isPending}
+            onClick={() => { if (text.trim().length < 2) { toast.error("이게돼 글을 먼저 써 주세요"); return; } create.mutate({ date: todayKst(), content: text.trim() }); }}>
             {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
           </Button>
         </div>
