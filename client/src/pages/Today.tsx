@@ -826,7 +826,7 @@ function MealForm({
           ))}
           {pickedList.length > 0 && (
             <div className="text-sm text-muted-foreground">
-              고른 것 {pickedList.length}개 · 탄 {pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 {pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 {pickedList.reduce((a, p) => a + p.fatG, 0)}g
+              고른 것 {pickedList.length}개 · {pickedList.reduce((a, p) => a + p.kcal, 0)}kcal · 탄 {pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 {pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 {pickedList.reduce((a, p) => a + p.fatG, 0)}g
             </div>
           )}
         </div>
