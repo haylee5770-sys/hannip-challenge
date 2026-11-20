@@ -381,7 +381,7 @@ export default function Today() {
         autoCleanEat={(mealsPrevDay.data?.length ?? 0) > 0}
         autoExercised={(exercisesPrevDay.data?.length ?? 0) > 0}
       />
-      <TodayTabs tab={tab} setTab={setTab} sleepDone={!!sleepToday.data} mealN={myMealsToday.data?.length ?? 0} waterMl={watersTodayTop.data?.totalMl ?? 0} exN={myExercisesToday.data?.length ?? 0} weighDone={!!weighInTop.data?.doneThisMonth} weighKg={(weighInTop.data as any)?.lastKg ?? null} />
+      <TodayTabs tab={tab} setTab={setTab} sleepDone={!!sleepToday.data} sleepMin={sleepToday.data?.durationMinutes ?? null} mealN={myMealsToday.data?.length ?? 0} waterMl={watersTodayTop.data?.totalMl ?? 0} exN={myExercisesToday.data?.length ?? 0} weighDone={!!weighInTop.data?.doneThisMonth} weighKg={(weighInTop.data as any)?.lastKg ?? null} />
       {/* 지난 날짜는 보기만: 기록 버튼 회색 유리 + 누르면 안내 팝업 (2026-11-21, 방장 포함 모두) */}
       <div className={isPast ? "past-lock" : undefined} onClickCapture={isPast ? blockPast : undefined} onFocusCapture={isPast ? (e) => { const t = e.target as HTMLElement; if (t.matches("input,textarea,select") && !t.closest("[data-view-ok]")) t.blur(); } : undefined}>
       {/* Sleep — 수면 기록 */}
@@ -1488,6 +1488,11 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
           </div>
         ) : undefined}>수면 기록</SectionTitle></div><div className="relative w-12 h-12 mr-1"><CountBox n={sleepCount} /></div></div>
       </div>
+      {/* 오늘 이미 인증했으면 몇 시~몇 시 잤는지 (2026-11-21) */}
+      {todaySleep.data && (() => { const sd = todaySleep.data; const m = sd.durationMinutes ?? 0; const hm = (h: number, mi: number) => `${short(h)}${mi ? ` ${mi}분` : ""}`; return (
+        <div className="mb-3 rounded-xl bg-primary/10 px-3 py-2 text-sm text-primary">
+          ✓ 인증 완료 · {hm(sd.bedHour, sd.bedMinute)} 취침 → {hm(sd.wakeHour, sd.wakeMinute)} 기상 · <b>{Math.floor(m / 60)}시간{m % 60 ? ` ${m % 60}분` : ""}</b>
+        </div>); })()}
       {/* 취침 한 줄 (밤 8시~새벽 2시) */}
       <div className="flex items-center gap-2 mb-2">
         <span className="w-8 text-xs text-muted-foreground shrink-0">취침</span>
@@ -1562,9 +1567,9 @@ function CountBadge({ n }: { n?: number | null }) {
 
 /* ---- 오늘 칸 고르기: 수면·식단·물·운동·체중 (접힌 따잠마음운과 같은 유리 네모) + 전체 보기 (2026-11-21) ---- */
 type TodayTab = "sleep" | "meal" | "water" | "exercise" | "weight" | "all";
-function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone, weighKg }: { tab: TodayTab; setTab: (v: TodayTab) => void; sleepDone: boolean; mealN: number; waterMl: number; exN: number; weighDone: boolean; weighKg?: number | null }) {
+function TodayTabs({ tab, setTab, sleepDone, sleepMin, mealN, waterMl, exN, weighDone, weighKg }: { tab: TodayTab; setTab: (v: TodayTab) => void; sleepDone: boolean; sleepMin?: number | null; mealN: number; waterMl: number; exN: number; weighDone: boolean; weighKg?: number | null }) {
   const items: Array<{ k: TodayTab; label: string; sub: string; done: boolean }> = [
-    { k: "sleep", label: "수면", sub: sleepDone ? "✓" : "–", done: sleepDone },
+    { k: "sleep", label: "수면", sub: sleepDone ? (sleepMin ? `${Math.floor(sleepMin / 60)}시간${sleepMin % 60 ? ` ${sleepMin % 60}분` : ""}` : "✓") : "–", done: sleepDone },
     { k: "meal", label: "식단", sub: mealN ? `${mealN}회` : "–", done: mealN > 0 },
     { k: "water", label: "물", sub: waterMl ? `${waterMl >= 1000 ? (waterMl / 1000).toFixed(1) + "L" : waterMl + "ml"}` : "–", done: waterMl > 0 },
     { k: "exercise", label: "운동", sub: exN ? `${exN}회` : "–", done: exN > 0 },
