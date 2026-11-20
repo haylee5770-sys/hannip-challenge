@@ -1,6 +1,6 @@
 // 구매하기 — 2026-11-21 다시 디자인
 // 15개 구매: 10% 할인 / 45개 구매: 10% 할인 + 3,000원 추가 할인
-// 네이버 구매 후 후기를 남기면 매달 1명을 뽑아 스무디 15개 증정
+// 네이버 구매 후 후기를 남기면 2달에 한 번(홀수달) 1명을 뽑아 스무디 15개 증정 (2026-11-21 변경)
 import PageTitle from "@/components/PageTitle";
 
 const PRODUCTS = [
@@ -15,13 +15,13 @@ export default function Shop() {
 
       {/* 이벤트 — 가장 크게 */}
       <section className="rounded-2xl border-2 border-primary bg-primary/10 p-5 text-center">
-        <div className="inline-block rounded-full bg-primary text-primary-foreground text-sm font-bold px-4 py-1 mb-3">EVENT · 매달 1명</div>
+        <div className="inline-block rounded-full bg-primary text-primary-foreground text-sm font-bold px-4 py-1 mb-3">EVENT · 2달에 1명</div>
         <h2 className="text-2xl md:text-3xl font-bold leading-snug break-keep">
           후기 남기면<br />스무디 <span className="text-primary">15개</span> 선물 🎁
         </h2>
         <ul className="mt-4 space-y-1.5 text-sm text-left max-w-xs mx-auto break-keep">
           <li>✔ 네이버에서 구매하고 <b>후기만 남기면 응모 끝</b></li>
-          <li>✔ 매달 <b>1명</b> 뽑아 스무디 15개를 보내 드려요</li>
+          <li>✔ <b>2달에 한 번</b>(1·3·5·7·9·11월) <b>1명</b>을 뽑아 스무디 15개를 보내 드려요</li>
           <li>✔ 15개·45개 <b>어떤 상품이든</b> 괜찮아요</li>
           <li>✔ 우리 방 멤버만 사는 상품이라 <b>당첨 확률 높아요</b></li>
         </ul>
@@ -40,7 +40,7 @@ export default function Shop() {
           </a>
         ))}
       </section>
-      <p className="text-center text-[11px] text-muted-foreground">후기는 한 달 동안 남긴 것을 모두 모아 그중 1명을 뽑아요.</p>
+      <p className="text-center text-[11px] text-muted-foreground">2달 동안 남긴 후기를 모두 모아 홀수달에 1명을 뽑아요.</p>
     </div>
   );
 }
