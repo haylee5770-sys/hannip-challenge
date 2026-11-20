@@ -1565,8 +1565,8 @@ function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone }: {
         {items.map(it => (
           <button key={it.k} type="button" onClick={() => setTab(it.k)}
             className={cn("rounded-xl border py-2 flex flex-col items-center justify-center leading-tight transition-colors",
-              // 아직 안 한 칸(–)도 색이 빠지지 않게 같은 연두 테두리 (2026-11-21, 수면만 회색으로 보이던 문제)
-              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/60 bg-primary/10 text-primary")}>
+              // 아직 안 한 칸은 회색 글씨·회색 테두리·배경 없음 → '안 했네'가 티 나게 (2026-11-21 해이 결정)
+              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-border bg-transparent text-muted-foreground")}>
             <span className="text-sm font-bold">{it.label}</span>
             <span className="text-[10px] mt-0.5 opacity-80 tabular-nums">{it.sub}</span>
           </button>
