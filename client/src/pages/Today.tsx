@@ -55,6 +55,12 @@ export default function Today() {
   // 자랑하기: 저장 후 인증 카드 이미지를 만들어 공유창(카톡)으로 (2026-11-20)
   const [bragCard, setBragCard] = useState<ProofCard | null>(null);
   const myCounts = trpc.rounds.myCounts.useQuery();
+  // 오늘 칸 고르기 (2026-11-21): 수면·식단·물·운동·체중 중 하나만 펼치거나 전체 보기
+  const [tab, setTabState] = useState<TodayTab>(() => (localStorage.getItem("hannip_today_tab") as TodayTab) || "sleep");
+  const setTab = (v: TodayTab) => { setTabState(v); try { localStorage.setItem("hannip_today_tab", v); } catch {} };
+  const show = (k: TodayTab) => tab === "all" || tab === k;
+  const watersTodayTop = trpc.waters.byDate.useQuery({ date });
+  const weighInTop = trpc.wellness.weighIn.useQuery(undefined, { staleTime: 10 * 60_000 });
   const kakaoShareText: string | null = null;
   /** 새 자랑하기: 이번 회차 안 항목별 번호 + 내 사진 + 피드백 (2026-11-20) */
   // 2026-11-21: 자랑하기를 누른 '그 순간' 바로 공유창을 연다 (휴대폰은 누른 직후에만 공유창을 허락함).
@@ -369,12 +375,13 @@ export default function Today() {
         autoCleanEat={(mealsPrevDay.data?.length ?? 0) > 0}
         autoExercised={(exercisesPrevDay.data?.length ?? 0) > 0}
       />
+      <TodayTabs tab={tab} setTab={setTab} sleepDone={!!sleepToday.data} mealN={myMealsToday.data?.length ?? 0} waterMl={watersTodayTop.data?.totalMl ?? 0} exN={myExercisesToday.data?.length ?? 0} weighDone={!!weighInTop.data?.doneThisMonth} />
       {/* Sleep — 수면 기록 */}
-      <SleepSection date={date} sleepCount={myCounts.data?.counts.wake} onBrag={bragItem} />
+      {show("sleep") && <SleepSection date={date} sleepCount={myCounts.data?.counts.wake} onBrag={bragItem} />}
 
 
       {/* Meals — 식단 기록 (독립 섹션) */}
-      <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+      {show("meal") && <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <MealsSection
           date={date}
           meals={myMealsToday.data ?? []}
@@ -388,15 +395,15 @@ export default function Today() {
           }}
           onBrag={bragItem}
         />
-      </section>
+      </section>}
 
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
-      <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+      {show("water") && <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <WaterSection date={date} waterCount={myCounts.data?.counts.water} userName={userName} onBrag={bragItem} />
-      </section>
+      </section>}
 
       {/* Exercise — 운동 기록 */}
-      <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+      {show("exercise") && <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <ExerciseSection
           date={date}
           exercises={myExercisesToday.data ?? []}
@@ -410,14 +417,11 @@ export default function Today() {
           }}
           onBrag={bragItem}
         />
-      </section>
+      </section>}
       {/* 체중 — 한 달에 한 번 (2026-11-21 새로: 체중계 종류 선택 없이 큰 버튼 → 사진 올리면 AI가 읽고, 골격근 kg · 체지방률 %로 통일) */}
-      <section id="weight" className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+      {show("weight") && <section id="weight" className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <WeightSection date={date} userName={userName} onBrag={bragItem} weightCount={myCounts.data?.counts.weight} />
-      </section>
-
-      {/* Season photos (Before / After) — 맨 아래 */}
-      <SeasonPhotosSection />
+      </section>}
     </div>
   );
 }
@@ -492,7 +496,7 @@ function WeightSection({ date, userName, onBrag, weightCount }: { date: string; 
           <div className="flex items-center gap-3">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={analyze.isPending}
-              className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors overflow-hidden">
+              className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors overflow-hidden", !photo && !analyze.isPending && "nudge")}>
               {analyze.isPending ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <Camera className="h-6 w-6 text-primary" />}
             </button>
             <span className="text-[11px] text-muted-foreground">{analyze.isPending ? "AI가 읽는 중…" : photo ? "누르면 다른 사진으로 바꿔요" : "체중계 사진 (필수)"}</span>
@@ -507,7 +511,7 @@ function WeightSection({ date, userName, onBrag, weightCount }: { date: string; 
           </div>
           <div className={ACTIONS_ROW}>
             <Button variant="ghost" onClick={() => { setOpen(false); setPhoto(null); setNotes([]); }} className={CANCEL_BTN}>취소</Button>
-            <Button onClick={submit} disabled={save.isPending} className={BRAG_BTN}>{save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}</Button>
+            <Button onClick={submit} disabled={save.isPending} className={cn(BRAG_BTN, !!photo && !!w && !save.isPending && "nudge")}>{save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}</Button>
           </div>
         </div>
       )}
@@ -629,6 +633,8 @@ function MealForm({
   const [vegetableG, setVegetableG] = useState("");
   const [waterMl, setWaterMl] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [analyzed, setAnalyzed] = useState(false);
+  const [needPhoto, setNeedPhoto] = useState(false);
   // 스무디·퓨레 버튼으로 고른 개수 (id → 개수)
   const [picked, setPicked] = useState<Record<string, number>>({});
   const pickedList = PRODUCTS.flatMap(p => Array.from({ length: picked[p.id] ?? 0 }, () => p));
@@ -636,6 +642,7 @@ function MealForm({
     onSuccess: (r) => {
       if (r.foods) setDescription(r.foods);
       setCarbsG(String(r.carbsG)); setProteinG(String(r.proteinG)); setFatG(String(r.fatG)); setVegetableG(String(r.vegetableG));
+      setAnalyzed(true);
       toast.success("AI가 사진을 분석했어요. 숫자는 고칠 수 있어요.");
     },
     onError: (e) => toast.error(e.message || "분석에 실패했어요. 숫자를 직접 넣어 주세요."),
@@ -678,7 +685,25 @@ function MealForm({
       results.push(b64);
     }
     setPhotos((prev) => [...prev, ...results]);
+    setNeedPhoto(false);
   };
+
+  // 다음에 누를 버튼 반짝임 (사진 → 자동 채우기 → 자랑하기)
+  const ready = isSmoothie ? photos.length > 0 && pickedList.length > 0 : photos.length > 0 && (analyzed || numbers.carbsG + numbers.proteinG + numbers.fatG + numbers.vegetableG > 0);
+  const photoThumbs = photos.map((p, idx) => (
+    <div key={idx} className="relative w-16 h-16 rounded-lg border hairline overflow-hidden">
+      <img src={p} alt="" className="w-full h-full object-cover" />
+      <button onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5">
+        <X className="h-3 w-3" />
+      </button>
+    </div>
+  ));
+  const cameraBox = (
+    <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", (needPhoto || photos.length === 0) && "nudge")}>
+      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+      <Camera className="h-6 w-6 text-primary" />
+    </label>
+  );
 
   return (
     <div className="rounded-xl border border-border p-4">
@@ -755,6 +780,25 @@ function MealForm({
 
       {!isSmoothie && (
         <>
+          {/* 사진 → 바로 옆 '사진으로 자동 채우기' (2026-11-21: 메모 위로 올림) */}
+          <div className="mb-3">
+            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">PHOTOS (최대 4장)</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              {photoThumbs}
+              {photos.length < 4 && cameraBox}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={photos.length === 0 || analyze.isPending}
+                onClick={() => analyze.mutate({ photoBase64: photos.slice(0, 4) })}
+                className={cn("rounded-xl border-primary text-primary h-11", photos.length > 0 && !analyzed && !analyze.isPending && "nudge")}
+              >
+                {analyze.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI가 보는 중…</> : <><Sparkles className="h-4 w-4 mr-2" />사진으로 자동 채우기</>}
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">사진을 올리고 바로 옆 버튼을 누르세요.<br /><b className="text-primary">AI 인식은 오류가 있을 수 있어요.</b> 숫자는 직접 고쳐도 되고, <b className="text-foreground">직접 기입이 가장 정확해요.</b></p>
+          </div>
+
           <div className="mb-5">
             <Label className="editorial-eyebrow text-muted-foreground mb-2 block">메모 (선택)</Label>
             <Textarea
@@ -764,20 +808,6 @@ function MealForm({
               className="rounded-none border-foreground/30 font-serif"
               rows={2}
             />
-          </div>
-
-          {/* 사진 AI 분석 (2026-11-20) */}
-          <div className="mb-4 flex items-center gap-3 flex-wrap">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={photos.length === 0 || analyze.isPending}
-              onClick={() => analyze.mutate({ photoBase64: photos.slice(0, 4) })}
-              className="rounded-none border-primary text-primary"
-            >
-              {analyze.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI가 보는 중…</> : <><Sparkles className="h-4 w-4 mr-2" />사진으로 자동 채우기</>}
-            </Button>
-            <span className="text-xs text-muted-foreground leading-relaxed">아래에 사진을 먼저 올리고 누르세요.<br /><b className="text-primary">AI 인식은 오류가 있을 수 있어요.</b> 숫자는 직접 고쳐도 되고, <b className="text-foreground">직접 기입이 가장 정확해요.</b></span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -798,31 +828,16 @@ function MealForm({
         </>
       )}
 
-      {/* Photos */}
-      <div className="mb-5">
-        <Label className="editorial-eyebrow text-muted-foreground mb-2 block">
-          PHOTOS {isSmoothie ? "· 사진 1장 = 인증 1회" : "(최대 4장)"}
-        </Label>
-        <div className="flex flex-wrap gap-3">
-          {photos.map((p, idx) => (
-            <div key={idx} className="relative w-16 h-16 rounded-lg border hairline overflow-hidden">
-              <img src={p} alt="" className="w-full h-full object-cover" />
-              <button
-                onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))}
-                className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-          {photos.length < (isSmoothie ? 8 : 4) && (
-            <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
-              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-              <Camera className="h-6 w-6 text-primary" />
-            </label>
-          )}
+      {/* 스무디 사진 */}
+      {isSmoothie && (
+        <div className="mb-5">
+          <Label className="editorial-eyebrow text-muted-foreground mb-2 block">PHOTOS · 사진 1장 = 인증 1회</Label>
+          <div className="flex flex-wrap gap-3">
+            {photoThumbs}
+            {photos.length < 8 && cameraBox}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={ACTIONS_ROW}>
         <Button variant="ghost" onClick={onCancel} className={CANCEL_BTN}>취소</Button>
@@ -830,7 +845,7 @@ function MealForm({
           onClick={async () => {
             if (isSmoothie) {
               if (photos.length === 0) {
-                toast.error("스무디 사진을 1장 이상 첨부해 주세요");
+                toast.error("스무디 사진을 1장 이상 첨부해 주세요"); setNeedPhoto(true);
                 return;
               }
               // 누른 순간 바로 카톡 공유창 (저장은 뒤에서)
@@ -869,7 +884,7 @@ function MealForm({
             }
             // 일반식: 사진 필수 검사
             if (photos.length === 0) {
-              toast.error("식단 사진을 1장 이상 첨부해 주세요");
+              toast.error("식단 사진을 1장 이상 첨부해 주세요"); setNeedPhoto(true);
               return;
             }
             onBragNow?.({
@@ -888,7 +903,7 @@ function MealForm({
             onCreated();
           }}
           disabled={create.isPending}
-          className={BRAG_BTN}
+          className={cn(BRAG_BTN, ready && !create.isPending && "nudge")}
         >
           {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>
@@ -934,7 +949,7 @@ function DailyNutritionTotals({ meals, date }: { meals: MealRow[]; date: string 
         })}
       </div>
       {intake.data?.line && (
-        <p className={cn("mt-4 text-sm font-semibold leading-snug rounded-lg px-3 py-2",
+        <p className={cn("mt-4 text-[11px] font-semibold leading-snug rounded-lg px-2.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis",
           intake.data.level === "low" ? "bg-rose-500/15 text-rose-300 border border-rose-400/50"
             : intake.data.level === "high" ? "bg-amber-500/10 text-amber-200 border border-amber-400/40"
             : "bg-primary/10 text-primary border border-primary/30")}>
@@ -1109,12 +1124,13 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
   const [sweat, setSweat] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [lastComment, setLastComment] = useState<{ text: string; warn: boolean } | null>(null);
+  const [analyzedEx, setAnalyzedEx] = useState(false);
   const [adding, setAdding] = useState(false);
   const exFileRef = useRef<HTMLInputElement>(null);
   const kind = sports.data?.find(s => s.id === sport)?.kind ?? "time";
   const details = trpc.wellness.exerciseDetails.useQuery({ ids: exercises.map(x => x.id) }, { enabled: exercises.length > 0 });
 
-  const reset = () => { setMinutes(""); setKm(""); setPace(""); setSpeed(""); setSteps(""); setHr(""); setLaps(""); setKcal(""); setFeel("ok"); setSweat(false); setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; };
+  const reset = () => { setAnalyzedEx(false); setMinutes(""); setKm(""); setPace(""); setSpeed(""); setSteps(""); setHr(""); setLaps(""); setKcal(""); setFeel("ok"); setSweat(false); setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; };
   const create = trpc.wellness.createExercise.useMutation({
     onSuccess: (r) => {
       setLastComment({ text: r.comment, warn: r.warn }); setAdding(false);
@@ -1128,6 +1144,8 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
       if (r.minutes) setMinutes(String(r.minutes)); if (r.distanceKm) setKm(String(r.distanceKm)); if (r.paceSec) setPace(secToPace(r.paceSec));
       if (r.speedKmh) setSpeed(String(r.speedKmh)); if (r.steps) setSteps(String(r.steps)); if (r.avgHr) setHr(String(r.avgHr));
       if (r.laps) setLaps(String(r.laps)); if (r.kcal) setKcal(String(r.kcal));
+      setAnalyzedEx(true);
+      setAnalyzedEx(true);
       toast.success("캡처에서 숫자를 읽어 채웠어요. 맞는지 확인해 주세요.");
     },
     onError: (e) => toast.error(e.message),
@@ -1184,7 +1202,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
             <button type="button" onClick={() => { setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; }} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
           </div>
         ) : (
-          <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
+          <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", !photo && "nudge")}>
             <input ref={exFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleExPhoto(e.target.files[0])} />
             <Camera className="h-6 w-6 text-primary" />
           </label>
@@ -1192,7 +1210,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
         <div className="flex-1 min-w-0">
           <div className="text-[11px] text-muted-foreground">운동 사진 또는 워치 기록 캡처 (필수)</div>
           <button type="button" disabled={!photo || analyze.isPending} onClick={() => photo && analyze.mutate({ photoBase64: photo })}
-            className="mt-1 inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-primary text-primary text-sm disabled:opacity-40">
+            className={cn("mt-1 inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-primary text-primary text-sm disabled:opacity-40", photo && !analyzedEx && !analyze.isPending && "nudge")}>
             {analyze.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} 캡처로 자동 채우기
           </button>
         </div>
@@ -1234,7 +1252,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
 
       <div className={ACTIONS_ROW}>
         <Button variant="ghost" onClick={() => { setAdding(false); reset(); }} className={CANCEL_BTN}>취소</Button>
-        <Button onClick={submit} disabled={create.isPending} className={BRAG_BTN}>
+        <Button onClick={submit} disabled={create.isPending} className={cn(BRAG_BTN, !!photo && !!minutes && !create.isPending && "nudge")}>
           {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>
       </div>
@@ -1487,12 +1505,12 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
             <button type="button" onClick={() => { setWakePhoto(null); if (wakeRef.current) wakeRef.current.value = ""; }} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
           </div>
         ) : (
-          <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
+          <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", !wakePhoto && "nudge")}>
             <input ref={wakeRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const fl = e.target.files?.[0]; if (!fl) return; const r = new FileReader(); r.onload = () => setWakePhoto(String(r.result)); r.readAsDataURL(fl); }} />
             <Camera className="h-6 w-6 text-primary" />
           </label>
         )}
-        <span className="text-xs text-muted-foreground">☀️ 기상 인증 · 아침을 깨우는 <b className="text-foreground">따뜻한 물 한 잔</b> 사진 (필수)</span>
+        <span className="text-xs text-muted-foreground leading-relaxed">☀️ 기상 인증 · 아침을 깨우는<br /><b className="text-foreground">따뜻한 물 한 잔</b> 사진 (필수)</span>
       </div>
       {/* 결과 */}
       <div className="flex items-center gap-3 mb-3">
@@ -1504,7 +1522,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
       </div>
       <div className={cn(ACTIONS_ROW, "items-center")}>
         
-        <Button onClick={handleSave} disabled={upsertSleep.isPending} className={BRAG_BTN}>
+        <Button onClick={handleSave} disabled={upsertSleep.isPending} className={cn(BRAG_BTN, !!wakePhoto && !upsertSleep.isPending && "nudge")}>
           {upsertSleep.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>
       </div>
@@ -1522,6 +1540,35 @@ function CountBadge({ n }: { n?: number | null }) {
     <span className="inline-flex items-center justify-center min-w-[3rem] h-12 px-2 rounded-full border-2 border-primary text-primary text-xl font-bold tabular-nums shadow-[0_0_10px_var(--primary-glow,rgba(182,242,74,0.35))]">
       {n}회
     </span>
+  );
+}
+
+/* ---- 오늘 칸 고르기: 수면·식단·물·운동·체중 (접힌 따잠마음운과 같은 유리 네모) + 전체 보기 (2026-11-21) ---- */
+type TodayTab = "sleep" | "meal" | "water" | "exercise" | "weight" | "all";
+function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone }: { tab: TodayTab; setTab: (v: TodayTab) => void; sleepDone: boolean; mealN: number; waterMl: number; exN: number; weighDone: boolean }) {
+  const items: Array<{ k: TodayTab; label: string; sub: string; done: boolean }> = [
+    { k: "sleep", label: "수면", sub: sleepDone ? "✓" : "–", done: sleepDone },
+    { k: "meal", label: "식단", sub: mealN ? `${mealN}회` : "–", done: mealN > 0 },
+    { k: "water", label: "물", sub: waterMl ? `${waterMl >= 1000 ? (waterMl / 1000).toFixed(1) + "L" : waterMl + "ml"}` : "–", done: waterMl > 0 },
+    { k: "exercise", label: "운동", sub: exN ? `${exN}회` : "–", done: exN > 0 },
+    { k: "weight", label: "체중", sub: weighDone ? "✓" : "–", done: weighDone },
+  ];
+  return (
+    <section className="mb-4 rounded-2xl bg-card border border-border p-4">
+      <div className="grid grid-cols-5 gap-1.5">
+        {items.map(it => (
+          <button key={it.k} type="button" onClick={() => setTab(it.k)}
+            className={cn("rounded-xl border py-2 flex flex-col items-center justify-center leading-tight transition-colors",
+              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-border text-muted-foreground")}>
+            <span className="text-sm font-bold">{it.label}</span>
+            <span className="text-[10px] mt-0.5 opacity-80 tabular-nums">{it.sub}</span>
+          </button>
+        ))}
+      </div>
+      <button type="button" onClick={() => setTab(tab === "all" ? "sleep" : "all")} className="mt-2 w-full text-center text-xs text-muted-foreground">
+        {tab === "all" ? "하나씩 보기 ▲" : "누르면 펼쳐져요 · 전체 보기 ▼"}
+      </button>
+    </section>
   );
 }
 
@@ -1859,7 +1906,7 @@ function HappyDiarySection({ date }: { date: string }) {
 }
 
 /* ----------------- Season Photos Section ----------------- */
-function SeasonPhotosSection() {
+export function SeasonPhotosSection() {
   const utils = trpc.useUtils();
   const myPhotos = trpc.seasons.myPhotos.useQuery();
   const myProgress = trpc.seasons.myProgress.useQuery();
@@ -2304,7 +2351,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
           </div>
         ))}
         {photos.length < 8 && (
-          <label className="w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
+          <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", photos.length === 0 && "nudge")}>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
             <Camera className="h-6 w-6 text-primary" />
           </label>
@@ -2323,7 +2370,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
             create.mutate({ recordedDate: date, volumeMl, photoBase64: photos });
           }}
           disabled={create.isPending}
-          className={BRAG_BTN}
+          className={cn(BRAG_BTN, photos.length > 0 && !create.isPending && "nudge")}
         >
           {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>

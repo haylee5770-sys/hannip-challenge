@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { label: "YEAR", path: "/year", korean: "1년" },
   { label: "ITGE", path: "/itge", korean: "이게돼" },
   { label: "DASHBOARD", path: "/dashboard", korean: "대시보드" },
+  { label: "BEFORE·AFTER", path: "/before-after", korean: "비포 애프터" },
   { label: "MEMBERS", path: "/members", korean: "멤버" },
   { label: "AWARDS", path: "/awards", korean: "시상식" },
   { label: "HISTORY", path: "/history", korean: "역대 챌린지" },

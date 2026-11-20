@@ -195,11 +195,14 @@ export async function intakeLine(userId: number, date: string) {
   const hourKst = new Date(Date.now() + 9 * 3600 * 1000).getUTCHours();
   const isToday = date === kstToday();
   let line: string; let level: "low" | "ok" | "high" | "none";
-  if (i.meals === 0) { line = "아직 기록이 없어요. 오늘도 든든하게 챙겨 드세요."; level = "none"; }
-  else if (ratio > 1.2) { line = `권장량을 넘었어요 (약 ${Math.round(ratio * 100)}%). 남은 끼니는 가볍게 채소 위주로 드세요.`; level = "high"; }
-  else if (ratio < 0.7 && (!isToday || hourKst >= 18)) { line = `⚠️ 오늘 먹은 양이 권장량의 ${Math.round(ratio * 100)}%예요. 너무 적어요. 한 끼 더 챙겨 드세요.${pr < 0.7 ? ` 특히 단백질이 ${Math.max(0, t.proteinG - i.proteinG)}g 부족해요.` : ""}`; level = "low"; }
-  else if (ratio < 0.7) { line = `지금까지 권장량의 ${Math.round(ratio * 100)}%예요. 남은 끼니도 꼭 챙겨 드세요.${pr < 0.5 ? ` 단백질이 ${Math.max(0, t.proteinG - i.proteinG)}g 남았어요.` : ""}`; level = "low"; }
-  else { line = `알맞게 먹고 있어요 (권장량의 ${Math.round(ratio * 100)}%).${pr < 0.8 ? ` 단백질만 ${Math.max(0, t.proteinG - i.proteinG)}g 더 채워요.` : ""}`; level = "ok"; }
+  // 한 줄에 들어가게 짧게 (2026-11-21)
+  const pct = Math.round(ratio * 100);
+  const lackP = Math.max(0, t.proteinG - i.proteinG);
+  if (i.meals === 0) { line = "아직 기록이 없어요 · 든든하게 챙겨 드세요"; level = "none"; }
+  else if (ratio > 1.2) { line = `권장량의 ${pct}% · 남은 끼니는 가볍게 채소로`; level = "high"; }
+  else if (ratio < 0.7 && (!isToday || hourKst >= 18)) { line = `⚠️ 권장량의 ${pct}% · 너무 적어요, 한 끼 더${pr < 0.7 ? ` · 단백질 ${lackP}g 부족` : ""}`; level = "low"; }
+  else if (ratio < 0.7) { line = `지금 권장량의 ${pct}% · 남은 끼니 꼭 챙겨요${pr < 0.5 ? ` · 단백질 ${lackP}g 남음` : ""}`; level = "low"; }
+  else { line = `알맞게 먹는 중 (${pct}%)${pr < 0.8 ? ` · 단백질 ${lackP}g 더` : ""}`; level = "ok"; }
   return { targets: { carbsG: t.carbsG, proteinG: t.proteinG, fatG: t.fatG, vegetableG: t.vegetableG, basis: t.basis }, line, level };
 }
 
