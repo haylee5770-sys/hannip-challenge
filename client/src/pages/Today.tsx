@@ -1683,7 +1683,10 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
     <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-6">
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-lg md:text-xl font-semibold">어제의 따·잠·마·음·운</h2>
-        <span className="text-sm text-muted-foreground tabular-nums"><b className="text-primary">{done}</b> / 5</span>
+        <span className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground tabular-nums"><b className="text-primary">{done}</b> / 5</span>
+          {allDone && <button type="button" onClick={() => setExpanded(false)} className="text-xs text-muted-foreground underline">접기 ▲</button>}
+        </span>
       </div>
       <ul className="divide-y divide-border">
         {rows.map(r => (
