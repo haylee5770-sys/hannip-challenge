@@ -10,6 +10,7 @@ import Today from "./pages/Today";
 import Feed from "./pages/Feed";
 import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
+import MemberDetail from "./pages/MemberDetail";
 import Profile from "./pages/Profile";
 import Admin from "@/pages/Admin";
 import Shop from "./pages/Shop";
@@ -44,6 +45,7 @@ function Router() {
               <Route path="/feed" component={Feed} />
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/members" component={Members} />
+              <Route path="/member/:id" component={MemberDetail} />
               <Route path="/ranking" component={Ranking} />
               <Route path="/reveal" component={Reveal} />
               <Route path="/season-report" component={SeasonReport} />

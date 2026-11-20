@@ -32,7 +32,8 @@ export default function Dashboard() {
   }, [range]);
 
   const today = todayLocal();
-  const weights = trpc.weights.myHistory.useQuery({ sinceDate: since });
+  // 몸무게는 한 달에 한 번(매달 1일)만 재므로 기간과 상관없이 전체를 보여 준다 (2026-11-21)
+  const weights = trpc.weights.myHistory.useQuery({});
   const goal = trpc.goals.mine.useQuery();
 
   const myMeals = trpc.meals.byUserRange.useQuery(

@@ -34,22 +34,37 @@ const ADMIN_ITEMS = [
 
 /** 카톡 안 브라우저일 때: 인증 사진을 화면에 띄워 길게 눌러 저장 + 크롬으로 열기 안내 */
 function ProofPreview() {
-  const [img, setImg] = useState<string | null>(null);
+  const [imgs, setImgs] = useState<string[] | null>(null);
+  const setImg = (v: null) => setImgs(v);
   useEffect(() => {
-    const h = (e: Event) => setImg((e as CustomEvent).detail?.dataUrl ?? null);
+    const h = (e: Event) => { const d = (e as CustomEvent).detail ?? {}; setImgs(d.dataUrls ?? (d.dataUrl ? [d.dataUrl] : null)); };
     window.addEventListener("hannip-proof-preview", h);
     return () => window.removeEventListener("hannip-proof-preview", h);
   }, []);
-  if (!img) return null;
+  if (!imgs?.length) return null;
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center p-5 gap-3" onClick={() => setImg(null)}>
-      <img src={img} alt="인증 사진" className="w-full max-w-sm rounded-2xl" onClick={e => e.stopPropagation()} />
+    <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center p-5 gap-3 overflow-y-auto" onClick={() => setImg(null)}>
+      <div className="w-full max-w-sm space-y-3 max-h-[65vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {imgs.map((src, i) => <img key={i} src={src} alt={`인증 사진 ${i + 1}`} className="w-full rounded-2xl" />)}
+      </div>
+      {imgs.length > 1 && <p className="text-xs text-white/80">사진 {imgs.length}장이에요. 한 장씩 길게 눌러 저장해 주세요.</p>}
       <p className="text-sm text-white text-center leading-relaxed">사진을 <b>길게 눌러 저장</b>한 뒤 카톡방에 올려 주세요.<br />문구는 복사돼 있어요.</p>
       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
         <Button onClick={openInExternalBrowser} className="rounded-full">크롬으로 열면 한 번에 보내져요</Button>
         <Button variant="outline" onClick={() => setImg(null)} className="rounded-full">닫기</Button>
       </div>
     </div>
+  );
+}
+
+/** 매달 1일: 맨 위 빨간 글씨 '오늘은 몸무게 체크하는 날' (이번 달 쟀으면 사라짐) (2026-11-21) */
+function WeighInBanner() {
+  const q = trpc.wellness.weighIn.useQuery(undefined, { staleTime: 10 * 60_000, retry: false });
+  if (!q.data?.isFirstDay || q.data.doneThisMonth) return null;
+  return (
+    <Link href="/today#weight">
+      <div className="bg-rose-600 text-white text-center text-sm font-bold py-2 px-3 cursor-pointer">⚖️ 오늘은 몸무게 체크하는 날이에요! 아침 공복에 재고 사진과 함께 올려 주세요.</div>
+    </Link>
   );
 }
 
@@ -101,6 +116,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background paper-grain">
       {/* Top masthead */}
+      <WeighInBanner />
       <header className="border-b hairline">
         <div className="container">
           <div className="flex items-center justify-between py-5 md:py-7">
@@ -213,16 +229,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <main className="container py-8 md:py-12">{children}</main>
 
-      <footer className="border-t hairline mt-16">
-        <div className="container py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <span className="editorial-eyebrow text-muted-foreground">
-            SUPER HANNIP CHALLENGE · MEMBERS ONLY
-          </span>
-          <span className="font-serif italic text-sm text-muted-foreground">
-            "꾸준함이 곧 우아함이다."
-          </span>
-        </div>
-      </footer>
+      <div className="h-10" />
     </div>
   );
 }

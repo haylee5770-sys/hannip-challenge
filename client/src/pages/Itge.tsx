@@ -62,7 +62,7 @@ export default function Itge() {
       toast.success("이게돼가 올라갔어요 💚");
       shareProof({
         emoji: "✨", title: "이게돼", lines: [], userName: user?.name ?? "", date: todayKst(),
-        itemLabel: "이게돼", count: r.count, body, feedback: r.summary,
+        itemLabel: "이게돼", count: r.count, body, avatar: (user as any)?.avatarUrl ?? null,
         time: new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }),
       }).catch(() => {});
     },

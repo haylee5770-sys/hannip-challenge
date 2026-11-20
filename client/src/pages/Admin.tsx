@@ -10,10 +10,31 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from "@/components/ui/tabs";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { supabase } from "@/lib/supabase";
 
 /** 챌린지 시작 / 종료 큰 버튼 (2026-11-20) */
+/** 요즘 챙겨야 할 크루 (2026-11-21): 며칠째 힘이 없거나, 어제 너무 적게 먹었거나, 몸 상태 특이사항이 있는 크루 */
+function CareList() {
+  const q = trpc.wellness.careList.useQuery(undefined, { staleTime: 60_000 });
+  if (q.isLoading) return null;
+  const list = q.data ?? [];
+  return (
+    <section className="mb-6 rounded-2xl border border-rose-400/40 bg-rose-500/5 p-4">
+      <div className="font-semibold mb-2">💗 요즘 챙겨야 할 크루 <span className="text-sm text-muted-foreground">{list.length}명</span></div>
+      {list.length === 0 ? <p className="text-sm text-muted-foreground">지금은 없어요.</p> : (
+        <div className="space-y-1.5">
+          {list.map(c => (
+            <Link key={c.userId} href={`/member/${c.userId}`} className="block rounded-lg bg-background/50 px-3 py-2 text-sm hover:bg-background">
+              <b>{c.name}</b> <span className="text-muted-foreground">· {c.reasons.join(" · ")}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function RoundControl() {
   const utils = trpc.useUtils();
   const cur = trpc.rounds.current.useQuery();
@@ -56,6 +77,7 @@ export default function Admin() {
       </section>
 
       <RoundControl />
+      <CareList />
 
       <Tabs defaultValue="report" className="py-10">
         <TabsList className="bg-transparent border-b hairline rounded-none w-full justify-start gap-6 p-0 h-auto mb-8 flex-wrap">

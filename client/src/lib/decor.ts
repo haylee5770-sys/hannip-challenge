@@ -49,9 +49,9 @@ export const BACKGROUNDS = [
   { id: "plum", name: "자두", hex: "#2e2238" },
 ];
 
-export type Decor = { color: string; bg: string; font: string; pattern: string; fortune?: boolean; coach?: boolean; birthDate?: string };
+export type Decor = { color: string; bg: string; font: string; pattern: string; quote?: boolean; coach?: boolean; fortune?: boolean; birthDate?: string };
 const KEY = "hannip_decor_v1";
-export const DEFAULT_DECOR: Decor = { color: "lime", bg: "charcoal", font: "basic", pattern: "none", fortune: false, coach: true, birthDate: "" };
+export const DEFAULT_DECOR: Decor = { color: "lime", bg: "charcoal", font: "basic", pattern: "none", quote: true, coach: true };
 
 export function loadDecor(): Decor {
   try {

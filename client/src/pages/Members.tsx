@@ -6,11 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
+import { ProfileForm } from "@/components/ProfileSetup";
 
 const SUGGEST = ["아이유", "수지", "제니", "카리나", "윈터", "장원영", "안유진", "김태리", "한소희", "박보영", "김고은", "전지현", "손예진", "공효진", "이영애", "송혜교", "김연아", "로제", "지수", "태연"];
 
 export default function Members() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const [, navigate] = useLocation();
+  const [editing, setEditing] = useState(false);
   const utils = trpc.useUtils();
   const members = trpc.members.list.useQuery();
   const [q, setQ] = useState("");
@@ -56,13 +61,31 @@ export default function Members() {
       </section>
 
       {members.isLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div> : (
-        <section className="grid grid-cols-5 gap-2">
-          {members.data?.map(m => (
-            <div key={m.id} className="aspect-square rounded-full border border-primary/50 bg-card flex items-center justify-center p-1 text-center">
-              <span className="text-[11px] font-semibold leading-tight line-clamp-2">{m.name ?? "?"}</span>
-            </div>
-          ))}
+        <section className="grid grid-cols-5 gap-x-2 gap-y-3">
+          {members.data?.map(m => {
+            const canOpen = isAdmin || m.id === user?.id;
+            return (
+              <button key={m.id} type="button" disabled={!canOpen} onClick={() => canOpen && navigate(`/member/${m.id}`)} className="flex flex-col items-center gap-1 text-center">
+                <span className="w-full aspect-square rounded-[36%] overflow-hidden border border-primary/50 bg-card flex items-center justify-center">
+                  {m.avatarUrl ? <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-lg font-bold text-primary">{Array.from(m.name ?? "?")[0]}</span>}
+                </span>
+                <span className="text-[11px] font-semibold leading-tight line-clamp-1 w-full">{m.name ?? "?"}</span>
+              </button>
+            );
+          })}
         </section>
+      )}
+      {isAdmin && <p className="text-[11px] text-center text-muted-foreground">방장만: 이름을 누르면 그 크루의 기록과 몸 상태를 볼 수 있어요.</p>}
+      <div className="text-center">
+        <button type="button" onClick={() => setEditing(true)} className="text-sm underline text-muted-foreground">내 프로필 사진 · 몸 정보 고치기</button>
+      </div>
+      {editing && (
+        <div className="fixed inset-0 z-[90] bg-black/70 flex items-end sm:items-center justify-center p-3" onClick={() => setEditing(false)}>
+          <div className="w-full max-w-md max-h-[88vh] overflow-y-auto rounded-2xl bg-background border border-border p-4" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between mb-3"><h3 className="text-lg font-semibold">내 정보</h3><button type="button" onClick={() => setEditing(false)} className="text-muted-foreground">✕</button></div>
+            <ProfileForm editing onDone={() => setEditing(false)} />
+          </div>
+        </div>
       )}
     </div>
   );

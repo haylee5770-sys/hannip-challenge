@@ -18,6 +18,7 @@ import { analyzeInbodyImage } from "./inbody";
 import { analyzeMealImage } from "./mealVision";
 import { getDailyLines } from "./dailyLines";
 import * as rounds from "./rounds";
+import * as wellness from "./wellness";
 
 
 import { syncSeasonBaselineForUser, computeLeaderboard, getMyCounts, dayNumber, totalDays, generateSeasonReports } from "./seasons";
@@ -314,6 +315,7 @@ const mealsRouter = router({
       photoBase64: z.array(z.string()).max(8).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      lockGuard(ctx.user, input.recordedDate);
       const mealId = await db.createMeal({
         userId: ctx.user.id,
         recordedDate: input.recordedDate,
@@ -375,6 +377,7 @@ const mealsRouter = router({
       if (meal.userId !== ctx.user.id && ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "권한이 없습니다." });
       }
+      lockGuard(ctx.user, String(meal.recordedDate).slice(0, 10));
       await db.deleteMeal(input.id);
       return { ok: true };
     }),
@@ -509,7 +512,10 @@ const exercisesRouter = router({
   delete: approvedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      // verify ownership inline
+      const ex = await db.getExerciseById(input.id);
+      if (!ex) return { ok: false };
+      if (ex.userId !== ctx.user.id && ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "권한이 없습니다." });
+      lockGuard(ctx.user, String(ex.recordedDate).slice(0, 10));
       await db.deleteExercise(input.id);
       return { ok: true };
     }),
@@ -1566,6 +1572,119 @@ const itgeRouter = router({
   crew: approvedProcedure.query(async () => rounds.itgeCrew()),
 });
 
+/* ----------------- 몸 정보·컨디션·운동 상세·권장량·방장 상세 (2026-11-21) ----------------- */
+async function uploadDataUrl(dataUrl: string, keyBase: string) {
+  const m = dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+  if (!m) throw new TRPCError({ code: "BAD_REQUEST", message: "사진 형식이 올바르지 않아요." });
+  const ext = m[1].split("/")[1].replace("+xml", "");
+  return storagePut(`${keyBase}.${ext}`, Buffer.from(m[2], "base64"), m[1]);
+}
+const lockGuard = (user: { role: string }, date: string) => {
+  try { wellness.assertEditable(user, date); }
+  catch { throw new TRPCError({ code: "FORBIDDEN", message: "밤 12시가 지난 날짜는 기록·수정할 수 없어요." }); }
+};
+const profileInput = z.object({
+  avatarBase64: z.string().optional(),
+  sex: z.enum(["female", "male"]),
+  birthYear: z.number().int().min(1930).max(2015),
+  heightCm: z.number().min(120).max(220),
+  weightKg: z.number().min(30).max(250).optional(),
+  activity: z.enum(["low", "mid", "high"]),
+  pregnant: z.boolean(),
+  lactating: z.boolean(),
+  flags: z.array(z.enum(wellness.FLAG_KEYS)).max(10),
+  healthNote: z.string().max(1000).nullable().optional(),
+  healthConsent: z.boolean(),
+});
+const wellnessRouter = router({
+  /** 내 몸 정보 (본인) — 프로필 사진·몸 정보가 없으면 입력 화면을 띄운다 */
+  myProfile: protectedProcedure.query(async ({ ctx }) => {
+    const p = await wellness.getProfile(ctx.user.id);
+    const w = await wellness.latestWeight(ctx.user.id);
+    const u = await db.getUserById(ctx.user.id);
+    return { profile: p, weightKg: w, avatarUrl: u?.avatarUrl ?? null, needsSetup: !p || !w || !u?.avatarUrl };
+  }),
+  saveProfile: protectedProcedure.input(profileInput).mutation(async ({ ctx, input }) => {
+    if (input.avatarBase64) {
+      const { url } = await uploadDataUrl(input.avatarBase64, `avatars/${ctx.user.id}/${Date.now()}`);
+      await db.updateUserProfile(ctx.user.id, { avatarUrl: url });
+    } else {
+      const u = await db.getUserById(ctx.user.id);
+      if (!u?.avatarUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "프로필 사진을 꼭 올려 주세요." });
+    }
+    const hasWeight = await wellness.latestWeight(ctx.user.id);
+    if (!hasWeight && !input.weightKg) throw new TRPCError({ code: "BAD_REQUEST", message: "몸무게를 입력해 주세요." });
+    await wellness.saveProfile(ctx.user.id, {
+      sex: input.sex, birthYear: input.birthYear, heightCm: input.heightCm, activity: input.activity,
+      pregnant: input.pregnant, lactating: input.lactating, flags: input.flags,
+      healthNote: input.healthNote ?? null, healthConsent: input.healthConsent,
+    }, hasWeight ? undefined : input.weightKg);
+    return { ok: true };
+  }),
+  condition: approvedProcedure.input(z.object({ date: dateString })).query(async ({ ctx, input }) => wellness.getCondition(ctx.user.id, input.date)),
+  setCondition: approvedProcedure.input(z.object({ date: dateString, level: z.enum(wellness.CONDITIONS) })).mutation(async ({ ctx, input }) => {
+    lockGuard(ctx.user, input.date);
+    await wellness.setCondition(ctx.user.id, input.date, input.level);
+    return { ok: true };
+  }),
+  /** 오늘 권장량 + 부족/넘침 한 줄 */
+  intake: approvedProcedure.input(z.object({ date: dateString })).query(async ({ ctx, input }) => wellness.intakeLine(ctx.user.id, input.date)),
+  sports: publicProcedure.query(() => wellness.SPORTS.map(s => ({ id: s.id, name: s.name, kind: s.kind }))),
+  analyzeWorkout: approvedProcedure.input(z.object({ photoBase64: z.string().min(20) })).mutation(async ({ ctx, input }) => {
+    const { url } = await uploadDataUrl(input.photoBase64, `workout-ai-tmp/${ctx.user.id}/${Date.now()}`);
+    const r = await wellness.analyzeWorkoutImage(url);
+    if (!r) throw new TRPCError({ code: "BAD_REQUEST", message: "캡처를 읽지 못했어요. 직접 입력해 주세요." });
+    return r;
+  }),
+  /** 새 운동 기록 (상세 칸 + 느낌 + 땀 + 코멘트) */
+  createExercise: approvedProcedure.input(z.object({
+    recordedDate: dateString,
+    sport: z.string().max(32),
+    minutes: z.number().int().min(1).max(1440),
+    feel: z.enum(wellness.FEELS),
+    sweat: z.boolean(),
+    distanceKm: z.number().min(0).max(500).nullable().optional(),
+    paceSec: z.number().int().min(0).max(3600).nullable().optional(),
+    speedKmh: z.number().min(0).max(100).nullable().optional(),
+    steps: z.number().int().min(0).max(200000).nullable().optional(),
+    avgHr: z.number().int().min(0).max(250).nullable().optional(),
+    laps: z.number().int().min(0).max(1000).nullable().optional(),
+    kcalWatch: z.number().int().min(0).max(10000).nullable().optional(),
+    note: z.string().max(500).optional(),
+    photoBase64: z.string(),
+  })).mutation(async ({ ctx, input }) => {
+    lockGuard(ctx.user, input.recordedDate);
+    const stored = await uploadDataUrl(input.photoBase64, `exercise/${ctx.user.id}/${input.recordedDate}_${Date.now()}`);
+    const sportName = wellness.SPORTS.find(s => s.id === input.sport)?.name ?? "기타";
+    const id = await db.createExercise({
+      userId: ctx.user.id, recordedDate: input.recordedDate, kind: sportName, durationMin: input.minutes,
+      intensity: input.feel === "easy" ? "low" : input.feel === "max" ? "high" : "medium",
+      note: input.note ?? null, photoKey: stored.key, photoUrl: stored.url,
+    });
+    const c = await wellness.exerciseComment(ctx.user.id, input.recordedDate, {
+      sport: input.sport, minutes: input.minutes, feel: input.feel, sweat: input.sweat,
+      distanceKm: input.distanceKm ?? null, paceSec: input.paceSec ?? null, speedKmh: input.speedKmh ?? null,
+    });
+    await wellness.saveExerciseDetail(id, ctx.user.id, {
+      sport: input.sport, distanceKm: input.distanceKm ?? null, paceSec: input.paceSec ?? null, speedKmh: input.speedKmh ?? null,
+      steps: input.steps ?? null, avgHr: input.avgHr ?? null, laps: input.laps ?? null, kcalWatch: input.kcalWatch ?? null,
+      feel: input.feel, sweat: input.sweat, comment: c.text,
+    });
+    return { id, comment: c.text, what: c.what, warn: c.warn, photoUrl: stored.url };
+  }),
+  exerciseDetails: approvedProcedure.input(z.object({ ids: z.array(z.number()).max(100) })).query(async ({ ctx, input }) => {
+    const rows = await wellness.exerciseDetailsFor(input.ids);
+    return rows.filter((r: any) => Number(r.userId) === ctx.user.id || ctx.user.role === "admin");
+  }),
+  /** 방장·본인만: 멤버 상세 */
+  memberDetail: approvedProcedure.input(z.object({ userId: z.number() })).query(async ({ ctx, input }) => {
+    if (ctx.user.role !== "admin" && ctx.user.id !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "방장과 본인만 볼 수 있어요." });
+    return wellness.memberDetail(input.userId);
+  }),
+  careList: adminProcedure.query(async () => wellness.careList()),
+  weighIn: approvedProcedure.query(async ({ ctx }) => wellness.weighInStatus(ctx.user.id)),
+});
+
 const watersRouter = router({
   byDate: approvedProcedure
     .input(z.object({ date: dateString }))
@@ -1583,6 +1702,7 @@ const watersRouter = router({
       photoBase64: z.array(z.string().min(8)).min(1).max(8),
     }))
     .mutation(async ({ ctx, input }) => {
+      lockGuard(ctx.user, input.recordedDate);
       const ids: number[] = [];
       for (let i = 0; i < input.photoBase64.length; i++) {
         const base64 = input.photoBase64[i];
@@ -1618,6 +1738,7 @@ const watersRouter = router({
       if (row.userId !== ctx.user.id && ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "권한이 없습니다." });
       }
+      lockGuard(ctx.user, String(row.recordedDate).slice(0, 10));
       await db.deleteWater(input.id);
       return { ok: true };
     }),
@@ -1713,6 +1834,7 @@ export const appRouter = router({
   happy: happyRouter,
   rounds: roundsRouter,
   itge: itgeRouter,
+  wellness: wellnessRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -428,6 +428,12 @@ export async function createExercise(input: InsertExercise) {
   return Number((result as any)[0]?.insertId ?? 0);
 }
 
+export async function getExerciseById(id: number) {
+  const conn = await db();
+  const r = await conn.select().from(exercises).where(eq(exercises.id, id)).limit(1);
+  return r[0] ?? null;
+}
+
 export async function deleteExercise(id: number) {
   const conn = await db();
   await conn.delete(exercises).where(eq(exercises.id, id));

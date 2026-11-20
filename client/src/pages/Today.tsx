@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
+import { quoteOf } from "@/lib/quotes";
 import { shareProof, type ProofCard } from "@/lib/proofCard";
 import { loadDecor } from "@/lib/decor";
 import { Streamdown } from "streamdown";
@@ -64,7 +65,7 @@ export default function Today() {
       n = p.item === "meal" || p.item === "smoothie" ? (c.meal ?? 0) + (c.smoothie ?? 0) : c[p.item];
     } catch {}
     const time = new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
-    const card: ProofCard = { emoji: p.emoji, title: p.label, lines: [], userName, date, count: n, photo: p.photo, itemLabel: p.label, feedback: p.feedback, time };
+    const card: ProofCard = { emoji: p.emoji, title: p.label, lines: [], userName, date, count: n, photo: p.photo, itemLabel: p.label, feedback: p.feedback, time, avatar: (user as any)?.avatarUrl ?? null };
     utils.happy.yearProgress.invalidate();
     shareProof(card)
       .then(r => {
@@ -351,6 +352,11 @@ export default function Today() {
           aria-label="다음 날"
         >›</button>
       </div>
+      {date < todayLocal() && user?.role !== "admin" && (
+        <p className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-center text-sm text-amber-200">
+          🔒 밤 12시가 지난 날짜는 보기만 할 수 있어요. 기록·수정·삭제는 그날 안에만 돼요.
+        </p>
+      )}
 
       {/* 따·잠·마·음·운 매일 체크 */}
       <DailyChecklist
@@ -371,7 +377,7 @@ export default function Today() {
           mealCount={myCounts.data ? myCounts.data.counts.meal + myCounts.data.counts.smoothie : undefined}
           userName={userName}
           onChange={() => {
-            utils.rounds.myCounts.invalidate();
+            utils.rounds.myCounts.invalidate(); utils.wellness.intake.invalidate();
             utils.meals.byMeDate.invalidate();
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
@@ -393,7 +399,7 @@ export default function Today() {
           exerciseCount={myCounts.data?.counts.exercise}
           userName={userName}
           onChange={() => {
-            utils.rounds.myCounts.invalidate();
+            utils.rounds.myCounts.invalidate(); utils.wellness.intake.invalidate();
             utils.exercises.byMeDate.invalidate();
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
@@ -673,7 +679,7 @@ function MealsSection({
         onOpen={setOpenId}
         total={mealCount}
       />
-      <DailyNutritionTotals meals={meals} />
+      <DailyNutritionTotals meals={meals} date={date} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && <MealCard meal={opened} onChange={() => { onChange(); setOpenId(null); }} />}
       </Popup>
@@ -969,7 +975,11 @@ function MealForm({
   );
 }
 
-function DailyNutritionTotals({ meals }: { meals: MealRow[] }) {
+function DailyNutritionTotals({ meals, date }: { meals: MealRow[]; date: string }) {
+  // 2026-11-21: 내 몸(키·몸무게·나이·성별·활동량)과 그날 운동으로 계산한 권장량 + 부족/넘침 한 줄
+  const intake = trpc.wellness.intake.useQuery({ date }, { staleTime: 30_000 });
+  const [showBasis, setShowBasis] = useState(false);
+  const T = intake.data?.targets ?? DAILY_TARGET;
   const sum = meals.reduce(
     (a, m) => ({ carbsG: a.carbsG + (m.carbsG || 0), proteinG: a.proteinG + (m.proteinG || 0), fatG: a.fatG + (m.fatG || 0), vegetableG: a.vegetableG + (m.vegetableG || 0) }),
     { carbsG: 0, proteinG: 0, fatG: 0, vegetableG: 0 },
@@ -986,7 +996,7 @@ function DailyNutritionTotals({ meals }: { meals: MealRow[] }) {
       <div className="space-y-3">
         {rows.map(r => {
           const v = sum[r.k];
-          const target = DAILY_TARGET[r.k];
+          const target = (T as any)[r.k] as number;
           const pct = Math.min(100, Math.round((v / target) * 100));
           return (
             <div key={r.k}>
@@ -1001,7 +1011,23 @@ function DailyNutritionTotals({ meals }: { meals: MealRow[] }) {
           );
         })}
       </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">목표량은 하루 권장 기준(탄 130 · 단 100 · 지 42 · 채소 300g)이에요.</p>
+      {intake.data?.line && (
+        <p className={cn("mt-4 text-sm font-semibold leading-snug rounded-lg px-3 py-2",
+          intake.data.level === "low" ? "bg-rose-500/15 text-rose-300 border border-rose-400/50"
+            : intake.data.level === "high" ? "bg-amber-500/10 text-amber-200 border border-amber-400/40"
+            : "bg-primary/10 text-primary border border-primary/30")}>
+          {intake.data.line}
+        </p>
+      )}
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        {intake.data?.targets ? "내 키·몸무게·나이·활동량과 오늘 운동으로 계산한 권장량이에요." : "기본 권장 기준이에요."}{" "}
+        <button type="button" onClick={() => setShowBasis(!showBasis)} className="underline">근거 보기</button>
+      </p>
+      {showBasis && (
+        <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+          보건복지부·한국영양학회 「한국인 영양소 섭취기준」의 에너지필요추정량 공식(성별·나이·키·몸무게·신체활동)으로 하루 필요량을 구하고, 운동은 국제 신체활동 기준표(Compendium of Physical Activities)로 더했어요. 탄수화물 약 55%, 지방 25%, 단백질은 몸무게 1kg당 1.2g으로 나눴어요. 공식으로 계산한 참고 안내이며, 질환·임신·복용 약이 있으면 의사·전문가 지침이 우선이에요.
+        </p>
+      )}
     </div>
   );
 }
@@ -1132,28 +1158,59 @@ const INTENSITY_OPTS = [
   { value: "high", label: "높음" },
 ] as const;
 
+/** 운동 기록 (2026-11-21 새로): 종류 목록 · 종류별 칸 · 워치 캡처 자동 채우기 · 운동 느낌(편안/적당/숨이 턱끝까지 + 땀 폭발) · 종합 코멘트 */
+const FEEL_OPTS = [
+  { v: "easy", emoji: "😌", label: "편안해요", hint: "말하면서 할 수 있음" },
+  { v: "ok", emoji: "🙂", label: "적당해요", hint: "숨이 조금 참" },
+  { v: "max", emoji: "🔥", label: "숨이 턱끝까지", hint: "말하기 힘들 만큼" },
+] as const;
+const numOrNull = (s: string) => { const n = parseFloat(s); return Number.isFinite(n) && n > 0 ? n : null; };
+function paceToSec(s: string): number | null {
+  const m = s.trim().match(/^(\d{1,2})\D+(\d{1,2})/); if (m) return parseInt(m[1]) * 60 + parseInt(m[2]);
+  const n = parseFloat(s); return Number.isFinite(n) && n > 0 ? Math.round(n * 60) : null;
+}
+const secToPace = (s?: number | null) => (s ? `${Math.floor(s / 60)}'${String(s % 60).padStart(2, "0")}"` : "");
+
 function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, onBrag }: { date: string; exercises: ExRow[]; exerciseCount?: number; userName?: string; onChange: () => void; onBrag?: BragFn }) {
   const [openId, setOpenId] = useState<number | null>(null);
-  const [kind, setKind] = useState("");
-  const [duration, setDuration] = useState("");
-  const [intensity, setIntensity] = useState<"low" | "medium" | "high">("medium");
-  const [note, setNote] = useState("");
+  const sports = trpc.wellness.sports.useQuery(undefined, { staleTime: Infinity });
+  const [sport, setSport] = useState("walk");
+  const [minutes, setMinutes] = useState("");
+  const [km, setKm] = useState("");
+  const [pace, setPace] = useState("");
+  const [speed, setSpeed] = useState("");
+  const [steps, setSteps] = useState("");
+  const [hr, setHr] = useState("");
+  const [laps, setLaps] = useState("");
+  const [kcal, setKcal] = useState("");
+  const [feel, setFeel] = useState<"easy" | "ok" | "max">("ok");
+  const [sweat, setSweat] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [lastComment, setLastComment] = useState<{ text: string; warn: boolean } | null>(null);
   const exFileRef = useRef<HTMLInputElement>(null);
+  const kind = sports.data?.find(s => s.id === sport)?.kind ?? "time";
+  const details = trpc.wellness.exerciseDetails.useQuery({ ids: exercises.map(x => x.id) }, { enabled: exercises.length > 0 });
 
-  const create = trpc.exercises.create.useMutation({
-    onSuccess: () => {
-      toast.success("운동이 기록되었습니다");
-      onBrag?.({ item: "exercise", label: "운동", emoji: "💪", photo: photo ?? undefined, feedback: `${kind.trim() || "운동"} ${duration}분 · 강도 ${INTENSITY_OPTS.find(o => o.value === intensity)?.label ?? ""} · 오늘도 움직였어요!` });
-      setKind(""); setDuration(""); setNote(""); setIntensity("medium"); setPhoto(null);
-      if (exFileRef.current) exFileRef.current.value = "";
-      onChange();
+  const reset = () => { setMinutes(""); setKm(""); setPace(""); setSpeed(""); setSteps(""); setHr(""); setLaps(""); setKcal(""); setFeel("ok"); setSweat(false); setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; };
+  const create = trpc.wellness.createExercise.useMutation({
+    onSuccess: (r) => {
+      setLastComment({ text: r.comment, warn: r.warn });
+      onBrag?.({ item: "exercise", label: "운동", emoji: "💪", photo: photo ?? undefined, feedback: `${r.what} · ${r.comment.replace(/^⚠️\s*/, "")}` });
+      reset(); onChange();
     },
     onError: (e) => toast.error(e.message),
   });
-  const del = trpc.exercises.delete.useMutation({
-    onSuccess: () => { onChange(); toast.success("삭제되었습니다"); },
+  const analyze = trpc.wellness.analyzeWorkout.useMutation({
+    onSuccess: (r) => {
+      setSport(r.sport);
+      if (r.minutes) setMinutes(String(r.minutes)); if (r.distanceKm) setKm(String(r.distanceKm)); if (r.paceSec) setPace(secToPace(r.paceSec));
+      if (r.speedKmh) setSpeed(String(r.speedKmh)); if (r.steps) setSteps(String(r.steps)); if (r.avgHr) setHr(String(r.avgHr));
+      if (r.laps) setLaps(String(r.laps)); if (r.kcal) setKcal(String(r.kcal));
+      toast.success("캡처에서 숫자를 읽어 채웠어요. 맞는지 확인해 주세요.");
+    },
+    onError: (e) => toast.error(e.message),
   });
+  const del = trpc.exercises.delete.useMutation({ onSuccess: () => { onChange(); toast.success("삭제되었습니다"); }, onError: (e) => toast.error(e.message) });
 
   const handleExPhoto = (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("이미지 파일만 업로드할 수 있어요."); return; }
@@ -1161,53 +1218,108 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
     reader.onload = (e) => setPhoto(e.target?.result as string);
     reader.readAsDataURL(file);
   };
+  const submit = () => {
+    const m = parseInt(minutes);
+    if (!m) { toast.error("운동한 시간(분)을 입력해 주세요"); return; }
+    if (!photo) { toast.error("운동 사진(또는 워치 캡처)을 1장 올려 주세요"); return; }
+    create.mutate({
+      recordedDate: date, sport, minutes: m, feel, sweat, photoBase64: photo,
+      distanceKm: kind === "swim" ? (numOrNull(km) ? numOrNull(km)! / 1000 : null) : numOrNull(km),
+      paceSec: kind === "distance" ? paceToSec(pace) : null,
+      speedKmh: kind === "cycle" ? numOrNull(speed) : null,
+      steps: kind === "distance" && numOrNull(steps) ? Math.round(numOrNull(steps)!) : null,
+      avgHr: numOrNull(hr) ? Math.round(numOrNull(hr)!) : null,
+      laps: kind === "swim" && numOrNull(laps) ? Math.round(numOrNull(laps)!) : null,
+      kcalWatch: numOrNull(kcal) ? Math.round(numOrNull(kcal)!) : null,
+    });
+  };
+  const field = (label: string, v: string, set: (s: string) => void, ph: string, mode: "numeric" | "decimal" | "text" = "decimal") => (
+    <label className="text-[11px] text-muted-foreground">{label}
+      <input inputMode={mode} value={v} onChange={e => set(e.target.value)} placeholder={ph} className="mt-0.5 w-full h-10 rounded-lg border border-border bg-transparent px-2 text-sm text-foreground" />
+    </label>
+  );
 
   const opened = exercises.find(x => x.id === openId) as (ExRow & { photoUrl?: string | null }) | undefined;
+  const openedD = (details.data ?? []).find((d: any) => Number(d.exerciseId) === openId) as any;
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 운동 기록` : "운동 기록"}</h2>
-      </div>
-      <div className="grid grid-cols-12 gap-2">
-        <Input value={kind} onChange={(e) => setKind(e.target.value)} placeholder="운동 (예: 걷기, 요가)" className="col-span-6 rounded-lg bg-transparent h-10" />
-        <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="분" className="col-span-3 rounded-lg bg-transparent h-10" />
-        <Select value={intensity} onValueChange={(v) => setIntensity(v as typeof intensity)}>
-          <SelectTrigger className="col-span-3 rounded-lg h-10"><SelectValue /></SelectTrigger>
-          <SelectContent>{INTENSITY_OPTS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
-      <div className="flex items-center gap-2">
+      <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 운동 기록` : "운동 기록"}</h2>
+
+      {/* 1. 사진 · 워치 캡처 */}
+      <div className="flex items-center gap-3">
         {photo ? (
-          <div className="relative w-14 h-14 rounded-lg border border-border overflow-hidden">
+          <div className="relative w-16 h-16 rounded-lg border border-border overflow-hidden shrink-0">
             <img src={photo} alt="운동 사진" className="w-full h-full object-cover" />
             <button type="button" onClick={() => { setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; }} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
           </div>
         ) : (
-          <label className="w-14 h-14 rounded-lg border-dashed border-2 border-foreground/20 flex flex-col items-center justify-center cursor-pointer">
+          <label className="w-16 h-16 rounded-lg border-dashed border-2 border-foreground/20 flex flex-col items-center justify-center cursor-pointer shrink-0">
             <input ref={exFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleExPhoto(e.target.files[0])} />
             <Camera className="h-5 w-5 text-muted-foreground" />
           </label>
         )}
-        <span className="text-[11px] text-muted-foreground">운동 사진 필수</span>
-        <Button
-          onClick={() => {
-            if (!kind.trim() || !duration) { toast.error("운동 종류와 시간을 입력해 주세요"); return; }
-            if (!photo) { toast.error("운동 사진을 1장 이상 첨부해 주세요"); return; }
-            create.mutate({ recordedDate: date, kind: kind.trim(), durationMin: parseInt(duration), intensity, note: note.trim() || undefined, photoBase64: photo });
-          }}
-          disabled={create.isPending}
-          className="ml-auto rounded-full px-5 h-10"
-        >
-          {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
-        </Button>
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] text-muted-foreground">운동 사진 또는 워치 기록 캡처 (필수)</div>
+          <button type="button" disabled={!photo || analyze.isPending} onClick={() => photo && analyze.mutate({ photoBase64: photo })}
+            className="mt-1 inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-primary text-primary text-sm disabled:opacity-40">
+            {analyze.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} 캡처로 자동 채우기
+          </button>
+        </div>
       </div>
+      <p className="text-[11px] text-muted-foreground leading-snug">워치·운동 앱 기록 화면을 캡처해 올리고 누르면 숫자가 채워져요. <b className="text-primary">AI 인식은 오류가 있을 수 있어요.</b> 워치가 없으면 직접 적어도 돼요. <b className="text-foreground">직접 기입이 가장 정확해요.</b></p>
+
+      {/* 2. 운동 종류 */}
+      <Select value={sport} onValueChange={setSport}>
+        <SelectTrigger className="rounded-lg h-11"><SelectValue placeholder="운동 종류" /></SelectTrigger>
+        <SelectContent>{(sports.data ?? []).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+      </Select>
+
+      {/* 3. 종류별 칸 */}
+      <div className="grid grid-cols-3 gap-2">
+        {field("시간(분)*", minutes, setMinutes, "30", "numeric")}
+        {kind === "distance" && <>{field("거리(km)", km, setKm, "5.2")}{field("평균 페이스", pace, setPace, "6'30\"", "text")}{field("걸음 수", steps, setSteps, "6500", "numeric")}</>}
+        {kind === "cycle" && <>{field("거리(km)", km, setKm, "15")}{field("평균 속도(km/h)", speed, setSpeed, "18")}</>}
+        {kind === "swim" && <>{field("거리(m)", km, setKm, "1000", "numeric")}{field("바퀴 수", laps, setLaps, "40", "numeric")}</>}
+        {field("평균 심박수", hr, setHr, "135", "numeric")}
+        {field("워치 칼로리(참고)", kcal, setKcal, "선택", "numeric")}
+      </div>
+
+      {/* 4. 운동 느낌 */}
+      <div>
+        <div className="text-[11px] text-muted-foreground mb-1">오늘 운동 느낌 (위 셋 중 하나 + 땀 폭발은 같이 눌러도 돼요)</div>
+        <div className="grid grid-cols-4 gap-1.5">
+          {FEEL_OPTS.map(o => (
+            <button key={o.v} type="button" onClick={() => setFeel(o.v)}
+              className={cn("rounded-lg border px-1 py-2 text-[11px] leading-tight", feel === o.v ? "border-primary bg-primary/15 text-primary font-semibold" : "border-border text-muted-foreground")}>
+              <div className="text-base">{o.emoji}</div>{o.label}
+            </button>
+          ))}
+          <button type="button" onClick={() => setSweat(!sweat)}
+            className={cn("rounded-lg border px-1 py-2 text-[11px] leading-tight", sweat ? "border-sky-400 bg-sky-400/15 text-sky-300 font-semibold" : "border-border text-muted-foreground")}>
+            <div className="text-base">💦</div>땀 폭발
+          </button>
+        </div>
+      </div>
+
+      <Button onClick={submit} disabled={create.isPending} className="w-full rounded-xl h-11">
+        {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
+      </Button>
+      {lastComment && (
+        <p className={cn("text-sm rounded-lg px-3 py-2", lastComment.warn ? "bg-rose-500/15 text-rose-300 border border-rose-400/50" : "bg-primary/10 text-primary border border-primary/30")}>{lastComment.text}</p>
+      )}
+
       <Medals items={exercises.map((x, i) => ({ id: x.id, label: `${i + 1}회`, sub: `${x.durationMin}분` }))} onOpen={setOpenId} total={exerciseCount} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && (
           <div className="space-y-3">
             {opened.photoUrl && <img src={opened.photoUrl} alt="" className="w-full rounded-xl object-cover max-h-[60vh]" />}
             <div className="text-lg font-semibold">{opened.kind}</div>
-            <div className="text-sm text-muted-foreground">{opened.durationMin}분 · 강도 {INTENSITY_OPTS.find(o => o.value === opened.intensity)?.label}</div>
+            <div className="text-sm text-muted-foreground">
+              {[`${opened.durationMin}분`, openedD?.distanceKm ? `${Number(openedD.distanceKm)}km` : null, openedD?.paceSec ? `페이스 ${secToPace(Number(openedD.paceSec))}` : null,
+                openedD?.avgHr ? `심박 ${openedD.avgHr}` : null, openedD ? FEEL_OPTS.find(f => f.v === openedD.feel)?.label : INTENSITY_OPTS.find(o => o.value === opened.intensity)?.label,
+                openedD && Number(openedD.sweat) ? "땀 폭발" : null].filter(Boolean).join(" · ")}
+            </div>
+            {openedD?.comment && <div className="text-sm">{openedD.comment}</div>}
             {opened.note && <div className="text-sm">{opened.note}</div>}
             <Button variant="outline" onClick={() => { del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
               <Trash2 className="h-4 w-4 mr-1" /> 삭제
@@ -1519,20 +1631,21 @@ function formatShortDate(d: string): string {
   return `${m}/${dd}(${w})`;
 }
 
-/** 날짜 아래 두 줄: 오늘의 운세(재미용) · 어제 돌아보기 코칭 — 꾸미기에서 켠 것만 */
+/** 날짜 아래 두 줄 (2026-11-21): 윗줄 오늘의 명언(누가 했는지) · 아랫줄 어제 돌아보기 코멘트 — 꾸미기에서 켠 것만. 사주·운세는 뺐다 */
 function DailyLines({ date }: { date: string }) {
   const prefs = loadDecor();
-  const want = (prefs.fortune && !!prefs.birthDate) || prefs.coach;
+  const showQuote = prefs.quote !== false;
   const q = trpc.happy.dailyLines.useQuery(
-    { date, birthDate: prefs.fortune ? prefs.birthDate || undefined : undefined, fortune: !!(prefs.fortune && prefs.birthDate), coach: !!prefs.coach },
-    { enabled: want, staleTime: 6 * 3600_000, retry: false, refetchOnWindowFocus: false },
+    { date, fortune: false, coach: !!prefs.coach },
+    { enabled: !!prefs.coach, staleTime: 6 * 3600_000, retry: false, refetchOnWindowFocus: false },
   );
-  if (!want) return null;
+  if (!showQuote && !prefs.coach) return null;
+  const qt = quoteOf(date);
   return (
-    <div className="mt-1 space-y-0.5 text-xs leading-snug text-muted-foreground max-w-[17rem] mx-auto">
-      {q.isLoading && <div>오늘의 한 줄을 준비하고 있어요…</div>}
-      {q.data?.fortune && <div>🔮 {q.data.fortune}</div>}
-      {q.data?.coach && <div className="text-foreground/85">🌱 {q.data.coach}</div>}
+    <div className="mt-1 space-y-1 text-xs leading-snug text-muted-foreground max-w-[18rem] mx-auto">
+      {showQuote && <div>“{qt.text}” <span className="opacity-70">— {qt.by}</span></div>}
+      {prefs.coach && q.isLoading && <div>어제 기록을 돌아보고 있어요…</div>}
+      {prefs.coach && q.data?.coach && <div className="text-foreground/85">🌱 {q.data.coach}</div>}
     </div>
   );
 }
@@ -1623,7 +1736,39 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
           </li>
         ))}
       </ul>
+      <ConditionCheck date={date} />
     </section>
+  );
+}
+
+/** 컨디션 체크 (2026-11-21): 따잠마음운 아래, 마음 버튼과 같은 모양. 매일 체크, 점수엔 안 들어감 */
+const CONDITION_OPTS = [
+  { v: "best", emoji: "😆", label: "최상이에요" },
+  { v: "ok", emoji: "🙂", label: "괜찮아요" },
+  { v: "meh", emoji: "😐", label: "그저 그래요" },
+  { v: "tired", emoji: "😩", label: "힘이 없어요" },
+] as const;
+function ConditionCheck({ date }: { date: string }) {
+  const utils = trpc.useUtils();
+  const q = trpc.wellness.condition.useQuery({ date });
+  const set = trpc.wellness.setCondition.useMutation({
+    onSuccess: () => utils.wellness.condition.invalidate({ date }),
+    onError: (e) => toast.error(e.message),
+  });
+  const cur = set.isPending ? set.variables?.level : q.data;
+  return (
+    <div className="pt-3 mt-1 border-t border-border">
+      <div className="text-sm font-semibold text-primary mb-2">컨디션 체크 <span className="text-[11px] font-normal text-muted-foreground">오늘 내 몸은</span></div>
+      <div className="flex flex-wrap gap-1">
+        {CONDITION_OPTS.map(o => (
+          <button key={o.v} type="button" onClick={() => set.mutate({ date, level: o.v })}
+            className={cn("px-2 py-1 rounded-full text-xs border transition-colors",
+              cur === o.v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/60")}>
+            {o.emoji} {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

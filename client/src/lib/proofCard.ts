@@ -13,7 +13,17 @@ export type ProofCard = {
   feedback?: string;    // 맨 아래 피드백
   body?: string;        // 사진 대신 글(이게돼)
   time?: string;        // 인증 시각 "오후 8:18"
+  avatar?: string | null; // 카톡방과 같은 프로필 사진 (이름 앞 둥근 네모)
 };
+
+/** 카톡 프로필처럼 둥근 네모 사진 */
+async function drawAvatar(g: CanvasRenderingContext2D, src: string | null | undefined, x: number, y: number, s: number, fallbackName: string, accent: string) {
+  g.save(); roundRect(g, x, y, s, s, s * 0.36); g.clip();
+  let ok = false;
+  if (src) { try { const img = await loadImg(src); const k = Math.max(s / img.width, s / img.height); g.drawImage(img, x + (s - img.width * k) / 2, y + (s - img.height * k) / 2, img.width * k, img.height * k); ok = true; } catch {} }
+  if (!ok) { g.fillStyle = accent; g.fillRect(x, y, s, s); g.fillStyle = "#1d1e21"; g.textAlign = "center"; g.font = `800 ${Math.round(s * 0.45)}px sans-serif`; g.fillText(Array.from(fallbackName)[0] ?? "?", x + s / 2, y + s * 0.64); }
+  g.restore();
+}
 
 /** 2026-11-20 새 자랑 사진 (4:5, 인스타 그대로 사용 가능)
  *  맨 위: 이름 · 항목 N회째(크게) / 인증 시간
@@ -36,13 +46,16 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   const name = card.userName || "멤버";
   const item = card.itemLabel ?? card.title;
   const hasCount = card.count != null;
-  const maxHeadW = hasCount ? W - 180 - 200 : W - 180;
+  // 2026-11-21: 이름 앞에 카톡과 같은 프로필 사진(둥근 네모)
+  const AV = 120, avX = 90, textX = avX + AV + 26;
+  await drawAvatar(g, card.avatar, avX, 108, AV, name, accent);
+  const maxHeadW = (hasCount ? W - 90 - 200 : W - 90) - textX;
   let size = 92;
-  for (; size > 44; size -= 4) { g.font = `900 ${size}px ${bodyFont}`; if (g.measureText(`${name} ${item}`).width <= maxHeadW) break; }
+  for (; size > 40; size -= 4) { g.font = `900 ${size}px ${bodyFont}`; if (g.measureText(`${name} ${item}`).width <= maxHeadW) break; }
   g.textAlign = "left"; g.font = `900 ${size}px ${bodyFont}`;
-  g.fillStyle = "#ffffff"; g.fillText(name, 90, 200);
+  g.fillStyle = "#ffffff"; g.fillText(name, textX, 200);
   const nw = g.measureText(name + " ").width;
-  g.fillStyle = accent; g.fillText(item, 90 + nw, 200);
+  g.fillStyle = accent; g.fillText(item, textX + nw, 200);
   if (hasCount) {
     const cx = W - 170, cy = 168, r = 80;
     g.save(); g.shadowColor = accent; g.shadowBlur = 30; g.strokeStyle = accent; g.lineWidth = 8;
@@ -176,17 +189,81 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
   g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
 }
 
+/** 이게돼 (2026-11-21): 카톡 대화 화면처럼. 4:5(캐러셀 비율) 그대로, 글이 넘치면 2장·3장으로 나눔 */
+export async function makeItgeImages(card: ProofCard): Promise<Blob[]> {
+  const W = 1080, H = 1350;
+  const bodyFont = getComputedStyle(document.body).fontFamily || "sans-serif";
+  try { await (document as any).fonts?.ready; } catch {}
+  const KAKAO_BG = "#b2c7d9", INK = "#1f2328", GREEN = "#3f7d16";
+  const name = card.userName || "멤버";
+  const AV = 120, avX = 60, bubX = avX + AV + 24, bubW = W - bubX - 70;
+  const FS = 46, LH = 70, padX = 40, padY = 36;
+  // 줄 나누기
+  const meas = document.createElement("canvas").getContext("2d")!;
+  meas.font = `500 ${FS}px ${bodyFont}`;
+  const lines = wrap(meas, (card.body ?? "").trim(), bubW - padX * 2);
+  const firstTop = 300, otherTop = 300, bottomLimit = H - 120;
+  const perPage = Math.max(1, Math.floor((bottomLimit - firstTop - padY * 2) / LH));
+  const pages: string[][] = [];
+  for (let i = 0; i < lines.length; i += perPage) pages.push(lines.slice(i, i + perPage));
+  if (!pages.length) pages.push([""]);
+  const out: Blob[] = [];
+  for (let p = 0; p < pages.length; p++) {
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d")!;
+    g.fillStyle = KAKAO_BG; g.fillRect(0, 0, W, H);
+    // 프로필 + 이름 · 이게돼 (같은 글씨·크기·두께)
+    await drawAvatar(g, card.avatar, avX, 80, AV, name, GREEN);
+    const textX = bubX;
+    const hasCount = card.count != null;
+    let size = 64;
+    for (; size > 36; size -= 4) { g.font = `800 ${size}px ${bodyFont}`; if (g.measureText(`${name} 이게돼`).width <= W - textX - (hasCount ? 200 : 70)) break; }
+    g.textAlign = "left"; g.font = `800 ${size}px ${bodyFont}`;
+    g.fillStyle = INK; g.fillText(name, textX, 150);
+    const nw = g.measureText(name + " ").width;
+    g.fillStyle = GREEN; g.fillText("이게돼", textX + nw, 150);
+    // 날짜·시간
+    g.save(); g.strokeStyle = "#4b5560"; g.lineWidth = 4; g.lineCap = "round";
+    g.beginPath(); g.arc(textX + 18, 204, 17, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.moveTo(textX + 18, 204); g.lineTo(textX + 18, 194); g.moveTo(textX + 18, 204); g.lineTo(textX + 26, 207); g.stroke(); g.restore();
+    g.fillStyle = "#4b5560"; g.font = `600 36px ${bodyFont}`;
+    g.fillText(`${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}${pages.length > 1 ? `   (${p + 1}/${pages.length})` : ""}`, textX + 48, 217);
+    // 오른쪽 동그라미: 이게돼 번호
+    if (hasCount) {
+      const cx = W - 130, cy = 140, r = 64;
+      g.fillStyle = "#ffffff"; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = GREEN; g.lineWidth = 6; g.stroke();
+      g.textAlign = "center"; g.fillStyle = GREEN; g.font = `900 64px ${bodyFont}`; g.fillText(String(card.count), cx, cy + 16);
+      g.font = `700 20px ${bodyFont}`; g.fillStyle = "#4b5560"; g.fillText("인증", cx, cy + 44);
+    }
+    // 말풍선 (카톡처럼 흰색 + 왼쪽 꼬리)
+    const top = p === 0 ? firstTop : otherTop;
+    const bh = pages[p].length * LH + padY * 2;
+    g.fillStyle = "#ffffff";
+    roundRect(g, bubX, top, bubW, bh, 26); g.fill();
+    if (p === 0) { g.beginPath(); g.moveTo(bubX + 2, top + 22); g.lineTo(bubX - 22, top + 12); g.lineTo(bubX + 2, top + 52); g.closePath(); g.fill(); }
+    g.textAlign = "left"; g.fillStyle = INK; g.font = `500 ${FS}px ${bodyFont}`;
+    pages[p].forEach((l, i) => g.fillText(l, bubX + padX, top + padY + FS + i * LH - 6));
+    if (p < pages.length - 1) { g.textAlign = "right"; g.fillStyle = "#4b5560"; g.font = `600 30px ${bodyFont}`; g.fillText("다음 장에 계속 →", W - 70, H - 80); }
+    g.textAlign = "center"; g.fillStyle = "rgba(31,35,40,0.28)"; g.font = `500 26px ${bodyFont}`;
+    g.fillText("super hannip Challenge", W / 2, H - 40);
+    out.push(await new Promise<Blob>((res) => c.toBlob(b => res(b!), "image/png")));
+  }
+  return out;
+}
+
 /** 이미지 만들어 공유창 열기. 안 되는 환경이면 이미지 저장 + 문구 복사. 결과를 문자열로 돌려준다. */
 export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
   const text = card.itemLabel
-    ? `${card.emoji} ${card.userName ?? ""} · ${card.itemLabel} ${card.count ?? ""}회째${card.feedback ? `\n${card.feedback}` : ""}\n#super_hannip_challenge`
+    ? `${card.emoji} ${card.userName ?? ""} · ${card.itemLabel}${card.count != null ? ` 누적 ${card.count}` : ""}${card.itemLabel !== "이게돼" && card.feedback ? `\n${card.feedback}` : ""}\n#super_hannip_challenge`
     : `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
-  const blob = card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card);
-  const file = new File([blob], `hannip_${card.date}.png`, { type: "image/png" });
+  const blobs = card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
+    : [card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card)];
+  const files = blobs.map((b, i) => new File([b], `hannip_${card.date}${blobs.length > 1 ? `_${i + 1}` : ""}.png`, { type: "image/png" }));
   const nav = navigator as any;
-  if (!isKakaoInApp() && nav.canShare && nav.canShare({ files: [file] })) {
+  if (!isKakaoInApp() && nav.canShare && nav.canShare({ files })) {
     try {
-      await nav.share({ files: [file], text });
+      await nav.share({ files, text });
       return "shared";
     } catch (e: any) {
       // 저장하느라 시간이 걸려 '누른 직후'가 아니면 브라우저가 막는다 → 버튼 한 번 더 누르게
@@ -196,15 +273,17 @@ export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled
   // 카톡 안 브라우저: 공유·다운로드가 막혀 있음 → 사진을 화면에 띄워 '길게 눌러 저장'하게
   if (isKakaoInApp()) {
     try { await navigator.clipboard.writeText(text); } catch {}
-    const dataUrl = await blobToDataUrl(blob);
-    window.dispatchEvent(new CustomEvent("hannip-proof-preview", { detail: { dataUrl, text } }));
+    const dataUrls = await Promise.all(blobs.map(blobToDataUrl));
+    window.dispatchEvent(new CustomEvent("hannip-proof-preview", { detail: { dataUrls, text } }));
     return "preview";
   }
   // 공유 불가(PC 등): 이미지 저장 + 문구 복사
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  for (const f of files) {
+    const url = URL.createObjectURL(f);
+    const a = document.createElement("a");
+    a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
   try { await navigator.clipboard.writeText(text); } catch {}
   return "downloaded";
 }
