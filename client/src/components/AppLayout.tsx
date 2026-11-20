@@ -14,6 +14,7 @@ import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEffect } from "react";
 import { isKakaoInApp, openInExternalBrowser } from "@/lib/proofCard";
+import type { ConfirmReq } from "@/lib/askConfirm";
 
 const NAV_ITEMS = [
   // 2026-11-20 방장 지정 순서
@@ -52,6 +53,29 @@ function ProofPreview() {
       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
         <Button onClick={openInExternalBrowser} className="rounded-full">크롬으로 열면 한 번에 보내져요</Button>
         <Button variant="outline" onClick={() => setImg(null)} className="rounded-full">닫기</Button>
+      </div>
+    </div>
+  );
+}
+
+/** 앱 안 확인 팝업 (삭제할까요?) — askConfirm()으로 띄움 */
+function ConfirmHost() {
+  const [req, setReq] = useState<ConfirmReq | null>(null);
+  useEffect(() => {
+    const h = (e: Event) => setReq((e as CustomEvent<ConfirmReq>).detail);
+    window.addEventListener("hannip-confirm", h);
+    return () => window.removeEventListener("hannip-confirm", h);
+  }, []);
+  if (!req) return null;
+  const done = (v: boolean) => { req.resolve(v); setReq(null); };
+  return (
+    <div className="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-6" onClick={() => done(false)}>
+      <div className="w-full max-w-xs rounded-2xl bg-card border border-border p-5 text-center" onClick={e => e.stopPropagation()}>
+        <p className="text-base font-semibold leading-relaxed whitespace-pre-line break-keep">{req.message}</p>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <Button variant="outline" className="rounded-xl h-11" onClick={() => done(false)}>취소</Button>
+          <Button className="rounded-xl h-11 bg-rose-500 hover:bg-rose-600 text-white" onClick={() => done(true)}>{req.ok ?? "삭제"}</Button>
+        </div>
       </div>
     </div>
   );
@@ -191,6 +215,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {user && <YearProgressBar />}
         <KakaoInAppNotice />
         <ProofPreview />
+        <ConfirmHost />
 
         {/* Mobile drawer */}
         {mobileOpen && (

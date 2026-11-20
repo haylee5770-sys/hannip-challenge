@@ -1,3 +1,4 @@
+import { askConfirm } from "@/lib/askConfirm";
 import PageTitle from "@/components/PageTitle";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -49,12 +50,12 @@ function RoundControl() {
         {cur.data ? <>지금 진행 중: <b className="text-primary">{cur.data.name}</b> <span className="text-muted-foreground">({cur.data.startDate}~)</span></> : <span className="text-muted-foreground">지금 진행 중인 챌린지가 없어요.</span>}
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" disabled={busy} onClick={() => { if (confirm("3일 디톡스를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.")) start.mutate({ type: "detox" }); }}
+        <button type="button" disabled={busy} onClick={async () => { if (await askConfirm("3일 디톡스를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.", "시작")) start.mutate({ type: "detox" }); }}
           className="rounded-xl bg-primary text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 3일 디톡스 시작</button>
-        <button type="button" disabled={busy} onClick={() => { if (confirm("미니 챌린지를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.")) start.mutate({ type: "mini" }); }}
+        <button type="button" disabled={busy} onClick={async () => { if (await askConfirm("미니 챌린지를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.", "시작")) start.mutate({ type: "mini" }); }}
           className="rounded-xl bg-primary/80 text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 미니 챌린지 시작</button>
       </div>
-      <button type="button" disabled={busy || !cur.data} onClick={() => { if (confirm("챌린지를 종료하고 시상식에 결과를 올릴까요?")) end.mutate(); }}
+      <button type="button" disabled={busy || !cur.data} onClick={async () => { if (await askConfirm("챌린지를 종료하고 시상식에 결과를 올릴까요?", "종료")) end.mutate(); }}
         className="w-full rounded-xl border-2 border-primary text-primary font-bold py-4 text-base disabled:opacity-40">■ 챌린지 종료 · 결산하기</button>
       <p className="text-[11px] text-muted-foreground">종료하면 이게돼 챔피언·꾸준함 챔피언이 자동 계산돼 '시상식'과 '역대 챌린지'에 올라가요.</p>
     </section>
@@ -404,7 +405,7 @@ function InvitesAdmin() {
               }}>
                 <Copy className="h-3.5 w-3.5" />
               </Button>
-              <Button size="sm" variant="ghost" className="rounded-none" onClick={() => { if (confirm("이 초대 링크를 삭제할까요?")) del.mutate({ id: inv.id }); }}>
+              <Button size="sm" variant="ghost" className="rounded-none" onClick={async () => { if (await askConfirm("이 초대 링크를 삭제할까요?")) del.mutate({ id: inv.id }); }}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -444,7 +445,7 @@ function SchedulesAdmin() {
         defaultHelp="매일 오전 8시 (한국 시간)"
         existing={(list.data ?? []).find(j => j?.jobKey === "dailyReminder.morning") ?? null}
         onSave={(cron) => upsert.mutate({ slot: "morning", cron, enabled: true })}
-        onDelete={() => { if (confirm("아침 알림을 삭제할까요?")) remove.mutate({ slot: "morning" }); }}
+        onDelete={async () => { if (await askConfirm("아침 알림을 삭제할까요?")) remove.mutate({ slot: "morning" }); }}
         loading={upsert.isPending}
       />
       <ReminderRow
@@ -454,7 +455,7 @@ function SchedulesAdmin() {
         defaultHelp="매일 저녁 9시 (한국 시간)"
         existing={(list.data ?? []).find(j => j?.jobKey === "dailyReminder.evening") ?? null}
         onSave={(cron) => upsert.mutate({ slot: "evening", cron, enabled: true })}
-        onDelete={() => { if (confirm("저녁 알림을 삭제할까요?")) remove.mutate({ slot: "evening" }); }}
+        onDelete={async () => { if (await askConfirm("저녁 알림을 삭제할까요?")) remove.mutate({ slot: "evening" }); }}
         loading={upsert.isPending}
       />
     </div>
@@ -652,8 +653,8 @@ function SeasonsAdmin() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      if (confirm("정말 시즌을 즉시 종료할까요?")) close.mutate({ id: current.data!.id });
+                    onClick={async () => {
+                      if (await askConfirm("정말 시즌을 즉시 종료할까요?", "종료")) close.mutate({ id: current.data!.id });
                     }}
                   >
                     즉시 종료

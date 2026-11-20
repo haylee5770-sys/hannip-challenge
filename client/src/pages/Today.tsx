@@ -1,3 +1,4 @@
+import { askConfirm } from "@/lib/askConfirm";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -374,7 +375,6 @@ export default function Today() {
 
       {/* Meals — 식단 기록 (독립 섹션) */}
       <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <CornerCount n={myCounts.data ? myCounts.data.counts.meal + myCounts.data.counts.smoothie : undefined} />
         <MealsSection
           date={date}
           meals={myMealsToday.data ?? []}
@@ -392,13 +392,11 @@ export default function Today() {
 
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
       <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <CornerCount n={myCounts.data?.counts.water} />
         <WaterSection date={date} waterCount={myCounts.data?.counts.water} userName={userName} onBrag={bragItem} />
       </section>
 
       {/* Exercise — 운동 기록 */}
       <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <CornerCount n={myCounts.data?.counts.exercise} />
         <ExerciseSection
           date={date}
           exercises={myExercisesToday.data ?? []}
@@ -415,8 +413,7 @@ export default function Today() {
       </section>
       {/* 체중 — 한 달에 한 번 (2026-11-21 새로: 체중계 종류 선택 없이 큰 버튼 → 사진 올리면 AI가 읽고, 골격근 kg · 체지방률 %로 통일) */}
       <section id="weight" className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <CornerCount n={myCounts.data?.counts.weight} />
-        <WeightSection date={date} userName={userName} onBrag={bragItem} />
+        <WeightSection date={date} userName={userName} onBrag={bragItem} weightCount={myCounts.data?.counts.weight} />
       </section>
 
       {/* Season photos (Before / After) — 맨 아래 */}
@@ -426,7 +423,7 @@ export default function Today() {
 }
 
 /* ----------------- Weight Section (2026-11-21) ----------------- */
-function WeightSection({ date, userName, onBrag }: { date: string; userName?: string; onBrag?: BragFn }) {
+function WeightSection({ date, userName, onBrag, weightCount }: { date: string; userName?: string; onBrag?: BragFn; weightCount?: number }) {
   const utils = trpc.useUtils();
   const history = trpc.weights.myHistory.useQuery({});
   const [open, setOpen] = useState(false);
@@ -484,7 +481,7 @@ function WeightSection({ date, userName, onBrag }: { date: string; userName?: st
       <SectionTitle extra={<p className="text-xs text-muted-foreground mt-1">한 달에 한 번, <b className="text-foreground">매달 1일</b> 아침 공복에 재요.</p>}>
         {userName ? `${userName} 한 달 체중` : "한 달 체중"}
       </SectionTitle>
-      {!open && <AddButton label="체중 기록 추가" onClick={() => setOpen(true)} />}
+      {!open && <AddButton label="체중 기록 추가" onClick={() => setOpen(true)} count={weightCount} />}
       {open && (
         <div className="space-y-3 rounded-xl border border-border p-4">
           <p className="text-sm">사진을 올리면 <b className="text-primary">AI가 체중·골격근량·체지방률을 자동으로 읽어요.</b></p>
@@ -584,7 +581,7 @@ function MealsSection({
   return (
     <div className="space-y-4">
       <SectionTitle>{userName ? `${userName} 식단 기록` : "식단 기록"}</SectionTitle>
-      {!creating && <AddButton label="식사 기록 추가" onClick={() => setCreating(true)} />}
+      {!creating && <AddButton label="식사 기록 추가" onClick={() => setCreating(true)} count={mealCount} />}
       {creating && (
         <MealForm
           date={date}
@@ -599,7 +596,6 @@ function MealsSection({
         items={(() => { const n = { s: 0, r: 0 }; return meals.slice().sort((a, b) => a.id - b.id).map(m => { const sm = m.category === "smoothie"; const k = sm ? ++n.s : ++n.r; return { id: m.id, label: `${k}회`, sub: sm ? "스무디" : "일반식" }; }); })()}
         onOpen={setOpenId}
       />
-      {void mealCount}
       <DailyNutritionTotals meals={meals} date={date} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && <MealCard meal={opened} onChange={() => { onChange(); setOpenId(null); }} />}
@@ -1007,7 +1003,7 @@ function MealCard({ meal, onChange }: { meal: MealRow; onChange: () => void }) {
           <div className="editorial-eyebrow text-muted-foreground">{cat?.caption}</div>
           <h3 className="editorial-h2 text-2xl mt-1">{cat?.label}</h3>
         </div>
-        <button onClick={() => { if (confirm("이 식단 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id: meal.id }); }} className="text-muted-foreground hover:text-destructive">
+        <button onClick={async () => { if (await askConfirm("이 식단 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id: meal.id }); }} className="text-muted-foreground hover:text-destructive">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
@@ -1177,7 +1173,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
   return (
     <div className="space-y-3">
       <SectionTitle>{userName ? `${userName} 운동 기록` : "운동 기록"}</SectionTitle>
-      {!adding && <AddButton label="운동 기록 추가" onClick={() => setAdding(true)} />}
+      {!adding && <AddButton label="운동 기록 추가" onClick={() => setAdding(true)} count={exerciseCount} />}
       {adding && (<div className="space-y-3 rounded-xl border border-border p-4">
 
       {/* 1. 사진 · 워치 캡처 */}
@@ -1260,7 +1256,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
             </div>
             {openedD?.comment && <div className="text-sm">{openedD.comment}</div>}
             {opened.note && <div className="text-sm">{opened.note}</div>}
-            <Button variant="outline" onClick={() => { if (!confirm("이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) return; del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
+            <Button variant="outline" onClick={async () => { if (!(await askConfirm("이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요."))) return; del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
               <Trash2 className="h-4 w-4 mr-1" /> 삭제
             </Button>
           </div>
@@ -1448,7 +1444,6 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
   const dotColor = (dur: number) => dur < 300 ? "bg-rose-400" : dur < 420 ? "bg-amber-400" : dur <= 510 ? "bg-primary" : "bg-purple-400";
   return (
     <section className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-      <CornerCount n={sleepCount} />
       <div className="mb-3">
         <SectionTitle extra={recent.length > 0 ? (
           <div className="flex items-center gap-1 mt-1" title="최근 7일">
@@ -1506,7 +1501,8 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
           {evalResult.message}
         </span>
       </div>
-      <div className={ACTIONS_ROW}>
+      <div className={cn(ACTIONS_ROW, "items-center")}>
+        <div className="mr-auto"><CountBox n={sleepCount} /></div>
         <Button onClick={handleSave} disabled={upsertSleep.isPending} className={BRAG_BTN}>
           {upsertSleep.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>
@@ -1534,20 +1530,31 @@ const CANCEL_BTN = "rounded-xl h-11 px-5";
 const BRAG_BTN = "rounded-xl h-11 px-7 font-semibold";
 function SectionTitle({ children, extra }: { children: React.ReactNode; extra?: React.ReactNode }) {
   return (
-    <div className="pr-20 min-h-[2.5rem] flex flex-col justify-center">
+    <div className="min-h-[2rem] flex flex-col justify-center">
       <h2 className="text-lg md:text-xl font-semibold leading-tight">{children}</h2>
       {extra}
     </div>
   );
 }
-function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+/** '＋ ○○ 기록 추가' 버튼 + 오른쪽에 누적 칸 (누를 때마다 숫자가 올라감) (2026-11-21) */
+function AddButton({ label, onClick, count }: { label: string; onClick: () => void; count?: number | null }) {
   return (
-    <Button onClick={onClick} className="w-full rounded-xl h-11">
-      <Plus className="h-4 w-4 mr-2" /> {label}
-    </Button>
+    <div className="flex items-stretch gap-2">
+      <Button onClick={onClick} className="flex-1 rounded-xl h-12">
+        <Plus className="h-4 w-4 mr-2" /> {label}
+      </Button>
+      <CountBox n={count} />
+    </div>
   );
 }
-/** 칸 오른쪽 위 모서리 탭: 칸의 둥근 모서리를 그대로 살리고, 왼쪽·아래는 직선 */
+function CountBox({ n }: { n?: number | null }) {
+  return (
+    <div className="w-16 h-12 rounded-xl border border-primary/70 bg-primary/10 flex flex-col items-center justify-center leading-none shrink-0">
+      <span className="text-[10px] text-muted-foreground">누적</span>
+      <span className="text-lg font-black text-primary tabular-nums mt-0.5">{n ?? "–"}<span className="text-xs font-bold">회</span></span>
+    </div>
+  );
+}/** 칸 오른쪽 위 모서리 탭: 칸의 둥근 모서리를 그대로 살리고, 왼쪽·아래는 직선 */
 function CornerCount({ n }: { n?: number | null }) {
   if (n == null) return null;
   return (
@@ -1664,6 +1671,26 @@ function DailyChecklist({ date, autoSlept, autoCleanEat, autoExercised }: { date
     { key: "move", head: "운", label: "어제 나는 운동을 했어요", checked: exercised, toggle: () => { setExercised(!exercised); persist({ exercised: !exercised }); } },
   ];
   const done = rows.filter(r => r.checked).length;
+  // 2026-11-21: 다섯 개 + 지금 내 컨디션까지 다 체크하면 '뿅' 하고 짧게 접힘. 누르면 다시 펼쳐짐. 날마다 새로 시작
+  const cond = trpc.wellness.condition.useQuery({ date });
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => { setExpanded(false); }, [date]);
+  const allDone = done === 5 && !!cond.data;
+  if (allDone && !expanded) {
+    const co = CONDITION_OPTS.find(o => o.v === cond.data);
+    return (
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-6 cursor-pointer animate-in fade-in zoom-in-95 duration-300" onClick={() => setExpanded(true)}>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-lg md:text-xl font-semibold">어제의 따·잠·마·음·운</h2>
+          <span className="text-sm tabular-nums text-primary font-bold">5 / 5 ✨</span>
+        </div>
+        <div className="grid grid-cols-5 gap-1.5">
+          {rows.map(r => <div key={r.key} className="rounded-xl bg-primary text-primary-foreground text-center py-2 font-bold">{r.head}</div>)}
+        </div>
+        <p className="mt-2 text-center text-xs text-muted-foreground">지금 내 컨디션 {co?.emoji} {co?.label} · 누르면 펼쳐져요</p>
+      </section>
+    );
+  }
 
   return (
     <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-6">
@@ -1927,7 +1954,7 @@ function SeasonPhotosSection() {
             front={findOne("before", "front")}
             side={findOne("before", "side")}
             onPick={(angle, file) => handleFile(file, "before", angle)}
-            onDelete={(id) => { if (confirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
+            onDelete={async (id) => { if (await askConfirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
             uploading={upload.isPending}
             forceShow={beforePhotos.length > 0 || isDay1}
           />
@@ -1936,7 +1963,7 @@ function SeasonPhotosSection() {
           <ProgressBlock
             photos={progressPhotos}
             onPick={(angle, file) => handleFile(file, "progress", angle)}
-            onDelete={(id) => { if (confirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
+            onDelete={async (id) => { if (await askConfirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
             uploading={upload.isPending}
             disabled={!day}
           />
@@ -1949,7 +1976,7 @@ function SeasonPhotosSection() {
             front={findOne("after", "front")}
             side={findOne("after", "side")}
             onPick={(angle, file) => handleFile(file, "after", angle)}
-            onDelete={(id) => { if (confirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
+            onDelete={async (id) => { if (await askConfirm("이 사진을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) del.mutate({ id }); }}
             uploading={upload.isPending}
             forceShow={afterPhotos.length > 0 || isLastDay}
           />
@@ -2264,7 +2291,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
         </div>
       </div>
 
-      {!adding && <AddButton label="물 기록 추가" onClick={() => setAdding(true)} />}
+      {!adding && <AddButton label="물 기록 추가" onClick={() => setAdding(true)} count={waterCount} />}
       {adding && (<div className="space-y-3 rounded-xl border border-border p-4">
       {/* 한 잔당 용량 */}
       <div className="grid grid-cols-4 gap-1.5">
@@ -2320,7 +2347,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
             <img src={opened.photoUrl} alt="" className="w-full rounded-xl object-cover max-h-[60vh]" />
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold tabular-nums">{opened.volumeMl}ml</span>
-              <Button variant="outline" onClick={() => { if (!confirm("이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.")) return; del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
+              <Button variant="outline" onClick={async () => { if (!(await askConfirm("이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요."))) return; del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
                 <Trash2 className="h-4 w-4 mr-1" /> 삭제
               </Button>
             </div>
