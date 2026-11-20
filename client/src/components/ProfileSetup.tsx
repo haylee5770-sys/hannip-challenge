@@ -32,7 +32,7 @@ function squareDataUrl(file: File): Promise<string> {
   });
 }
 
-const chip = (on: boolean) => cn("px-3 py-2 rounded-xl border text-sm transition-colors", on ? "border-primary bg-primary/15 text-primary font-semibold" : "border-border text-foreground/80");
+const chip = (on: boolean) => cn("px-2 py-2 rounded-xl border text-sm whitespace-nowrap transition-colors", on ? "border-primary bg-primary/15 text-primary font-semibold" : "border-border text-foreground/80");
 
 export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?: boolean }) {
   const utils = trpc.useUtils();
@@ -57,10 +57,12 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
   useEffect(() => {
     const p = me.data?.profile; if (!p) return;
     setSex(p.sex); setBirthYear(String(p.birthYear)); setHeight(String(p.heightCm)); setActivity(p.activity);
+    if (editing && me.data?.weightKg) setWeight(String(me.data.weightKg));
     setPregnant(p.pregnant); setLactating(p.lactating); setFlags(p.flags); setNote(p.healthNote ?? ""); setConsent(p.healthConsent);
   }, [me.data?.profile]);
 
   const hasWeight = !!me.data?.weightKg;
+  void hasWeight;
   const shownAvatar = avatar ?? me.data?.avatarUrl ?? null;
 
   const submit = () => {
@@ -68,11 +70,11 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
     const by = parseInt(birthYear), h = parseFloat(height), w = parseFloat(weight);
     if (!by || by < 1930 || by > 2015) return toast.error("태어난 해를 4자리로 입력해 주세요. (예: 1985)");
     if (!h || h < 120 || h > 220) return toast.error("키를 cm로 입력해 주세요.");
-    if (!hasWeight && (!w || w < 30 || w > 250)) return toast.error("몸무게를 kg로 입력해 주세요.");
+    if (!editing && (!w || w < 30 || w > 250)) return toast.error("몸무게를 kg로 입력해 주세요.");
     if (!activity) return toast.error("평소 활동량을 골라 주세요.");
     if (note.trim() && !consent) return toast.error("몸 상태 메모를 저장하려면 동의에 체크해 주세요.");
     save.mutate({
-      avatarBase64: avatar ?? undefined, sex, birthYear: by, heightCm: h, weightKg: hasWeight ? undefined : w, activity,
+      avatarBase64: avatar ?? undefined, sex, birthYear: by, heightCm: h, weightKg: w && w >= 30 && w <= 250 ? w : undefined, activity,
       pregnant: sex === "female" && pregnant, lactating: sex === "female" && lactating, flags: flags as any,
       healthNote: consent ? note.trim() || null : null, healthConsent: consent,
     });
@@ -98,7 +100,7 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
       <section className="space-y-3">
         <div>
           <div className="text-sm font-semibold">기본 정보 <span className="text-primary">(필수)</span></div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">키, 몸무게는 처음 가입 당시 기록이 필수입니다.<br />몸무게는 한 달에 한 번, <b className="text-foreground">매달 1일</b>에만 잽니다.</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">키, 몸무게는 처음 가입 당시 기록이 필수입니다.<br />몸무게는 한 달에 한 번, <b className="text-foreground">매달 1일</b>에만 잽니다.{editing ? " 몸무게는 오늘 화면의 \u0027체중 기록 추가\u0027에서 바꿔요." : ""}</p>
         </div>
         <div className="flex gap-2">
           <button type="button" className={chip(sex === "female")} onClick={() => setSex("female")}>여자</button>
@@ -108,16 +110,14 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
           <label className="text-[11px] text-muted-foreground">태어난 해<input inputMode="numeric" value={birthYear} onChange={e => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="1985" className="mt-1 w-full h-11 rounded-xl border border-border bg-transparent px-3 text-base text-foreground" /></label>
           <label className="text-[11px] text-muted-foreground">키 (cm)<input inputMode="decimal" value={height} onChange={e => setHeight(e.target.value)} placeholder="162" className="mt-1 w-full h-11 rounded-xl border border-border bg-transparent px-3 text-base text-foreground" /></label>
           <label className="text-[11px] text-muted-foreground">몸무게 (kg)
-            {hasWeight
-              ? <div className="mt-1 h-11 rounded-xl border border-border px-3 flex items-center text-base text-foreground/70">{me.data?.weightKg}</div>
-              : <input inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value)} placeholder="58.5" className="mt-1 w-full h-11 rounded-xl border border-border bg-transparent px-3 text-base text-foreground" />}
+            <input inputMode="decimal" value={weight} disabled={editing} onChange={e => setWeight(e.target.value)} placeholder="58.5" className="mt-1 w-full h-11 rounded-xl border border-border bg-transparent px-3 text-base text-foreground disabled:opacity-60" />
           </label>
         </div>
         <div>
           <div className="text-[11px] text-muted-foreground mb-1">평소 활동량 (운동 말고 일상)</div>
           <div className="grid grid-cols-3 gap-2">
             <button type="button" className={chip(activity === "low")} onClick={() => setActivity("low")}>주로 앉아서</button>
-            <button type="button" className={chip(activity === "mid")} onClick={() => setActivity("mid")}>많이 걷거나 서서</button>
+            <button type="button" className={chip(activity === "mid")} onClick={() => setActivity("mid")}>서서·많이 걸음</button>
             <button type="button" className={chip(activity === "high")} onClick={() => setActivity("high")}>몸 쓰는 일</button>
           </div>
         </div>

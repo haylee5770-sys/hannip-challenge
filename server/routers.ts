@@ -1612,13 +1612,14 @@ const wellnessRouter = router({
       const u = await db.getUserById(ctx.user.id);
       if (!u?.avatarUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "프로필 사진을 꼭 올려 주세요." });
     }
-    const hasWeight = await wellness.latestWeight(ctx.user.id);
-    if (!hasWeight && !input.weightKg) throw new TRPCError({ code: "BAD_REQUEST", message: "몸무게를 입력해 주세요." });
+    // 2026-11-21: 처음 입력 때는 기존 기록이 있어도 몸무게를 직접 넣는다 → 넣은 값으로 오늘 몸무게 저장
+    const prof = await wellness.getProfile(ctx.user.id);
+    if (!prof && !input.weightKg) throw new TRPCError({ code: "BAD_REQUEST", message: "몸무게를 입력해 주세요." });
     await wellness.saveProfile(ctx.user.id, {
       sex: input.sex, birthYear: input.birthYear, heightCm: input.heightCm, activity: input.activity,
       pregnant: input.pregnant, lactating: input.lactating, flags: input.flags,
       healthNote: input.healthNote ?? null, healthConsent: input.healthConsent,
-    }, hasWeight ? undefined : input.weightKg);
+    }, !prof ? input.weightKg : undefined);
     return { ok: true };
   }),
   condition: approvedProcedure.input(z.object({ date: dateString })).query(async ({ ctx, input }) => wellness.getCondition(ctx.user.id, input.date)),
