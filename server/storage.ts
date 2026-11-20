@@ -7,6 +7,35 @@ function getSupabase() {
   });
 }
 
+/**
+ * Supabase 무료판은 일주일 동안 활동이 없으면 자동으로 일시정지된다.
+ * 서버가 하루 두 번 가볍게 조회해서 잠들지 않게 한다.
+ */
+export async function pingSupabase(): Promise<void> {
+  if (!ENV.supabaseUrl || !ENV.supabaseServiceKey) return;
+  const supabase = getSupabase();
+  const bucket = process.env.SUPABASE_BUCKET || "uploads";
+  try {
+    const [files, users] = await Promise.all([
+      supabase.storage.from(bucket).list("", { limit: 1 }),
+      supabase.auth.admin.listUsers({ page: 1, perPage: 1 }),
+    ]);
+    console.log(
+      "[keepalive] supabase ok",
+      files.error ? `storage err: ${files.error.message}` : "storage ok",
+      users.error ? `auth err: ${users.error.message}` : "auth ok",
+    );
+  } catch (e: any) {
+    console.warn("[keepalive] supabase ping failed:", e?.message ?? String(e));
+  }
+}
+
+export function startSupabaseKeepAlive() {
+  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+  setTimeout(() => void pingSupabase(), 60 * 1000);
+  setInterval(() => void pingSupabase(), TWELVE_HOURS);
+}
+
 function appendHashSuffix(relKey: string): string {
   const hash = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
   const lastDot = relKey.lastIndexOf(".");
