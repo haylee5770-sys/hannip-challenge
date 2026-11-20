@@ -19,6 +19,7 @@ import { analyzeMealImage } from "./mealVision";
 import { getDailyLines } from "./dailyLines";
 import * as rounds from "./rounds";
 import * as wellness from "./wellness";
+import * as entryCode from "./entryCode";
 
 
 import { syncSeasonBaselineForUser, computeLeaderboard, getMyCounts, dayNumber, totalDays, generateSeasonReports } from "./seasons";
@@ -1683,6 +1684,8 @@ const wellnessRouter = router({
     return wellness.memberDetail(input.userId);
   }),
   careList: adminProcedure.query(async () => wellness.careList()),
+  entryCode: adminProcedure.query(async () => entryCode.currentEntryCode()),
+  rotateEntryCode: adminProcedure.input(z.object({ days: z.number().int().min(3).max(90).optional() })).mutation(async ({ input }) => entryCode.rotateEntryCode(input.days)),
   analyzeScale: approvedProcedure.input(z.object({ photoBase64: z.string().min(20) })).mutation(async ({ ctx, input }) => {
     const { url } = await uploadDataUrl(input.photoBase64, `scale-ai-tmp/${ctx.user.id}/${Date.now()}`);
     const r = await wellness.analyzeScaleImage(url);
@@ -1791,8 +1794,8 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "동의 항목을 모두 확인해 주세요." });
         }
         const season = await db.getActiveSeason();
-        if (!entryCodeMatches(input.seasonCode, season?.seasonCode)) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "입장코드가 올바르지 않아요. 방장에게 다시 확인해 주세요." });
+        if (!(await entryCode.entryCodeOk(input.seasonCode))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "입장코드가 올바르지 않아요. 방장에게 지금 코드를 다시 받아 주세요." });
         }
         await db.completeOnboarding(ctx.user.id, {
           realName: input.realName,
@@ -1809,7 +1812,7 @@ export const appRouter = router({
       .input(z.object({ seasonCode: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
         const season = await db.getActiveSeason();
-        if (!entryCodeMatches(input.seasonCode, season?.seasonCode)) {
+        if (!(await entryCode.entryCodeOk(input.seasonCode)) && !entryCodeMatches(input.seasonCode, season?.seasonCode)) {
           throw new TRPCError({ code: "FORBIDDEN", message: "입장코드가 올바르지 않아요. 방장에게 다시 확인해 주세요." });
         }
         if (season) await db.grantSeasonToken(ctx.user.id, season.id);
@@ -1820,7 +1823,7 @@ export const appRouter = router({
     seasonAccess: protectedProcedure.query(async ({ ctx }) => {
       const season = await db.getActiveSeason();
       if (!season) return { hasAccess: true, season: null }; // 시즌 없으면 통과
-      if (ctx.user.role === "admin") return { hasAccess: true, season };
+      if (ctx.user.role === "admin" || ctx.user.status === "approved") return { hasAccess: true, season }; // 2026-11-21: 코드는 처음 입장할 때만
       const token = await db.getSeasonToken(ctx.user.id, season.id);
       return { hasAccess: !!token, season };
     }),

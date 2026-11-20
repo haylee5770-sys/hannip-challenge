@@ -249,6 +249,20 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     );
   }
 
+  // ── 신청은 했고 방장 수락을 기다리는 중 (2026-11-21) ──
+  if (user.status === "pending" && (user as any).onboardingDone) {
+    return (
+      <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
+        <div className="max-w-sm w-full text-center space-y-4">
+          <div className="text-4xl">⏳</div>
+          <h1 className="text-2xl font-semibold">입장 신청이 접수됐어요</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">방장이 확인하고 수락하면 바로 들어올 수 있어요.<br />수락되면 이 화면을 새로고침해 주세요.</p>
+          <Button variant="outline" className="rounded-xl" onClick={() => location.reload()}>새로고침</Button>
+        </div>
+      </div>
+    );
+  }
+
   // ── 신규 멤버 (pending) — 온보딩 + 입장코드 ──
   if (user.status !== "approved") {
     const handleCodeNext = (e: React.FormEvent) => {

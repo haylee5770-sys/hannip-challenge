@@ -1082,7 +1082,7 @@ export async function completeOnboarding(
     joinPurpose: data.joinPurpose ?? null,
     agreedToTerms: data.agreedToTerms,
     onboardingDone: true,
-    status: "approved",
+    status: "pending", // 2026-11-21: 방장이 수락해야 입장
   }).where(eq(users.id, userId));
 }
 

@@ -14,6 +14,7 @@ import * as db from "../db";
 import { startSupabaseKeepAlive } from "../storage";
 import { ensureRoundSchema, refreshOldItgeSummaries } from "../rounds";
 import { ensureWellnessSchema } from "../wellness";
+import { ensureEntryCodeSchema } from "../entryCode";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,7 +38,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  db.ensureSchema().then(() => ensureRoundSchema()).then(() => ensureWellnessSchema()).then(() => refreshOldItgeSummaries()).catch(e => console.error("[ensureSchema] failed:", e));
+  db.ensureSchema().then(() => ensureRoundSchema()).then(() => ensureWellnessSchema()).then(() => ensureEntryCodeSchema()).then(() => refreshOldItgeSummaries()).catch(e => console.error("[ensureSchema] failed:", e));
   startSupabaseKeepAlive();
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

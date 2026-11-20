@@ -168,52 +168,88 @@ function MembersAdmin() {
 
   if (list.isLoading) return <div className="py-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
+  // 2026-11-21: 휴대폰에서 글씨가 겹치지 않게 한 사람씩 카드로. 수락을 기다리는 사람을 맨 위에
+  const order = { pending: 0, approved: 1, rejected: 2 } as Record<string, number>;
+  const rows = (list.data ?? []).slice().sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  const pendingN = rows.filter(u => u.status === "pending").length;
   return (
-    <div className="border hairline divide-y">
-      <div className="grid grid-cols-12 gap-4 p-4 bg-secondary editorial-eyebrow text-muted-foreground">
-        <div className="col-span-4">멤버</div>
-        <div className="col-span-3">상태</div>
-        <div className="col-span-2">권한</div>
-        <div className="col-span-3 text-right">액션</div>
-      </div>
-      {(list.data ?? []).map(u => (
-        <div key={u.id} className="grid grid-cols-12 gap-4 p-4 items-center">
-          <div className="col-span-4">
-            <div className="font-serif text-lg">{u.name ?? "이름 없음"}</div>
-            <div className="text-xs text-muted-foreground">{u.email}</div>
+    <div className="space-y-2">
+      {pendingN > 0 && <p className="text-sm font-semibold text-primary">⏳ 수락을 기다리는 신청 {pendingN}명</p>}
+      {rows.map(u => (
+        <div key={u.id} className={`rounded-2xl border p-4 ${u.status === "pending" ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="text-base font-semibold truncate">{u.name ?? "이름 없음"} {(u as any).realName ? <span className="text-xs text-muted-foreground font-normal">({(u as any).realName})</span> : null}</div>
+              <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+              {(u as any).phone && <div className="text-xs text-muted-foreground">{(u as any).phone}</div>}
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                u.status === "approved" ? "border-primary/60 text-primary" : u.status === "pending" ? "glass-fill" : "border-destructive/50 text-destructive"}`}>
+                {u.status === "approved" ? "수락됨" : u.status === "pending" ? "신청" : "거절"}
+              </span>
+              <span className="text-[10px] tracking-wider text-muted-foreground">{u.role === "admin" ? "방장" : "멤버"}</span>
+            </div>
           </div>
-          <div className="col-span-3">
-            <span className={`editorial-eyebrow px-2 py-1 border hairline ${
-              u.status === "approved" ? "bg-foreground text-background" :
-              u.status === "pending" ? "bg-secondary" :
-              "border-destructive/40 text-destructive"
-            }`}>
-              {u.status === "approved" ? "승인됨" : u.status === "pending" ? "대기" : "거절"}
-            </span>
-          </div>
-          <div className="col-span-2 editorial-eyebrow">{u.role === "admin" ? "ADMIN" : "MEMBER"}</div>
-          <div className="col-span-3 flex justify-end gap-2">
+          <div className="flex justify-end gap-2 mt-3">
             {u.status === "pending" && (
               <>
-                <Button size="sm" variant="outline" className="rounded-none"
-                  onClick={() => setStatus.mutate({ userId: u.id, status: "approved" })}>
-                  <CheckCircle2 className="h-3 w-3 mr-1" /> 승인
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={async () => { if (await askConfirm(`${u.name ?? "이 분"}의 신청을 거절할까요?`, "거절")) setStatus.mutate({ userId: u.id, status: "rejected" }); }}>
+                  <XCircle className="h-3.5 w-3.5 mr-1" /> 거절
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-none"
-                  onClick={() => setStatus.mutate({ userId: u.id, status: "rejected" })}>
-                  <XCircle className="h-3 w-3 mr-1" /> 거절
+                <Button size="sm" className="rounded-xl glass-btn" onClick={() => setStatus.mutate({ userId: u.id, status: "approved" })}>
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> 수락
                 </Button>
               </>
             )}
+            {u.status === "rejected" && (
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setStatus.mutate({ userId: u.id, status: "approved" })}>다시 수락</Button>
+            )}
             {u.status === "approved" && (
-              <Button size="sm" variant="outline" className="rounded-none"
-                onClick={() => setRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" })}>
-                {u.role === "admin" ? "관리자 해제" : "관리자 지정"}
+              <Button size="sm" variant="outline" className="rounded-xl"
+                onClick={async () => { if (u.role !== "admin" || await askConfirm(`${u.name ?? "이 분"}의 방장 권한을 뺄까요?`, "빼기")) setRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" }); }}>
+                {u.role === "admin" ? "방장 권한 빼기" : "방장으로 지정"}
               </Button>
             )}
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** 시크릿 입장 코드 (2026-11-21): 무작위 6자리, 정한 날짜마다 저절로 바뀜. 이 코드로 신청 → 방장이 MEMBERS에서 수락 */
+function SecretCodeBox() {
+  const utils = trpc.useUtils();
+  const q = trpc.wellness.entryCode.useQuery();
+  const rotate = trpc.wellness.rotateEntryCode.useMutation({
+    onSuccess: () => { utils.wellness.entryCode.invalidate(); toast.success("새 코드로 바꿨어요"); },
+    onError: (e) => toast.error(e.message),
+  });
+  if (q.isLoading || !q.data) return <Loader2 className="h-5 w-5 animate-spin" />;
+  const d = q.data;
+  return (
+    <div className="rounded-2xl border border-primary p-4 mb-6 space-y-3">
+      <div className="text-xs text-muted-foreground">지금 입장 코드 (크루에게 이 코드를 알려 주세요)</div>
+      <div className="flex items-center gap-3">
+        <span className="font-mono text-3xl font-black tracking-[0.25em] text-primary">{d.code}</span>
+        <Button size="sm" variant="outline" className="rounded-xl" onClick={() => { navigator.clipboard?.writeText(d.code); toast.success("코드를 복사했어요"); }}>
+          <Copy className="h-3.5 w-3.5 mr-1" /> 복사
+        </Button>
+      </div>
+      <div className="text-xs text-muted-foreground">{d.createdAt}에 만들어짐 · <b className="text-foreground">{d.nextChange}</b>에 저절로 새 코드로 바뀌어요 ({d.days}일마다)</div>
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <span className="text-xs text-muted-foreground">바뀌는 간격</span>
+        {[10, 14, 20, 30].map(n => (
+          <button key={n} type="button" onClick={async () => { if (await askConfirm(`${n}일마다 바뀌게 하고, 지금 새 코드로 바꿀까요?`, "바꾸기")) rotate.mutate({ days: n }); }}
+            className={`px-3 py-1 rounded-full border text-xs ${d.days === n ? "glass-fill" : "border-border"}`}>{n}일</button>
+        ))}
+        <Button size="sm" className="rounded-xl ml-auto" disabled={rotate.isPending}
+          onClick={async () => { if (await askConfirm("지금 바로 새 코드로 바꿀까요? 예전 코드는 더 이상 안 돼요.", "바꾸기")) rotate.mutate({}); }}>
+          지금 새 코드로
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">새 사람은 이 코드를 넣고 입장 신청을 해요 → <b className="text-foreground">02 · MEMBERS</b>에서 '수락'을 눌러야 들어올 수 있어요. 이미 들어온 멤버는 코드가 바뀌어도 그대로 이용해요.</p>
     </div>
   );
 }
@@ -238,12 +274,8 @@ function EntryCodeAdmin() {
     <div className="space-y-10">
       {/* 시즌코드 설정 */}
       <div>
-        <h3 className="editorial-h2 text-2xl mb-1">시즌코드 설정</h3>
-        <div className="border border-foreground p-4 mb-4">
-          <div className="text-xs text-muted-foreground mb-1">모든 시즌 공통 입장코드</div>
-          <div className="font-mono text-2xl tracking-widest">SUPERHAPPY2027</div>
-          <div className="text-xs text-muted-foreground mt-1">대소문자·띄어쓰기 상관없이 들어올 수 있어요. 시즌이 바뀌어도 그대로예요.</div>
-        </div>
+        <h3 className="editorial-h2 text-2xl mb-1">시크릿 입장 코드</h3>
+        <SecretCodeBox />
         <p className="text-sm text-muted-foreground mb-6">
           아래 시즌별 코드는 따로 쓰고 싶을 때만 넣으세요. 넣지 않아도 공통 코드로 들어올 수 있어요.
         </p>
