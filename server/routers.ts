@@ -17,6 +17,9 @@ import { generateAutoFeedback } from "./feedback";
 import { analyzeInbodyImage } from "./inbody";
 import { analyzeMealImage } from "./mealVision";
 import { getDailyLines } from "./dailyLines";
+import * as rounds from "./rounds";
+
+
 import { syncSeasonBaselineForUser, computeLeaderboard, getMyCounts, dayNumber, totalDays, generateSeasonReports } from "./seasons";
 import { evaluateSleep, computeSleepMinutes } from "./sleep";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
@@ -98,6 +101,21 @@ const membersRouter = router({
       role: u.role,
     }));
   }),
+
+  /** 활동명 중복·비슷한 이름 검사 (수지 ↔ 배수지도 막음) */
+  checkName: protectedProcedure
+    .input(z.object({ name: z.string().max(64) }))
+    .query(async ({ ctx, input }) => rounds.checkNickname(input.name, ctx.user.id)),
+
+  /** 활동명 바꾸기 (검사 통과해야 저장) */
+  setNickname: protectedProcedure
+    .input(z.object({ name: z.string().min(2).max(20) }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await rounds.checkNickname(input.name, ctx.user.id);
+      if (!r.ok) throw new TRPCError({ code: "BAD_REQUEST", message: `${r.reason} (${r.similar.join(", ")})` });
+      await db.updateUserProfile(ctx.user.id, { name: input.name.trim() });
+      return { ok: true };
+    }),
 
   updateProfile: protectedProcedure
     .input(z.object({
@@ -1400,9 +1418,19 @@ const sleepRouter = router({
       bedMinute: sleepMinuteSchema,
       wakeHour: sleepHourSchema,
       wakeMinute: sleepMinuteSchema,
+      /** 기상 인증: 아침 따뜻한 물 한 잔 사진 (2026-11-20) */
+      photoBase64: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const evalResult = evaluateSleep(input.bedHour, input.bedMinute, input.wakeHour, input.wakeMinute);
+      let morningPhotoUrl: string | null = null;
+      const pm = input.photoBase64?.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+      if (pm) {
+        try {
+          const { url } = await storagePut(`wake/${ctx.user.id}/${input.recordedDate}_${Date.now()}.${pm[1].split("/")[1].replace("+xml", "")}`, Buffer.from(pm[2], "base64"), pm[1]);
+          morningPhotoUrl = url;
+        } catch (e) { console.warn("[wake photo upload failed]", e); }
+      }
       // bedAt: 기상일 기준, 자정 이후 취침이면 기상일 당일, 그렇지 않으면 전일 저녁으로 저장.
       const wakeDate = new Date(input.recordedDate + "T00:00:00Z");
       const bedIsAm = input.bedHour < 12; // 0–11시면 자정 이후 취침
@@ -1422,7 +1450,9 @@ const sleepRouter = router({
         wakeHour: input.wakeHour,
         wakeMinute: input.wakeMinute,
       });
+      if (morningPhotoUrl) await db.setSleepMorningPhoto(ctx.user.id, input.recordedDate, morningPhotoUrl).catch(e => console.warn("[wake photo save]", e));
       return {
+        morningPhotoUrl,
         id,
         durationMinutes: evalResult.durationMinutes,
         status: evalResult.status,
@@ -1496,6 +1526,44 @@ const happyRouter = router({
       await db.upsertHappyNote(ctx.user.id, input.date, input.mood, input.goodThing.trim(), input.promise.trim());
       return { ok: true };
     }),
+});
+
+/** 회차·시상·이게돼·1년 (2026-11-20) */
+const roundsRouter = router({
+  /** 지금 회차 기준 항목별 내 인증 번호 */
+  myCounts: approvedProcedure.query(async ({ ctx }) => {
+    const r = await rounds.countRange();
+    return { ...r, counts: await rounds.itemCounts(ctx.user.id, r.since, r.until) };
+  }),
+  current: approvedProcedure.query(async () => {
+    const s = await rounds.activeRound();
+    return s ? { id: s.id, name: s.name, startDate: String(s.startDate).slice(0, 10) } : null;
+  }),
+  start: adminProcedure
+    .input(z.object({ type: z.enum(["detox", "mini"]) }))
+    .mutation(async ({ ctx, input }) => rounds.startRound(ctx.user.id, input.type)),
+  end: adminProcedure.mutation(async () => rounds.endRound()),
+  ceremony: approvedProcedure.query(async () => rounds.ceremony()),
+  history: approvedProcedure.query(async () => rounds.history()),
+  updateAward: adminProcedure
+    .input(z.object({ id: z.number(), name: z.string().max(128).optional(), count: z.number().int().min(0).optional() }))
+    .mutation(async ({ input }) => { await rounds.updateAward(input.id, input); return { ok: true }; }),
+  rename: adminProcedure
+    .input(z.object({ seasonId: z.number(), name: z.string().min(1).max(128) }))
+    .mutation(async ({ input }) => { await rounds.renameRound(input.seasonId, input.name); return { ok: true }; }),
+  /** 1년 달력: 날짜별 기상·식단 여부 */
+  dayFlags: approvedProcedure
+    .input(z.object({ since: dateString, until: dateString }))
+    .query(async ({ ctx, input }) => rounds.dayFlags(ctx.user.id, input.since, input.until)),
+});
+
+const itgeRouter = router({
+  create: approvedProcedure
+    .input(z.object({ date: dateString, content: z.string().min(2).max(3000) }))
+    .mutation(async ({ ctx, input }) => rounds.createItge(ctx.user.id, input.date, input.content.trim())),
+  mine: approvedProcedure.query(async ({ ctx }) => rounds.listItge(ctx.user.id)),
+  byUser: approvedProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => rounds.listItge(input.userId)),
+  crew: approvedProcedure.query(async () => rounds.itgeCrew()),
 });
 
 const watersRouter = router({
@@ -1643,6 +1711,8 @@ export const appRouter = router({
   sleep: sleepRouter,
   waters: watersRouter,
   happy: happyRouter,
+  rounds: roundsRouter,
+  itge: itgeRouter,
 });
 
 export type AppRouter = typeof appRouter;

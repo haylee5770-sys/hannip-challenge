@@ -12,6 +12,7 @@ import { dailyReminderHandler } from "../scheduledHandlers";
 import { sdk } from "./sdk";
 import * as db from "../db";
 import { startSupabaseKeepAlive } from "../storage";
+import { ensureRoundSchema } from "../rounds";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -35,7 +36,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  db.ensureSchema().catch(e => console.error("[ensureSchema] failed:", e));
+  db.ensureSchema().then(() => ensureRoundSchema()).catch(e => console.error("[ensureSchema] failed:", e));
   startSupabaseKeepAlive();
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

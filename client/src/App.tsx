@@ -14,6 +14,10 @@ import Profile from "./pages/Profile";
 import Admin from "@/pages/Admin";
 import Shop from "./pages/Shop";
 import Decor from "./pages/Decor";
+import Year from "./pages/Year";
+import Itge from "./pages/Itge";
+import Awards from "./pages/Awards";
+import History from "./pages/History";
 import { applyDecor, loadDecor } from "./lib/decor";
 applyDecor(loadDecor());
 import Invite from "@/pages/Invite";
@@ -49,6 +53,10 @@ function Router() {
               <Route path="/admin" component={Admin} />
           <Route path="/shop" component={Shop} />
           <Route path="/decor" component={Decor} />
+          <Route path="/year" component={Year} />
+          <Route path="/itge" component={Itge} />
+          <Route path="/awards" component={Awards} />
+          <Route path="/history" component={History} />
               <Route path="/404" component={NotFound} />
               <Route component={NotFound} />
             </Switch>

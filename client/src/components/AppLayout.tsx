@@ -16,12 +16,14 @@ import { useEffect } from "react";
 import { isKakaoInApp, openInExternalBrowser } from "@/lib/proofCard";
 
 const NAV_ITEMS = [
-  // 2026-11-20 방장 요청: 피드·순위·리포트 메뉴 빼고(리포트는 대시보드로 합침) 구매하기 추가
+  // 2026-11-20 방장 지정 순서
   { label: "TODAY", path: "/today", korean: "오늘" },
+  { label: "YEAR", path: "/year", korean: "1년" },
+  { label: "ITGE", path: "/itge", korean: "이게돼" },
   { label: "DASHBOARD", path: "/dashboard", korean: "대시보드" },
   { label: "MEMBERS", path: "/members", korean: "멤버" },
-  { label: "REVEAL", path: "/reveal", korean: "결산" },
-  { label: "ARCHIVE", path: "/archive", korean: "역대 챌린지" },
+  { label: "AWARDS", path: "/awards", korean: "시상식" },
+  { label: "HISTORY", path: "/history", korean: "역대 챌린지" },
   { label: "SHOP", path: "/shop", korean: "구매하기" },
   { label: "STYLE", path: "/decor", korean: "꾸미기" },
 ];
@@ -84,7 +86,6 @@ function YearProgressBar() {
         <span>나의 {q.data?.year ?? new Date().getFullYear()}년</span>
         <span>올해 <b className="text-primary">{days}</b>일 기록했어요 · {total}일</span>
       </div>
-      <p className="mt-3 text-sm text-primary/90">꾸준함이 자존감이 되고, 자존감이 인생을 바꾼다</p>
     </div>
   );
 }
@@ -127,7 +128,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       )}
                       style={{ transitionTimingFunction: "var(--ease-out)" }}
                     >
-                      {item.label}
+                      {item.korean}
                     </span>
                   </Link>
                 );

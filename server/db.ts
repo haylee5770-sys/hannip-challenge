@@ -899,6 +899,12 @@ export async function countSleepDaysInRange(userId: number, since: string, until
 }
 
 
+/** 기상 인증 사진(아침 물 한 잔) 저장 */
+export async function setSleepMorningPhoto(userId: number, date: string, url: string) {
+  const conn = await db();
+  await conn.execute(sql`UPDATE sleeps SET morningPhotoUrl = ${url} WHERE userId = ${userId} AND recordedDate = ${date}`);
+}
+
 /* -------- Happy notes (행복 한 줄 일기) -------- */
 
 export type HappyNote = {

@@ -7,8 +7,91 @@ export type ProofCard = {
   lines: string[];      // 예: ["레드 단스 · 옐로우 단스", "탄 43g · 단 33g · 지 6g"]
   userName?: string;
   date: string;         // YYYY-MM-DD
-  count?: number;       // 누적 횟수
+  count?: number;       // 이번 회차 안에서 이 항목 몇 번째
+  photo?: string;       // 직접 올린 사진(dataURL 또는 주소) → 가운데 크게
+  itemLabel?: string;   // 예: "스무디" "기상" "물" "운동" "식단" "이게돼"
+  feedback?: string;    // 맨 아래 피드백
+  body?: string;        // 사진 대신 글(이게돼)
+  time?: string;        // 인증 시각 "오후 8:18"
 };
+
+/** 2026-11-20 새 자랑 사진 (4:5, 인스타 그대로 사용 가능)
+ *  맨 위: 이름 · 항목 N회째(크게) / 인증 시간
+ *  가운데: 직접 올린 사진 크게 (또는 이게돼 글)
+ *  맨 아래: 피드백 */
+export async function makeProofImage2(card: ProofCard): Promise<Blob> {
+  const W = 1080, H = 1350;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d")!;
+  const accent = cssVar("--primary", "#b6f24a");
+  const bg = cssVar("--background", "#2b2d31");
+  const bodyFont = getComputedStyle(document.body).fontFamily || "sans-serif";
+  try { await (document as any).fonts?.ready; } catch {}
+
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.fillStyle = "rgba(255,255,255,0.06)"; roundRect(g, 40, 40, W - 80, H - 80, 44); g.fill();
+  g.fillStyle = accent; roundRect(g, 40, 40, W - 80, 12, 6); g.fill();
+
+  // 맨 위: 이름 · 항목 N회째
+  g.textAlign = "left";
+  g.fillStyle = "#ececea"; g.font = `700 46px ${bodyFont}`;
+  g.fillText(clip(g, card.userName || "멤버", 520), 90, 140);
+  const nameW = Math.min(520, g.measureText(card.userName || "멤버").width);
+  g.fillStyle = accent; g.font = `900 92px ${bodyFont}`;
+  const head = `${card.itemLabel ?? card.title} ${card.count ?? ""}${card.count != null ? "회째" : ""}`.trim();
+  g.fillText(clip(g, head, W - 180), 90, 250);
+  g.fillStyle = "#a6a9ae"; g.font = `500 36px ${bodyFont}`;
+  g.fillText(`${card.emoji}  ${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}`, 90, 312);
+  void nameW;
+
+  // 가운데: 사진 또는 글
+  const bx = 90, by = 352, bw = W - 180, bh = 780;
+  if (card.photo) {
+    try {
+      const img = await loadImg(card.photo);
+      g.save(); roundRect(g, bx, by, bw, bh, 32); g.clip();
+      const s = Math.max(bw / img.width, bh / img.height);
+      const iw = img.width * s, ih = img.height * s;
+      g.drawImage(img, bx + (bw - iw) / 2, by + (bh - ih) / 2, iw, ih);
+      g.restore();
+    } catch { drawBodyText(g, card.lines.join("\n") || card.title, bx, by, bw, bh, bodyFont); }
+  } else {
+    g.fillStyle = "rgba(255,255,255,0.05)"; roundRect(g, bx, by, bw, bh, 32); g.fill();
+    drawBodyText(g, card.body ?? card.lines.join("\n"), bx + 40, by + 40, bw - 80, bh - 80, bodyFont);
+  }
+
+  // 맨 아래: 피드백
+  const fb = card.feedback ?? card.lines[0] ?? "";
+  if (fb) {
+    g.textAlign = "left"; g.fillStyle = "#ececea"; g.font = `600 40px ${bodyFont}`;
+    wrap(g, `💬 ${fb}`, W - 180).slice(0, 2).forEach((l, i) => g.fillText(l, 90, 1190 + i * 52));
+  }
+  g.textAlign = "right"; g.fillStyle = accent; g.font = `500 26px ${bodyFont}`;
+  g.fillText("super hannip Challenge", W - 90, H - 62);
+  return await new Promise<Blob>((res) => c.toBlob(b => res(b!), "image/png"));
+}
+
+function loadImg(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+function wrap(g: CanvasRenderingContext2D, text: string, max: number): string[] {
+  const out: string[] = [];
+  for (const para of text.split("\n")) {
+    let line = "";
+    for (const ch of Array.from(para)) {
+      if (g.measureText(line + ch).width > max && line) { out.push(line); line = ch; } else line += ch;
+    }
+    out.push(line);
+  }
+  return out;
+}
+function drawBodyText(g: CanvasRenderingContext2D, text: string, x: number, y: number, w: number, h: number, font: string) {
+  let size = 52;
+  let lines: string[] = [];
+  for (; size >= 30; size -= 4) { g.font = `500 ${size}px ${font}`; lines = wrap(g, text, w); if (lines.length * size * 1.45 <= h) break; }
+  g.textAlign = "left"; g.fillStyle = "#ececea";
+  lines.slice(0, Math.floor(h / (size * 1.45))).forEach((l, i) => g.fillText(l, x, y + size + i * size * 1.45));
+}
 
 function cssVar(name: string, fallback: string) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -78,8 +161,10 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
 
 /** 이미지 만들어 공유창 열기. 안 되는 환경이면 이미지 저장 + 문구 복사. 결과를 문자열로 돌려준다. */
 export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
-  const text = `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
-  const blob = await makeProofImage(card);
+  const text = card.itemLabel
+    ? `${card.emoji} ${card.userName ?? ""} · ${card.itemLabel} ${card.count ?? ""}회째${card.feedback ? `\n${card.feedback}` : ""}\n#super_hannip_challenge`
+    : `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
+  const blob = card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card);
   const file = new File([blob], `hannip_${card.date}.png`, { type: "image/png" });
   const nav = navigator as any;
   if (!isKakaoInApp() && nav.canShare && nav.canShare({ files: [file] })) {

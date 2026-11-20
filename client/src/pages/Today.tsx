@@ -52,6 +52,20 @@ export default function Today() {
   // 자랑하기: 저장 후 인증 카드 이미지를 만들어 공유창(카톡)으로 (2026-11-20)
   const [bragCard, setBragCard] = useState<ProofCard | null>(null);
   const kakaoShareText: string | null = null;
+  /** 새 자랑하기: 이번 회차 안 항목별 번호 + 내 사진 + 피드백 (2026-11-20) */
+  const bragItem: BragFn = async (p) => {
+    let n: number | undefined;
+    try { await utils.rounds.myCounts.invalidate(); const r = await utils.rounds.myCounts.fetch(); n = (r.counts as any)[p.item]; } catch {}
+    const time = new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
+    const card: ProofCard = { emoji: p.emoji, title: p.label, lines: [], userName, date, count: n, photo: p.photo, itemLabel: p.label, feedback: p.feedback, time };
+    utils.happy.yearProgress.invalidate();
+    shareProof(card)
+      .then(r => {
+        if (r === "downloaded") toast.success("인증 사진을 저장하고 문구를 복사했어요.");
+        if (r === "blocked") setBragCard(card);
+      })
+      .catch(() => setBragCard(card));
+  };
   const setKakaoShareText = (text: string | null) => {
     if (!text) return;
     const parts = text.replace(/#super_hannip_challenge/g, "").split("\n").map(s => s.trim()).filter(Boolean);
@@ -306,6 +320,9 @@ export default function Today() {
         </section>
       )}
 
+      {/* 우리 방 모토 — 오늘 칸 위, 가운데 */}
+      <p className="text-center text-sm md:text-base text-primary mb-3">꾸준함이 자존감이 되고, 자존감이 인생을 바꾼다</p>
+
       {/* 날짜 앞뒤로 보기 (팀보드처럼) */}
       <div className="flex items-center justify-between rounded-2xl bg-card border border-border px-3 py-2 mb-4">
         <button type="button" onClick={() => setDate(shiftDate(date, -1))} className="px-3 py-2 text-xl text-muted-foreground hover:text-primary" aria-label="이전 날">‹</button>
@@ -336,7 +353,7 @@ export default function Today() {
         autoExercised={(exercisesPrevDay.data?.length ?? 0) > 0}
       />
       {/* Sleep — 수면 기록 */}
-      <SleepSection date={date} sleepCount={seasonProgress.data?.counts.sleep} onShare={setKakaoShareText} />
+      <SleepSection date={date} sleepCount={seasonProgress.data?.counts.sleep} onBrag={bragItem} />
 
 
       {/* Meals — 식단 기록 (독립 섹션) */}
@@ -351,13 +368,13 @@ export default function Today() {
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
           }}
-          onShare={setKakaoShareText}
+          onBrag={bragItem}
         />
       </section>
 
       {/* Water — 물 기록 (사진 + 용량, 독립 섹션) */}
       <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
-        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} onShare={setKakaoShareText} />
+        <WaterSection date={date} waterCount={seasonProgress.data?.counts.water ?? undefined} userName={userName} onBrag={bragItem} />
       </section>
 
       {/* Exercise — 운동 기록 */}
@@ -372,7 +389,7 @@ export default function Today() {
             utils.feed.today.invalidate();
             utils.seasons.myProgress.invalidate();
           }}
-          onShare={setKakaoShareText}
+          onBrag={bragItem}
         />
       </section>
       {/* 체중 — 한 달에 한 번 (2026-11-20 매일 → 월 1회) */}
@@ -610,75 +627,47 @@ function MealsSection({
   mealCount,
   userName,
   onChange,
-  onShare,
+  onBrag,
 }: {
   date: string;
   meals: MealRow[];
   mealCount?: number;
   userName?: string;
   onChange: () => void;
-  onShare?: (text: string) => void;
+  onBrag?: BragFn;
 }) {
   const [creating, setCreating] = useState(false);
+  const [openId, setOpenId] = useState<number | null>(null);
+  const opened = meals.find(m => m.id === openId);
 
   return (
-    <div className="grid grid-cols-12 gap-6">
-      <div className="col-span-12 md:col-span-4">
-        <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
-          {userName ? `${userName} 식단 기록` : "식단 기록"}
-          {mealCount != null && (
-            <span className="text-base font-sans font-normal text-primary tabular-nums">{mealCount}회</span>
-          )}
-        </h2>
-        <p className="mt-3 font-serif italic text-muted-foreground text-sm">
-          일반식은 사진을 올리면 AI가 채워 주고, 스무디는 버튼만 누르면 돼요.
-        </p>
-        {!creating && (
-          <Button
-            variant="outline"
-            onClick={() => setCreating(true)}
-            className="mt-6 rounded-none border-foreground hover:bg-foreground hover:text-background"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            식사 기록 추가
-          </Button>
-        )}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 식단 기록` : "식단 기록"}</h2>
+        <CountBadge n={mealCount ?? meals.length} />
       </div>
-
-      <div className="col-span-12 md:col-span-8 space-y-6">
-        {creating && (
-          <MealForm
-            date={date}
-            mealsToday={meals.map(m => ({
-              category: m.category,
-              carbsG: m.carbsG,
-              proteinG: m.proteinG,
-              fatG: m.fatG,
-              vegetableG: m.vegetableG,
-              waterMl: m.waterMl,
-            }))}
-            onCancel={() => setCreating(false)}
-            onCreated={(shareText) => {
-              setCreating(false);
-              onChange();
-              if (shareText) onShare?.(shareText);
-            }}
-          />
-        )}
-
-        {meals.length === 0 && !creating && (
-          <div className="border hairline p-8 text-center font-serif italic text-muted-foreground">
-            아직 오늘 기록한 식사가 없어요.
-          </div>
-        )}
-
-        {meals.map((meal) => (
-          <MealCard key={meal.id} meal={meal} onChange={onChange} />
-        ))}
-
-        {/* 오늘 하루 영양 합계 (2026-11-20) */}
-        <DailyNutritionTotals meals={meals} />
-      </div>
+      {!creating && (
+        <Button onClick={() => setCreating(true)} className="w-full rounded-xl h-11">
+          <Plus className="h-4 w-4 mr-2" /> 식사 기록 추가
+        </Button>
+      )}
+      {creating && (
+        <MealForm
+          date={date}
+          mealsToday={meals.map(m => ({ category: m.category, carbsG: m.carbsG, proteinG: m.proteinG, fatG: m.fatG, vegetableG: m.vegetableG, waterMl: m.waterMl }))}
+          onCancel={() => setCreating(false)}
+          onCreated={(b) => { setCreating(false); onChange(); if (b) onBrag?.(b); }}
+        />
+      )}
+      {/* 오늘 기록: 메달 (누르면 자세히 · 코멘트 · 삭제) */}
+      <Medals
+        items={meals.slice().sort((a, b) => a.id - b.id).map((m, i) => ({ id: m.id, label: `${i + 1}회`, sub: m.category === "smoothie" ? "스무디" : "식사" }))}
+        onOpen={setOpenId}
+      />
+      <DailyNutritionTotals meals={meals} />
+      <Popup open={!!opened} onClose={() => setOpenId(null)}>
+        {opened && <MealCard meal={opened} onChange={() => { onChange(); setOpenId(null); }} />}
+      </Popup>
     </div>
   );
 }
@@ -695,7 +684,7 @@ function MealForm({
     carbsG: number; proteinG: number; fatG: number; vegetableG: number; waterMl: number;
   }>;
   onCancel: () => void;
-  onCreated: (shareText?: string) => void;
+  onCreated: (brag?: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string }) => void;
 }) {
   const [category, setCategory] = useState<MealCategory>("regular");
   const isSmoothie = category === "smoothie";
@@ -732,11 +721,7 @@ function MealForm({
   );
 
   const create = trpc.meals.create.useMutation({
-    onSuccess: () => {
-      toast.success("식사가 기록되었습니다");
-      const catLabel = CATEGORIES.find(c => c.value === category)?.label ?? "식사";
-      onCreated(`🥗 ${catLabel} 인증 완료! #super_hannip_challenge`);
-    },
+    onSuccess: () => { toast.success("식사가 기록되었습니다"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -942,7 +927,12 @@ function MealForm({
                     await create.mutateAsync({ recordedDate: date, category: "smoothie", photoBase64: [p] });
                   }
                 }
-                onCreated(pickedList.length ? `🥤 스무디 인증 완료!\n${pickedList.map(p => p.name).join(" · ")}\n${pickedList.reduce((a, p) => a + p.kcal, 0)}kcal · 탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g` : `🥤 스무디 인증 완료!`);
+                onCreated({
+                  item: "smoothie", label: "스무디", emoji: "🥤", photo: photos[0],
+                  feedback: pickedList.length
+                    ? `${pickedList.map(p => p.name).join(" · ")} · 단백질 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g (${pickedList.reduce((a, p) => a + p.kcal, 0)}kcal)`
+                    : "오늘도 스무디로 몸을 챙겼어요",
+                });
               } catch (e) {
                 // create.onError가 토스트 표시 처리
                 return;
@@ -954,12 +944,19 @@ function MealForm({
               toast.error("식단 사진을 1장 이상 첨부해 주세요");
               return;
             }
-            create.mutate({
-              recordedDate: date,
-              category,
-              description: description.trim() || undefined,
-              ...numbers,
-              photoBase64: photos,
+            try {
+              await create.mutateAsync({
+                recordedDate: date,
+                category,
+                description: description.trim() || undefined,
+                ...numbers,
+                photoBase64: photos,
+              });
+            } catch { return; }
+            const tip = (feedback.data as any[] | undefined)?.[0]?.text as string | undefined;
+            onCreated({
+              item: "meal", label: "식단", emoji: "🥗", photo: photos[0],
+              feedback: tip || `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g`,
             });
           }}
           disabled={create.isPending}
@@ -1135,7 +1132,8 @@ const INTENSITY_OPTS = [
   { value: "high", label: "높음" },
 ] as const;
 
-function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, onShare }: { date: string; exercises: ExRow[]; exerciseCount?: number; userName?: string; onChange: () => void; onShare?: (text: string) => void }) {
+function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, onBrag }: { date: string; exercises: ExRow[]; exerciseCount?: number; userName?: string; onChange: () => void; onBrag?: BragFn }) {
+  const [openId, setOpenId] = useState<number | null>(null);
   const [kind, setKind] = useState("");
   const [duration, setDuration] = useState("");
   const [intensity, setIntensity] = useState<"low" | "medium" | "high">("medium");
@@ -1146,7 +1144,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
   const create = trpc.exercises.create.useMutation({
     onSuccess: () => {
       toast.success("운동이 기록되었습니다");
-      onShare?.(`💪 ${kind.trim() || "운동"} 인증 완료! #super_hannip_challenge`);
+      onBrag?.({ item: "exercise", label: "운동", emoji: "💪", photo: photo ?? undefined, feedback: `${kind.trim() || "운동"} ${duration}분 · 강도 ${INTENSITY_OPTS.find(o => o.value === intensity)?.label ?? ""} · 오늘도 움직였어요!` });
       setKind(""); setDuration(""); setNote(""); setIntensity("medium"); setPhoto(null);
       if (exFileRef.current) exFileRef.current.value = "";
       onChange();
@@ -1164,152 +1162,63 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
     reader.readAsDataURL(file);
   };
 
+  const opened = exercises.find(x => x.id === openId) as (ExRow & { photoUrl?: string | null }) | undefined;
   return (
-    <div className="grid grid-cols-12 gap-6">
-      <div className="col-span-12 md:col-span-4">
-        <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
-          {userName ? `${userName} 운동 기록` : "운동 기록"}
-          {exerciseCount != null && (
-            <span className="text-base font-sans font-normal text-primary tabular-nums">{exerciseCount}회</span>
-          )}
-        </h2>
-        <p className="mt-3 font-serif italic text-muted-foreground text-sm">
-          작은 움직임도 기록하면 흐름이 됩니다.
-        </p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 운동 기록` : "운동 기록"}</h2>
+        <CountBadge n={exerciseCount ?? exercises.length} />
       </div>
-
-      <div className="col-span-12 md:col-span-8">
-        <div className="border hairline p-6 mb-6">
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-6">
-              <Label className="editorial-eyebrow text-muted-foreground mb-1 block">운동 종류</Label>
-              <Input
-                value={kind}
-                onChange={(e) => setKind(e.target.value)}
-                placeholder="예) 러닝, 요가, 필라테스"
-                className="rounded-none border-0 border-b border-foreground/30 px-0 font-serif text-lg focus-visible:ring-0 focus-visible:border-foreground"
-              />
-            </div>
-            <div className="col-span-6 md:col-span-3">
-              <Label className="editorial-eyebrow text-muted-foreground mb-1 block">시간 (분)</Label>
-              <Input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                placeholder="30"
-                className="rounded-none border-0 border-b border-foreground/30 px-0 number-display text-lg focus-visible:ring-0 focus-visible:border-foreground"
-              />
-            </div>
-            <div className="col-span-6 md:col-span-3">
-              <Label className="editorial-eyebrow text-muted-foreground mb-1 block">강도</Label>
-              <Select value={intensity} onValueChange={(v) => setIntensity(v as typeof intensity)}>
-                <SelectTrigger className="rounded-none border-foreground/30">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {INTENSITY_OPTS.map(o => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <Textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="메모 (선택)"
-            className="rounded-none border-foreground/30 font-serif mb-4"
-            rows={2}
-          />
-
-          {/* 운동 사진 — 필수 */}
-          <div className="mb-4">
-            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">
-              PHOTO · 운동 인증 사진 <span className="text-destructive">*필수</span>
-            </Label>
-            {photo ? (
-              <div className="relative w-24 h-24 border hairline overflow-hidden">
-                <img src={photo} alt="운동 사진" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => { setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; }}
-                  className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
-              <label className="w-24 h-24 border-dashed border-2 border-foreground/20 hover:border-foreground/50 flex flex-col items-center justify-center cursor-pointer transition-colors gap-1">
-                <input
-                  ref={exFileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleExPhoto(e.target.files[0])}
-                />
-                <Camera className="h-5 w-5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">사진 추가</span>
-              </label>
-            )}
-            <p className="text-xs text-muted-foreground mt-1 font-serif italic">운동 현장 사진을 1장 올려주세요.</p>
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              onClick={() => {
-                if (!kind.trim() || !duration) {
-                  toast.error("운동 종류와 시간을 입력해 주세요");
-                  return;
-                }
-                if (!photo) {
-                  toast.error("운동 사진을 1장 이상 첨부해 주세요");
-                  return;
-                }
-                create.mutate({
-                  recordedDate: date,
-                  kind: kind.trim(),
-                  durationMin: parseInt(duration),
-                  intensity,
-                  note: note.trim() || undefined,
-                  photoBase64: photo,
-                });
-              }}
-              disabled={create.isPending}
-              className="rounded-none uppercase tracking-wider"
-            >
-              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
-            </Button>
-          </div>
-        </div>
-
-        {exercises.length === 0 ? (
-          <div className="border hairline p-8 text-center font-serif italic text-muted-foreground">
-            아직 오늘 기록한 운동이 없어요.
+      <div className="grid grid-cols-12 gap-2">
+        <Input value={kind} onChange={(e) => setKind(e.target.value)} placeholder="운동 (예: 걷기, 요가)" className="col-span-6 rounded-lg bg-transparent h-10" />
+        <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="분" className="col-span-3 rounded-lg bg-transparent h-10" />
+        <Select value={intensity} onValueChange={(v) => setIntensity(v as typeof intensity)}>
+          <SelectTrigger className="col-span-3 rounded-lg h-10"><SelectValue /></SelectTrigger>
+          <SelectContent>{INTENSITY_OPTS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2">
+        {photo ? (
+          <div className="relative w-14 h-14 rounded-lg border border-border overflow-hidden">
+            <img src={photo} alt="운동 사진" className="w-full h-full object-cover" />
+            <button type="button" onClick={() => { setPhoto(null); if (exFileRef.current) exFileRef.current.value = ""; }} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {exercises.map(ex => (
-              <div key={ex.id} className="border hairline p-4 flex items-center justify-between">
-                <div>
-                  <div className="font-serif text-lg">{ex.kind}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {ex.durationMin}분 · 강도 {INTENSITY_OPTS.find(o => o.value === ex.intensity)?.label}
-                  </div>
-                  {ex.note && <div className="text-sm font-serif italic text-muted-foreground mt-1">{ex.note}</div>}
-                </div>
-                <button onClick={() => del.mutate({ id: ex.id })} className="text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+          <label className="w-14 h-14 rounded-lg border-dashed border-2 border-foreground/20 flex flex-col items-center justify-center cursor-pointer">
+            <input ref={exFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleExPhoto(e.target.files[0])} />
+            <Camera className="h-5 w-5 text-muted-foreground" />
+          </label>
+        )}
+        <span className="text-[11px] text-muted-foreground">운동 사진 필수</span>
+        <Button
+          onClick={() => {
+            if (!kind.trim() || !duration) { toast.error("운동 종류와 시간을 입력해 주세요"); return; }
+            if (!photo) { toast.error("운동 사진을 1장 이상 첨부해 주세요"); return; }
+            create.mutate({ recordedDate: date, kind: kind.trim(), durationMin: parseInt(duration), intensity, note: note.trim() || undefined, photoBase64: photo });
+          }}
+          disabled={create.isPending}
+          className="ml-auto rounded-full px-5 h-10"
+        >
+          {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
+        </Button>
+      </div>
+      <Medals items={exercises.map((x, i) => ({ id: x.id, label: `${i + 1}회`, sub: `${x.durationMin}분` }))} onOpen={setOpenId} />
+      <Popup open={!!opened} onClose={() => setOpenId(null)}>
+        {opened && (
+          <div className="space-y-3">
+            {opened.photoUrl && <img src={opened.photoUrl} alt="" className="w-full rounded-xl object-cover max-h-[60vh]" />}
+            <div className="text-lg font-semibold">{opened.kind}</div>
+            <div className="text-sm text-muted-foreground">{opened.durationMin}분 · 강도 {INTENSITY_OPTS.find(o => o.value === opened.intensity)?.label}</div>
+            {opened.note && <div className="text-sm">{opened.note}</div>}
+            <Button variant="outline" onClick={() => { del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
+              <Trash2 className="h-4 w-4 mr-1" /> 삭제
+            </Button>
           </div>
         )}
-      </div>
+      </Popup>
     </div>
   );
 }
-
-
 /* ----------------- Sleep Section ----------------- */
 
 type SleepStatus = "danger" | "warning" | "good" | "over" | "neutral";
@@ -1417,7 +1326,9 @@ function WheelPicker({
   );
 }
 
-function SleepSection({ date, sleepCount, onShare }: { date: string; sleepCount?: number; onShare?: (text: string) => void }) {
+function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?: number; onBrag?: BragFn }) {
+  const [wakePhoto, setWakePhoto] = useState<string | null>(null);
+  const wakeRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
   const todaySleep = trpc.sleep.byDate.useQuery({ date });
   const sleepHistory = trpc.sleep.list.useQuery({ since: undefined } as any);
@@ -1450,12 +1361,15 @@ function SleepSection({ date, sleepCount, onShare }: { date: string; sleepCount?
       utils.seasons.myProgress.invalidate();
       utils.happy.yearProgress.invalidate();
       const d = computeSleepMin(bedHour, bedMinute, wakeHour, wakeMinute);
-      onShare?.(`😴 수면 인증 완료!\n${fmtClock(bedHour)} 취침 · ${fmtClock(wakeHour)} 기상\n${Math.floor(d / 60)}시간${d % 60 ? ` ${d % 60}분` : ""} 잤어요`);
+      onBrag?.({ item: "wake", label: "기상", emoji: "☀️", photo: wakePhoto ?? undefined, feedback: `${fmtClock(bedHour)} 취침 · ${fmtClock(wakeHour)} 기상 · ${Math.floor(d / 60)}시간${d % 60 ? ` ${d % 60}분` : ""} · ${evaluateSleepClient(bedHour, bedMinute, wakeHour, wakeMinute).message}` });
+      setWakePhoto(null); if (wakeRef.current) wakeRef.current.value = "";
     },
   });
 
   const handleSave = () => {
+    if (!wakePhoto) { toast.error("아침 따뜻한 물 한 잔 사진을 올려 주세요"); return; }
     upsertSleep.mutate({
+      photoBase64: wakePhoto,
       recordedDate: date,
       bedHour,
       bedMinute,
@@ -1517,6 +1431,21 @@ function SleepSection({ date, sleepCount, onShare }: { date: string; sleepCount?
           ))}
         </div>
       </div>
+      {/* 기상 인증: 아침 따뜻한 물 한 잔 사진 (필수) */}
+      <div className="flex items-center gap-2 mb-3">
+        {wakePhoto ? (
+          <div className="relative w-14 h-14 rounded-lg border border-border overflow-hidden">
+            <img src={wakePhoto} alt="" className="w-full h-full object-cover" />
+            <button type="button" onClick={() => { setWakePhoto(null); if (wakeRef.current) wakeRef.current.value = ""; }} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
+          </div>
+        ) : (
+          <label className="w-14 h-14 rounded-lg border-dashed border-2 border-primary/50 flex items-center justify-center cursor-pointer">
+            <input ref={wakeRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const fl = e.target.files?.[0]; if (!fl) return; const r = new FileReader(); r.onload = () => setWakePhoto(String(r.result)); r.readAsDataURL(fl); }} />
+            <Camera className="h-5 w-5 text-primary" />
+          </label>
+        )}
+        <span className="text-xs text-muted-foreground">☀️ 기상 인증 · 아침을 깨우는 <b className="text-foreground">따뜻한 물 한 잔</b> 사진 (필수)</span>
+      </div>
       {/* 결과 + 자랑하기 한 줄 */}
       <div className="flex items-center gap-3">
         <span className="text-lg font-semibold tabular-nums">{hours}시간{mins ? ` ${mins}분` : ""}</span>
@@ -1529,6 +1458,46 @@ function SleepSection({ date, sleepCount, onShare }: { date: string; sleepCount?
         </Button>
       </div>
     </section>
+  );
+}
+
+/* ----------------- 공통: 자랑하기 형식 · 큰 횟수 배지 · 메달 · 팝업 (2026-11-20) ----------------- */
+export type BragItem = "meal" | "smoothie" | "water" | "exercise" | "wake";
+export type BragFn = (p: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string }) => void;
+
+function CountBadge({ n }: { n?: number | null }) {
+  if (n == null) return null;
+  return (
+    <span className="inline-flex items-center justify-center min-w-[3rem] h-12 px-2 rounded-full border-2 border-primary text-primary text-xl font-bold tabular-nums shadow-[0_0_10px_var(--primary-glow,rgba(182,242,74,0.35))]">
+      {n}회
+    </span>
+  );
+}
+
+function Medals({ items, onOpen }: { items: Array<{ id: number; label: string; sub?: string }>; onOpen: (id: number) => void }) {
+  if (!items.length) return null;
+  return (
+    <div className="grid grid-cols-5 gap-2">
+      {items.map(it => (
+        <button key={it.id} type="button" onClick={() => onOpen(it.id)}
+          className="aspect-square rounded-full border-2 border-primary/70 bg-primary/10 flex flex-col items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+          <span className="text-sm font-bold leading-none">{it.label}</span>
+          {it.sub && <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">{it.sub}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Popup({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[90] bg-black/70 flex items-end sm:items-center justify-center p-3" onClick={onClose}>
+      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-card border border-border p-4" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-end mb-1"><button type="button" onClick={onClose} className="text-muted-foreground"><X className="h-5 w-5" /></button></div>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -2103,7 +2072,10 @@ function PhotoPicker({
 const WATER_VOLUME_OPTIONS = [300, 400, 500, 600, 700, 800, 900, 1000] as const;
 const WATER_DAILY_TARGET_ML = 2000;
 
-function WaterSection({ date, waterCount, userName, onShare }: { date: string; waterCount?: number; userName?: string; onShare?: (text: string) => void }) {
+function WaterSection({ date, waterCount, userName, onBrag }: { date: string; waterCount?: number; userName?: string; onBrag?: BragFn }) {
+  void waterCount;
+  const [openId, setOpenId] = useState<number | null>(null);
+  const lastPhotos = useRef<string[]>([]);
   const utils = trpc.useUtils();
   const watersToday = trpc.waters.byDate.useQuery({ date });
   const [volumeMl, setVolumeMl] = useState<number>(500);
@@ -2119,7 +2091,9 @@ function WaterSection({ date, waterCount, userName, onShare }: { date: string; w
       utils.waters.byDate.invalidate();
       utils.seasons.myProgress.invalidate();
       toast.success(`물 ${res.count}회 기록되었습니다 (${(volumeMl * res.count).toLocaleString()}ml)`);
-      onShare?.(`💧 물 ${res.count}회 인증 완료! (${(volumeMl * res.count).toLocaleString()}ml) #super_hannip_challenge`);
+      const newTotal = totalMl + volumeMl * res.count;
+      onBrag?.({ item: "water", label: "물", emoji: "💧", photo: lastPhotos.current[0],
+        feedback: `${volumeMl}ml · 오늘 ${newTotal.toLocaleString()}ml (목표의 ${Math.min(100, Math.round(newTotal / WATER_DAILY_TARGET_ML * 100))}%)` });
       setPhotos([]);
       if (fileRef.current) fileRef.current.value = "";
     },
@@ -2153,177 +2127,83 @@ function WaterSection({ date, waterCount, userName, onShare }: { date: string; w
     setPhotos((prev) => [...prev, ...results]);
   };
 
+  const opened = items.find(it => it.id === openId);
   return (
-    <div className="grid grid-cols-12 gap-6">
-      <div className="col-span-12 md:col-span-4">
-        <h2 className="text-xl md:text-2xl font-semibold flex items-baseline gap-3">
-          {userName ? `${userName} 물 기록` : "물 기록"}
-          {((waterCount ?? items.length) > 0) && (
-            <span className="text-base font-sans font-normal text-primary tabular-nums">{waterCount ?? items.length}회</span>
-          )}
-        </h2>
-        <p className="mt-3 font-serif italic text-muted-foreground text-sm">
-          한 잔씩 사진으로 남겨 주세요. 사진 1장 = 기록 1회로 누적됩니다.
-        </p>
-
-        {/* 누적 진행 바 */}
-        <div className="mt-6 border hairline p-4">
-          <div className="flex items-baseline justify-between mb-2">
-            <span className="editorial-eyebrow text-muted-foreground">오늘 누적</span>
-            <span className="number-display text-2xl tabular-nums">
-              {totalMl.toLocaleString()}
-              <span className="text-xs text-muted-foreground ml-1">ml</span>
-            </span>
-          </div>
-          <div className="h-1.5 w-full bg-secondary/60 overflow-hidden">
-            <div
-              className={cn(
-                "h-full transition-[width] duration-500 ease-out",
-                totalMl >= WATER_DAILY_TARGET_ML ? "bg-emerald-500" : "bg-foreground"
-              )}
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between mt-1.5">
-            <span className="text-xs font-serif italic text-muted-foreground">
-              {totalMl >= WATER_DAILY_TARGET_ML
-                ? "오늘 수분 목표 달성!"
-                : `목표 ${WATER_DAILY_TARGET_ML.toLocaleString()}ml까지 ${(WATER_DAILY_TARGET_ML - totalMl).toLocaleString()}ml`}
-            </span>
-            <span className="text-xs text-muted-foreground tabular-nums">{progressPct}%</span>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg md:text-xl font-semibold">{userName ? `${userName} 물 기록` : "물 기록"}</h2>
+        <div className="text-right">
+          <div className="text-[11px] text-muted-foreground">오늘 누적</div>
+          <div className="text-2xl font-bold tabular-nums text-primary">{totalMl.toLocaleString()}<span className="text-sm ml-0.5">ml</span></div>
+        </div>
+      </div>
+      <div>
+        <div className="h-2.5 w-full rounded-full bg-secondary overflow-hidden">
+          <div className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out" style={{ width: `${progressPct}%` }} />
+        </div>
+        <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+          <span>{totalMl >= WATER_DAILY_TARGET_ML ? "오늘 수분 목표 달성!" : `목표 ${WATER_DAILY_TARGET_ML.toLocaleString()}ml까지 ${(WATER_DAILY_TARGET_ML - totalMl).toLocaleString()}ml`}</span>
+          <span className="tabular-nums">{progressPct}%</span>
         </div>
       </div>
 
-      <div className="col-span-12 md:col-span-8 space-y-6">
-        {/* 입력 카드 */}
-        <div className="border hairline p-6">
-          <div className="mb-4">
-            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">
-              VOLUME · 한 잔당 용량
-            </Label>
-            <div className="grid grid-cols-4 gap-2">
-              {WATER_VOLUME_OPTIONS.map((v) => {
-                const active = volumeMl === v;
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setVolumeMl(v)}
-                    className={cn(
-                      "border hairline px-3 py-2 transition-colors number-display tabular-nums text-base",
-                      active ? "bg-foreground text-background border-foreground" : "hover:bg-secondary/40",
-                    )}
-                  >
-                    {v}
-                    <span className="text-xs ml-1 opacity-70">ml</span>
-                  </button>
-                );
-              })}
+      {/* 한 잔당 용량 */}
+      <div className="grid grid-cols-4 gap-1.5">
+        {WATER_VOLUME_OPTIONS.map((v) => (
+          <button key={v} type="button" onClick={() => setVolumeMl(v)}
+            className={cn("rounded-lg border py-2 text-xs tabular-nums whitespace-nowrap transition-colors",
+              volumeMl === v ? "bg-primary text-primary-foreground border-primary font-semibold" : "border-border text-muted-foreground")}>
+            {v}ml
+          </button>
+        ))}
+      </div>
+
+      {/* 사진 (1장 = 1회, 최대 8장) + 자랑하기 */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {photos.map((p, idx) => (
+          <div key={idx} className="relative w-14 h-14 rounded-lg border border-border overflow-hidden">
+            <img src={p} alt="" className="w-full h-full object-cover" />
+            <button type="button" onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== idx))} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5"><X className="h-3 w-3" /></button>
+          </div>
+        ))}
+        {photos.length < 8 && (
+          <label className="w-14 h-14 rounded-lg border-dashed border-2 border-foreground/20 flex items-center justify-center cursor-pointer">
+            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+            <Plus className="h-5 w-5 text-muted-foreground" />
+          </label>
+        )}
+        <Button
+          onClick={() => {
+            if (photos.length === 0) { toast.error("물 사진을 1장 이상 첨부해 주세요"); return; }
+            lastPhotos.current = photos;
+            create.mutate({ recordedDate: date, volumeMl, photoBase64: photos });
+          }}
+          disabled={create.isPending}
+          className="ml-auto rounded-full px-5 h-10"
+        >
+          {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground -mt-2">사진 1장 = 1회 · 최대 8장</p>
+
+      {/* 오늘 마신 물: 메달 (누르면 사진 · 삭제) */}
+      <Medals items={items.map((it, i) => ({ id: it.id, label: `${i + 1}회`, sub: `${it.volumeMl}ml` }))} onOpen={setOpenId} />
+      <Popup open={!!opened} onClose={() => setOpenId(null)}>
+        {opened && (
+          <div className="space-y-3">
+            <img src={opened.photoUrl} alt="" className="w-full rounded-xl object-cover max-h-[60vh]" />
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-semibold tabular-nums">{opened.volumeMl}ml</span>
+              <Button variant="outline" onClick={() => { del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
+                <Trash2 className="h-4 w-4 mr-1" /> 삭제
+              </Button>
             </div>
-          </div>
-
-          <div className="mb-4">
-            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">
-              PHOTOS · 사진 1장 = 인증 1회 (최대 8장)
-            </Label>
-            <div className="flex flex-wrap gap-3">
-              {photos.map((p, idx) => (
-                <div key={idx} className="relative w-16 h-16 rounded-lg border hairline overflow-hidden">
-                  <img src={p} alt="" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-              {photos.length < 8 && (
-                <label className="w-16 h-16 rounded-lg border-dashed border-2 border-foreground/20 hover:border-foreground/50 flex items-center justify-center cursor-pointer transition-colors">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleFiles(e.target.files)}
-                  />
-                  <Plus className="h-5 w-5 text-muted-foreground" />
-                </label>
-              )}
-            </div>
-            {photos.length > 0 && (
-              <p className="mt-2 font-serif italic text-xs text-muted-foreground">
-                선택된 사진 {photos.length}장 × {volumeMl}ml = 저장 시{" "}
-                <span className="text-foreground number-display">
-                  {(photos.length * volumeMl).toLocaleString()}ml
-                </span>{" "}
-                추가, 인증 {photos.length}회로 집계됩니다.
-              </p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t hairline">
-            <Button
-              onClick={() => {
-                if (photos.length === 0) {
-                  toast.error("물 사진을 1장 이상 첨부해 주세요");
-                  return;
-                }
-                create.mutate({
-                  recordedDate: date,
-                  volumeMl,
-                  photoBase64: photos,
-                });
-              }}
-              disabled={create.isPending}
-              className="rounded-none uppercase tracking-wider"
-            >
-              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
-            </Button>
-          </div>
-        </div>
-
-        {/* 오늘 인증 리스트 */}
-        {items.length === 0 ? (
-          <div className="border hairline p-8 text-center font-serif italic text-muted-foreground">
-            아직 오늘 물 기록이 없어요.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {items.map((it) => (
-              <div key={it.id} className="border hairline overflow-hidden bg-background">
-                <div className="aspect-square bg-secondary/30 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={it.photoUrl} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <div className="editorial-eyebrow text-muted-foreground">VOLUME</div>
-                    <div className="number-display tabular-nums text-lg">
-                      {it.volumeMl}
-                      <span className="text-xs text-muted-foreground ml-0.5">ml</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => del.mutate({ id: it.id })}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
         )}
-      </div>
+      </Popup>
     </div>
   );
 }
-
 /* ----------------- Kakao Share Banner ----------------- */
 function KakaoShareBanner({ text, onClose }: { text: string; onClose: () => void }) {
   useEffect(() => {

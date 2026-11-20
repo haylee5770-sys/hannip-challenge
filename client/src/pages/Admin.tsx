@@ -13,6 +13,32 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Redirect } from "wouter";
 import { supabase } from "@/lib/supabase";
 
+/** 챌린지 시작 / 종료 큰 버튼 (2026-11-20) */
+function RoundControl() {
+  const utils = trpc.useUtils();
+  const cur = trpc.rounds.current.useQuery();
+  const after = () => { utils.rounds.invalidate(); };
+  const start = trpc.rounds.start.useMutation({ onSuccess: (r) => { toast.success(`${r.seasonNumber}회차 시작! 모두의 번호가 1번부터 시작돼요.`); after(); }, onError: e => toast.error(e.message) });
+  const end = trpc.rounds.end.useMutation({ onSuccess: (r) => { r.ok ? toast.success("챌린지 종료! 시상식에 결과가 올라갔어요.") : toast.error((r as any).message ?? "진행 중인 챌린지가 없어요"); after(); }, onError: e => toast.error(e.message) });
+  const busy = start.isPending || end.isPending;
+  return (
+    <section className="mt-6 rounded-2xl bg-card border border-primary/50 p-5 space-y-3">
+      <div className="text-sm">
+        {cur.data ? <>지금 진행 중: <b className="text-primary">{cur.data.name}</b> <span className="text-muted-foreground">({cur.data.startDate}~)</span></> : <span className="text-muted-foreground">지금 진행 중인 챌린지가 없어요.</span>}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" disabled={busy} onClick={() => { if (confirm("3일 디톡스를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.")) start.mutate({ type: "detox" }); }}
+          className="rounded-xl bg-primary text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 3일 디톡스 시작</button>
+        <button type="button" disabled={busy} onClick={() => { if (confirm("미니 챌린지를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.")) start.mutate({ type: "mini" }); }}
+          className="rounded-xl bg-primary/80 text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 미니 챌린지 시작</button>
+      </div>
+      <button type="button" disabled={busy || !cur.data} onClick={() => { if (confirm("챌린지를 종료하고 시상식에 결과를 올릴까요?")) end.mutate(); }}
+        className="w-full rounded-xl border-2 border-primary text-primary font-bold py-4 text-base disabled:opacity-40">■ 챌린지 종료 · 결산하기</button>
+      <p className="text-[11px] text-muted-foreground">종료하면 이게돼 챔피언·꾸준함 챔피언이 자동 계산돼 '시상식'과 '역대 챌린지'에 올라가요.</p>
+    </section>
+  );
+}
+
 export default function Admin() {
   const { user, loading } = useAuth();
   if (loading) return <div className="py-20 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
@@ -28,6 +54,8 @@ export default function Admin() {
           </h1>
         </div>
       </section>
+
+      <RoundControl />
 
       <Tabs defaultValue="report" className="py-10">
         <TabsList className="bg-transparent border-b hairline rounded-none w-full justify-start gap-6 p-0 h-auto mb-8 flex-wrap">
