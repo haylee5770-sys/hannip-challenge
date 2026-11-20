@@ -42,11 +42,13 @@ export default function Members() {
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={e => setQ(e.target.value)} maxLength={20} placeholder="쓰고 싶은 활동명 (예: 수지)" className="pl-9 rounded-xl bg-transparent h-11" />
           </div>
-          <Button className="rounded-xl h-11" disabled={!check.data?.ok || setNick.isPending} onClick={() => setNick.mutate({ name: q.trim() })}>
+          <Button className="rounded-xl h-11" disabled={!check.data?.ok || setNick.isPending || q.trim().replace(/\s+/g, "") === (user?.name ?? "").replace(/\s+/g, "")} onClick={() => setNick.mutate({ name: q.trim() })}>
             {setNick.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "이 이름 쓰기"}
           </Button>
         </div>
-        {q.trim().length >= 2 && check.data && (
+        {q.trim().length >= 2 && q.trim().replace(/\s+/g, "") === (user?.name ?? "").replace(/\s+/g, "") ? (
+          <p className="text-sm text-muted-foreground">지금 쓰고 있는 내 활동명이에요.</p>
+        ) : q.trim().length >= 2 && check.data && (
           check.data.ok
             ? <p className="text-sm text-primary">✓ 쓸 수 있는 이름이에요.</p>
             : <p className="text-sm text-rose-300">✕ {check.data.reason} {check.data.similar.length ? `(이미 있음: ${check.data.similar.join(", ")})` : ""}</p>
