@@ -381,7 +381,7 @@ export default function Today() {
         autoCleanEat={(mealsPrevDay.data?.length ?? 0) > 0}
         autoExercised={(exercisesPrevDay.data?.length ?? 0) > 0}
       />
-      <TodayTabs tab={tab} setTab={setTab} sleepDone={!!sleepToday.data} mealN={myMealsToday.data?.length ?? 0} waterMl={watersTodayTop.data?.totalMl ?? 0} exN={myExercisesToday.data?.length ?? 0} weighDone={!!weighInTop.data?.doneThisMonth} />
+      <TodayTabs tab={tab} setTab={setTab} sleepDone={!!sleepToday.data} mealN={myMealsToday.data?.length ?? 0} waterMl={watersTodayTop.data?.totalMl ?? 0} exN={myExercisesToday.data?.length ?? 0} weighDone={!!weighInTop.data?.doneThisMonth} weighKg={(weighInTop.data as any)?.lastKg ?? null} />
       {/* 지난 날짜는 보기만: 기록 버튼 회색 유리 + 누르면 안내 팝업 (2026-11-21, 방장 포함 모두) */}
       <div className={isPast ? "past-lock" : undefined} onClickCapture={isPast ? blockPast : undefined} onFocusCapture={isPast ? (e) => { const t = e.target as HTMLElement; if (t.matches("input,textarea,select") && !t.closest("[data-view-ok]")) t.blur(); } : undefined}>
       {/* Sleep — 수면 기록 */}
@@ -1562,13 +1562,13 @@ function CountBadge({ n }: { n?: number | null }) {
 
 /* ---- 오늘 칸 고르기: 수면·식단·물·운동·체중 (접힌 따잠마음운과 같은 유리 네모) + 전체 보기 (2026-11-21) ---- */
 type TodayTab = "sleep" | "meal" | "water" | "exercise" | "weight" | "all";
-function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone }: { tab: TodayTab; setTab: (v: TodayTab) => void; sleepDone: boolean; mealN: number; waterMl: number; exN: number; weighDone: boolean }) {
+function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone, weighKg }: { tab: TodayTab; setTab: (v: TodayTab) => void; sleepDone: boolean; mealN: number; waterMl: number; exN: number; weighDone: boolean; weighKg?: number | null }) {
   const items: Array<{ k: TodayTab; label: string; sub: string; done: boolean }> = [
     { k: "sleep", label: "수면", sub: sleepDone ? "✓" : "–", done: sleepDone },
     { k: "meal", label: "식단", sub: mealN ? `${mealN}회` : "–", done: mealN > 0 },
     { k: "water", label: "물", sub: waterMl ? `${waterMl >= 1000 ? (waterMl / 1000).toFixed(1) + "L" : waterMl + "ml"}` : "–", done: waterMl > 0 },
     { k: "exercise", label: "운동", sub: exN ? `${exN}회` : "–", done: exN > 0 },
-    { k: "weight", label: "체중", sub: weighDone ? "✓" : "–", done: weighDone },
+    { k: "weight", label: "체중", sub: weighDone ? (weighKg != null ? `${weighKg}kg` : "✓") : "–", done: weighDone },
   ];
   return (
     <section className="mb-4 rounded-2xl bg-card border border-border p-4">
@@ -1577,7 +1577,7 @@ function TodayTabs({ tab, setTab, sleepDone, mealN, waterMl, exN, weighDone }: {
           <button key={it.k} type="button" onClick={() => setTab(it.k)}
             className={cn("rounded-xl border py-2 flex flex-col items-center justify-center leading-tight transition-colors",
               // 아직 안 한 칸은 회색 글씨·회색 테두리·배경 없음 → '안 했네'가 티 나게 (2026-11-21 해이 결정)
-              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-border bg-transparent text-muted-foreground")}>
+              tab === it.k ? "glass-fill" : it.done ? "border-primary/60 bg-primary/10 text-primary" : "border-white/15 bg-transparent text-muted-foreground")}>
             <span className="text-sm font-bold">{it.label}</span>
             <span className="text-[10px] mt-0.5 opacity-80 tabular-nums">{it.sub}</span>
           </button>

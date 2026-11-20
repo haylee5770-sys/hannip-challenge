@@ -382,5 +382,8 @@ export async function analyzeScaleImage(url: string) {
 export async function weighInStatus(userId: number) {
   const today = kstToday(); const month = today.slice(0, 7);
   const r = (await q(sql`SELECT COUNT(*) c FROM weights WHERE userId=${userId} AND DATE_FORMAT(recordedDate,'%Y-%m')=${month}`))[0];
-  return { isFirstDay: today.slice(8) === "01", doneThisMonth: Number(r?.c ?? 0) > 0 };
+  // 오늘 칸 '체중'에 숫자로 보여 줄 이번 달 마지막 몸무게 (2026-11-21)
+  const last = (await q(sql`SELECT weightKg FROM weights WHERE userId=${userId} AND DATE_FORMAT(recordedDate,'%Y-%m')=${month} ORDER BY recordedDate DESC, id DESC LIMIT 1`))[0];
+  const lastKg = last?.weightKg != null ? Math.round(Number(last.weightKg) * 10) / 10 : null;
+  return { isFirstDay: today.slice(8) === "01", doneThisMonth: Number(r?.c ?? 0) > 0, lastKg };
 }
