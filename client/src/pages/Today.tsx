@@ -348,7 +348,7 @@ export default function Today() {
           <button type="button" onClick={() => setDate(shiftDate(date, -1))} className="p-2 text-primary hover:opacity-80" aria-label="이전 날">
             <svg width="14" height="14" viewBox="0 0 10 10" aria-hidden="true"><path d="M8 1 L2 5 L8 9 Z" fill="currentColor" /></svg>
           </button>
-          <div className="text-xl md:text-2xl font-semibold tabular-nums whitespace-nowrap">
+          <div className={cn("text-xl md:text-2xl font-semibold tabular-nums whitespace-nowrap", date !== todayLocal() && "text-muted-foreground")}>
             {date === todayLocal() && <span className="text-primary text-2xl md:text-3xl font-bold mr-2">오늘</span>}
             {formatShortDate(date)}
           </div>
@@ -362,9 +362,6 @@ export default function Today() {
             <svg width="14" height="14" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1 L8 5 L2 9 Z" fill="currentColor" /></svg>
           </button>
         </div>
-        {date !== todayLocal() && (
-          <div className="text-center"><button type="button" onClick={() => setDate(todayLocal())} className="text-[11px] text-muted-foreground underline">오늘로</button></div>
-        )}
       </div>
       {/* 명언·어제 돌아보기 한마디 — 박스 밖 빈 공간에 글자만 */}
       <DailyLines date={date} />
