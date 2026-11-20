@@ -347,3 +347,8 @@
 }
 .black-glass::before { content: ""; position: absolute; left: 5%; right: 5%; top: 3px; height: 22%; border-radius: 9999px; background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0)); pointer-events: none; }
 .black-glass > * { position: relative; }
+
+/* 지난 날짜 보기 전용 (2026-11-21): 기록 버튼만 회색 유리, 기록 내용 색은 그대로 */
+.past-lock .glass-pill, .past-lock .glass-btn, .past-lock .glass-fill,
+.past-lock label.nudge, .past-lock button.nudge { filter: grayscale(1) brightness(.85); animation: none !important; }
+.past-lock [data-view-ok] { filter: none; }

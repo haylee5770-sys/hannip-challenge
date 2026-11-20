@@ -48,6 +48,14 @@ type MealCategory =
 
 export default function Today() {
   const [date, setDate] = useState<string>(() => todayLocal());
+  const isPast = date < todayLocal();
+  const [pastAlert, setPastAlert] = useState(false);
+  const blockPast = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest("button,label,input,textarea,select");
+    if (!el || el.closest("[data-view-ok]")) return;
+    e.preventDefault(); e.stopPropagation();
+    setPastAlert(true);
+  };
   const sleepToday = trpc.sleep.byDate.useQuery({ date });
   const utils = trpc.useUtils();
   const { user } = useAuth();
@@ -365,11 +373,6 @@ export default function Today() {
       </div>
       {/* 명언·어제 돌아보기 한마디 — 박스 밖 빈 공간에 글자만 */}
       <DailyLines date={date} />
-      {date < todayLocal() && user?.role !== "admin" && (
-        <p className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-center text-sm text-amber-200">
-          🔒 밤 12시가 지난 날짜는 보기만 할 수 있어요. 기록·수정·삭제는 그날 안에만 돼요.
-        </p>
-      )}
 
       {/* 따·잠·마·음·운 매일 체크 */}
       <DailyChecklist
@@ -379,6 +382,8 @@ export default function Today() {
         autoExercised={(exercisesPrevDay.data?.length ?? 0) > 0}
       />
       <TodayTabs tab={tab} setTab={setTab} sleepDone={!!sleepToday.data} mealN={myMealsToday.data?.length ?? 0} waterMl={watersTodayTop.data?.totalMl ?? 0} exN={myExercisesToday.data?.length ?? 0} weighDone={!!weighInTop.data?.doneThisMonth} />
+      {/* 지난 날짜는 보기만: 기록 버튼 회색 유리 + 누르면 안내 팝업 (2026-11-21, 방장 포함 모두) */}
+      <div className={isPast ? "past-lock" : undefined} onClickCapture={isPast ? blockPast : undefined} onFocusCapture={isPast ? (e) => { const t = e.target as HTMLElement; if (t.matches("input,textarea,select") && !t.closest("[data-view-ok]")) t.blur(); } : undefined}>
       {/* Sleep — 수면 기록 */}
       {show("sleep") && <SleepSection date={date} sleepCount={myCounts.data?.counts.wake} onBrag={bragItem} />}
 
@@ -425,6 +430,15 @@ export default function Today() {
       {show("weight") && <section id="weight" className="relative mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <WeightSection date={date} userName={userName} onBrag={bragItem} weightCount={myCounts.data?.counts.weight} />
       </section>}
+      </div>
+      <Popup open={pastAlert} onClose={() => setPastAlert(false)}>
+        <div className="text-center py-3">
+          <div className="text-3xl mb-2">🔒</div>
+          <p className="font-semibold mb-1">지난 날짜는 볼 수만 있어요</p>
+          <p className="text-sm text-muted-foreground">기록·수정·삭제는 그날 안에만 할 수 있어요.</p>
+          <Button className="mt-4 glass-btn h-10 px-6" data-view-ok onClick={() => { setPastAlert(false); setDate(todayLocal()); }}>오늘로 가기</Button>
+        </div>
+      </Popup>
     </div>
   );
 }
@@ -1610,7 +1624,7 @@ function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: st
   return (
     <div className="grid grid-cols-5 gap-2">
       {items.map(it => (
-        <button key={it.id} type="button" onClick={() => onOpen(it.id)}
+        <button key={it.id} type="button" data-view-ok onClick={() => onOpen(it.id)}
           className="aspect-square rounded-full border border-primary/70 bg-primary/[0.07] flex flex-col items-center justify-center text-primary hover:bg-primary/15 transition-colors">
           <span className="text-sm font-bold leading-none">{it.label}</span>
           {it.sub && <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">{it.sub}</span>}
@@ -1631,7 +1645,7 @@ function Popup({ open, onClose, children }: { open: boolean; onClose: () => void
   return (
     <div className="fixed inset-0 z-[90] bg-black/70 flex items-end sm:items-center justify-center p-3" onClick={onClose}>
       <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-card border border-border p-4" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-end mb-1"><button type="button" onClick={onClose} className="text-muted-foreground"><X className="h-5 w-5" /></button></div>
+        <div className="flex justify-end mb-1"><button type="button" data-view-ok onClick={onClose} className="text-muted-foreground"><X className="h-5 w-5" /></button></div>
         {children}
       </div>
     </div>
