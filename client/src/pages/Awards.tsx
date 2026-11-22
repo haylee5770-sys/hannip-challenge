@@ -6,6 +6,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useState } from "react";
 import { toast } from "sonner";
 import { shareAwardCard, shareToast } from "@/lib/shareCards";
+import { PAST_AWARDS } from "@/lib/pastAwards";
+import { ChevronDown } from "lucide-react";
 
 type W = { userId: number; name: string; count: number };
 const md = (d?: string | null) => (d ? `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일` : "");
@@ -37,15 +39,52 @@ function Ranks({ list, unit, emptyText = "아직 기록이 없어요." }: { list
 }
 
 function AwardCard({ sub, title, gift, desc, children }: { sub: string; title: string; gift: string; desc: string; children: React.ReactNode }) {
+  // 2026-11-22: 세 상이 첫 화면을 꽉 채우도록 (내용은 줄이지 않고 글씨·간격만 조절)
   return (
-    <section className="rounded-3xl bg-card border border-primary/40 p-5 space-y-3">
-      <div>
-        <div className="text-primary text-xs font-semibold">{sub}</div>
-        <h2 className="text-2xl font-black mt-0.5">{title}</h2>
-        <div className="mt-2 inline-block rounded-full border border-primary/50 px-3 py-1 text-sm font-bold">🎁 {gift}</div>
-        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{desc}</p>
+    <section className="flex-1 rounded-3xl black-glass px-4 py-3.5 flex flex-col justify-center gap-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-primary text-[11px] font-semibold">{sub}</div>
+          <h2 className="text-xl font-black leading-tight text-white">{title}</h2>
+        </div>
+        <div className="shrink-0 rounded-full border border-primary/50 px-2.5 py-1 text-xs font-bold text-white">🎁 {gift}</div>
       </div>
+      <p className="text-[12px] text-white/65 leading-snug break-keep">{desc}</p>
       {children}
+    </section>
+  );
+}
+
+/** 역대 시상식 막대 (2026-11-22): 기수 · 받은 사람 이름. 누르면 상별로 펼쳐진다 */
+function PastAwards() {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <section className="pt-8 space-y-2">
+      <div className="editorial-eyebrow text-primary px-1">역대 시상식</div>
+      {PAST_AWARDS.map(s => {
+        const names = s.awards.map(a => a.name).join(", ");
+        const on = open === s.no;
+        return (
+          <div key={s.no} className="rounded-2xl border border-white/10 bg-white/[0.06]" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.12)" }}>
+            <button type="button" onClick={() => setOpen(on ? null : s.no)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+              <span className="shrink-0"><b className="text-primary text-base">{s.no}</b>{s.sub && <span className="ml-1.5 text-[11px] text-muted-foreground">{s.sub}</span>}</span>
+              <span className="flex-1 min-w-0 truncate text-sm">{names || <span className="text-muted-foreground">정리 중</span>}</span>
+              {s.awards.length > 0 && <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", on && "rotate-180")} />}
+            </button>
+            {on && s.awards.length > 0 && (
+              <div className="px-4 pb-3 space-y-1.5">
+                {s.awards.map(a => (
+                  <div key={a.label} className="flex items-center gap-2 text-sm">
+                    <span className="w-14 shrink-0 text-xs text-primary font-semibold">{a.label}</span>
+                    <span className="flex-1 font-semibold">{a.name}</span>
+                    {a.note && <span className="text-xs text-muted-foreground">{a.note}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -85,12 +124,13 @@ export default function Awards() {
   const wait = old ? "시즌이 끝나면 발표돼요." : "아직 기록이 없어요.";
 
   return (
-    <div className="space-y-4">
-      <section className="text-center pb-2">
+    <div>
+      <div className="flex flex-col gap-2.5 min-h-[calc(100dvh-15rem)]">
+      <section className="text-center pb-1">
         <div className="editorial-eyebrow text-primary mb-1">{live ? "LIVE · 진행 중" : old ? "COMING SOON" : "AWARDS · 최종 발표"}</div>
         <div className="text-lg md:text-xl font-semibold text-foreground/85 break-keep">{seasonName}</div>
-        <h1 className="text-3xl md:text-4xl font-semibold">🏆 시상식</h1>
-        <p className="text-sm text-muted-foreground mt-1">{range}</p>
+        <h1 className="text-2xl md:text-4xl font-semibold">🏆 시상식</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">{range}</p>
       </section>
 
       <AwardCard sub="작은 변화를 가장 자주 발견한 크루" title="이게돼 챔피언" gift="스무디 15개"
@@ -120,7 +160,9 @@ export default function Awards() {
             </button>
           </div>
         ))}
-      <p className="text-center text-xs text-muted-foreground leading-relaxed pt-2">슈퍼루틴 시즌 참여자만 받을 수 있어요.<br />선물은 시즌마다 달라질 수 있어요. 방장 마음이에요 😊</p>
+      <p className="text-center text-[11px] text-muted-foreground leading-relaxed">슈퍼루틴 시즌 참여자만 받을 수 있어요 · 선물은 시즌마다 달라질 수 있어요. 방장 마음이에요 😊</p>
+      </div>
+      <PastAwards />
     </div>
   );
 }

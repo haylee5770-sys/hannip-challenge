@@ -60,7 +60,7 @@ function Final2026({ past }: { past?: boolean }) {
   return (
     <section className="space-y-2">
       {past && <div className="text-xs text-muted-foreground font-semibold pt-4">지난 시즌 · 2026</div>}
-      <button type="button" onClick={click} className={cn("w-full text-left black-glass rounded-3xl border p-4", state === "live" ? "border-primary" : "border-primary/50")}>
+      <button type="button" onClick={click} className="w-full text-left black-glass rounded-3xl p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-semibold tracking-wide text-primary">BONUS SEASON</span>
           <span className="text-[11px] text-muted-foreground">{state === "live" ? "진행 중 · 누르면 나의 변화" : state === "done" ? "끝 · 누르면 결과" : "11/24 시작"}</span>
@@ -70,6 +70,16 @@ function Final2026({ past }: { past?: boolean }) {
       </button>
       {open && <SeasonResult seasonId={open} onClose={() => setOpen(null)} />}
     </section>
+  );
+}
+
+function YearHead({ year, line1, line2 }: { year: string; line1: string; line2: string }) {
+  // 2026-11-22: 왼쪽 큰 연도(포인트색) + 오른쪽 흰 글씨 두 줄
+  return (
+    <div className="flex items-center gap-3 pt-2 pb-1 px-1">
+      <span className="text-5xl font-black text-primary leading-none tabular-nums">{year}</span>
+      <span className="text-base font-semibold leading-snug text-foreground">{line1}<br />{line2}</span>
+    </div>
   );
 }
 
@@ -107,14 +117,14 @@ export default function Year() {
   return (
     <div className="space-y-4">
       {!isNewYear && (<>
-        <PageTitle eyebrow="MY YEAR · 2026" title="나의 1년, 8번의 시즌" />
+        <YearHead year="2026" line1="나의" line2="마지막 시즌" />
         <Final2026 />
         <div className="pt-6" />
       </>)}
-      <PageTitle eyebrow={`MY YEAR · ${YEAR}`} title="나의 1년, 8번의 시즌" />
+      <YearHead year={String(YEAR)} line1="나의 1년," line2="8번의 시즌" />
 
       {/* 진행 카드 — 블랙 유리 */}
-      <section className="black-glass rounded-3xl border border-primary p-4">
+      <section className="black-glass rounded-3xl p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-semibold tracking-wide text-muted-foreground">MISSION CLEAR</span>
           <span className="text-sm font-extrabold text-primary">{Math.round((clearCount / ROUNDS.length) * 100)}%</span>

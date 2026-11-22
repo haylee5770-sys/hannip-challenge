@@ -467,7 +467,7 @@ function GoalCard({
         <div className="flex gap-2 mt-4">
           <Button variant="ghost" onClick={() => setEditing(false)} className="rounded-none">취소</Button>
           <Button
-            className="rounded-none flex-1"
+            className="glass-btn flex-1 h-11"
             disabled={upsert.isPending}
             onClick={() => {
               const s = parseFloat(start);

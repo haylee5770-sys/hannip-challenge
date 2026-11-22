@@ -315,7 +315,7 @@ export default function SeasonReport() {
                 isPublic,
               })}
               disabled={save.isPending}
-              className="rounded-none uppercase tracking-wider"
+              className="glass-btn px-10 h-11"
             >
               {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "저장"}
             </Button>
@@ -486,7 +486,7 @@ function WaistRecord({ seasonId }: { seasonId: number }) {
         })}
         disabled={save.isPending}
         variant="outline"
-        className="w-full rounded-none"
+        className="w-full glass-btn h-11"
       >
         {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "저장"}
       </Button>

@@ -99,7 +99,7 @@ export default function Profile() {
             <Button
               onClick={() => update.mutate({ name: name.trim(), bio: bio.trim() || null, ...(newPhoto ? { avatarBase64: newPhoto } : {}) })}
               disabled={update.isPending}
-              className="rounded-none uppercase tracking-wider px-8"
+              className="glass-btn px-10 h-11"
             >
               {update.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "저장"}
             </Button>

@@ -1922,7 +1922,7 @@ function HappyDiarySection({ date }: { date: string }) {
                 save.mutate({ date, mood, goodThing, promise });
               }}
               disabled={save.isPending}
-              className="rounded-none px-8 h-12"
+              className="glass-btn px-10 h-12"
             >
               {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : note.data ? "수정" : "저장"}
             </Button>

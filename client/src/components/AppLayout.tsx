@@ -279,16 +279,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <nav className="container flex flex-col pb-8 min-h-[calc(100dvh-4.5rem)]">
               <div className="grid grid-cols-2 gap-2.5 mt-2">
                 <Link href="/profile">
-                  <button onClick={() => setMobileOpen(false)} className="black-glass w-full h-14 rounded-2xl flex items-center justify-center gap-2 text-[15px] font-semibold text-white">
+                  <button onClick={() => setMobileOpen(false)} className="glass-btn w-full h-12 flex items-center justify-center gap-2 text-[15px]">
                     {user?.avatarUrl
-                      ? <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover border-2 border-primary" />
-                      : <span className="h-8 w-8 rounded-full bg-muted border-2 border-primary" />}
-                    프로필 수정
+                      ? <img src={user.avatarUrl} alt="" className="relative z-[1] h-7 w-7 rounded-full object-cover border-2 border-white/80" />
+                      : <span className="relative z-[1] h-7 w-7 rounded-full bg-muted border-2 border-white/80" />}
+                    <span className="relative z-[1]">프로필 수정</span>
                   </button>
                 </Link>
                 <Link href="/decor">
-                  <button onClick={() => setMobileOpen(false)} className="black-glass w-full h-14 rounded-2xl flex items-center justify-center gap-2 text-[15px] font-semibold text-white">
-                    <Palette className="h-5 w-5" /> 앱 꾸미기
+                  <button onClick={() => setMobileOpen(false)} className="glass-btn w-full h-12 flex items-center justify-center gap-2 text-[15px]">
+                    <Palette className="relative z-[1] h-5 w-5" /><span className="relative z-[1]">앱 꾸미기</span>
                   </button>
                 </Link>
               </div>
@@ -298,9 +298,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {items.filter(i => i.group === "act" && !["/members", "/awards", "/history"].includes(i.path)).map(item => (
                   <Link key={item.path} href={item.path}>
                     <button onClick={() => setMobileOpen(false)}
-                      className="w-full h-12 rounded-2xl flex items-center justify-between px-4 border border-white/10 bg-white/[0.06]"
-                      style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.12)" }}>
-                      <span className="text-[17px] font-medium">{item.korean}</span>
+                      className="relative overflow-hidden w-full h-12 rounded-2xl flex items-center justify-between px-4 border border-white/20"
+                      style={{ background: "linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.04) 55%, rgba(255,255,255,.07))", boxShadow: "inset 0 1px 0 rgba(255,255,255,.4), 0 4px 12px rgba(0,0,0,.18)", backdropFilter: "blur(10px)" }}>
+                      <span aria-hidden className="pointer-events-none absolute left-3 right-3 top-[2px] h-[38%] rounded-full" style={{ background: "linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0))" }} />
+                      <span className="relative text-[17px] font-medium">{item.korean}</span>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </Link>
@@ -334,7 +335,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {isAdmin && (
                 <Link href="/admin">
                   <button onClick={() => setMobileOpen(false)} className="mt-2.5 w-full h-11 rounded-full flex items-center justify-center gap-1.5 text-sm font-semibold"
-                    style={{ color: "#7cc4ff", border: "1px solid rgba(124,196,255,.45)", background: "rgba(124,196,255,.10)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.18)" }}>
+                    style={{ color: "var(--primary)", background: "rgba(255,255,255,.06)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.18)" }}>
                     <KeyRound className="h-4 w-4" /> 관리 <span className="text-[11px] opacity-70">방장만</span>
                   </button>
                 </Link>

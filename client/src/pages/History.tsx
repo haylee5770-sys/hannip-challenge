@@ -14,6 +14,8 @@ export default function History() {
   const upd = trpc.rounds.updateAward.useMutation({ onSuccess: () => { utils.rounds.history.invalidate(); toast.success("고쳤어요"); } });
   const ren = trpc.rounds.rename.useMutation({ onSuccess: () => { utils.rounds.history.invalidate(); toast.success("고쳤어요"); } });
 
+  // 2026-11-20 이전에 끝난 시험용 회차(예: 10.5기 미니 챌린지 시험)는 보이지 않게
+  const list = (q.data ?? []).filter(s => (s.endDate ?? "") >= "2026-11-20");
   const Row = ({ a, unit }: { a: A; unit: string }) => (
     <div className="flex items-center gap-2 text-sm">
       <span className="w-6">{["🥇", "🥈", "🥉"][a.rankNo - 1] ?? a.rankNo}</span>
@@ -29,9 +31,24 @@ export default function History() {
         <div className="editorial-eyebrow text-primary mb-1">HALL OF FAME</div>
         <h1 className="text-3xl md:text-4xl font-semibold">역대 챌린지</h1>
       </section>
+      {/* 2026-11-22: 이번 파이널 시즌 카드 (날짜로 진행 전·진행 중·종료가 저절로 바뀜) */}
+      {(() => {
+        const t = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+        const st = t < "2026-11-24" ? "진행 전" : t <= "2026-12-23" ? "진행 중" : "종료";
+        return (
+          <section className="rounded-3xl black-glass p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-primary">2026 마지막 챌린지</span>
+              <span className={`text-[11px] rounded-full px-2.5 py-0.5 border ${st === "진행 중" ? "border-primary text-primary" : "border-white/25 text-white/70"}`}>{st}</span>
+            </div>
+            <h2 className="text-xl font-black text-white mt-1">2026 파이널 시즌</h2>
+            <div className="text-xs text-white/60 mt-0.5">11/24 ~ 12/23 · 끝나면 여기에 수상자가 올라가요</div>
+          </section>
+        );
+      })()}
       {q.isLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        : (q.data ?? []).length === 0 ? <p className="text-center text-sm text-muted-foreground py-10">아직 끝난 회차가 없어요.</p>
-        : (q.data ?? []).map(s => (
+        : list.length === 0 ? <p className="text-center text-sm text-muted-foreground py-10">지난 수상자는 시상식 아래 '역대 시상식'에서 볼 수 있어요.</p>
+        : list.map(s => (
           <section key={s.id} className="rounded-2xl bg-card border border-border p-4">
             <div className="flex items-center gap-2 mb-2">
               <h2 className="text-lg font-semibold flex-1">{s.name}</h2>
