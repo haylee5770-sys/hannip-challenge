@@ -8,6 +8,7 @@ import ProfileSetup from "./ProfileSetup";
 import SignupFlow from "./SignupFlow";
 import SeasonStart from "./SeasonStart";
 import { openInExternalBrowser } from "@/lib/proofCard";
+import InstallButton from "./InstallButton";
 
 /** 카카오톡·라인 등 인앱 브라우저 여부 판별 */
 function isInAppBrowser() {
@@ -47,54 +48,21 @@ function InAppBrowserBlock() {
     }
   };
 
+  // 2026-11-22: 큰 버튼 하나. 안 열릴 때만 쓰는 '링크 복사'는 맨 아래 작게
   return (
-    <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
+    <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="max-w-sm w-full text-center space-y-6">
         <div>
-          <div className="editorial-eyebrow text-muted-foreground mb-3">MEMBERS ONLY</div>
-          <h1 className="editorial-h1 text-4xl mb-3">
-            super hannip <span className="italic font-serif font-light">Challenge</span>
-          </h1>
+          <div className="text-xs tracking-[0.3em] text-primary font-bold mb-3">SUPER HANNIP</div>
+          <h1 className="text-2xl font-black leading-snug">{isIOS ? "사파리" : "크롬"}에서 열어 주세요</h1>
+          <p className="text-sm text-muted-foreground mt-2">{isKakao ? "카카오톡" : "이 앱"} 안에서는 입장할 수 없어요.</p>
         </div>
-
-        <div className="border hairline p-6 space-y-5 text-left">
-          <div>
-            <div className="editorial-eyebrow text-muted-foreground mb-2">안내</div>
-            <p className="font-serif text-base leading-relaxed">
-              {isKakao ? "카카오톡" : "이 앱"} 안에서는 구글 로그인이 막혀 있어요.<br />
-              {isIOS ? "Safari" : "Chrome"} 브라우저에서 열어야 로그인할 수 있어요.
-            </p>
-          </div>
-
-          <Button onClick={openInExternalBrowser} className="w-full h-12 rounded-2xl font-bold">
-            {isIOS ? "사파리로 열기" : "크롬으로 열기"}
-          </Button>
-          <Button onClick={handleCopy} className="w-full rounded-2xl" variant="outline">
-            {copied ? "✓ 링크 복사됨!" : "🔗 안 열리면 링크 복사하기"}
-          </Button>
-
-          <div className="border-t hairline pt-4 space-y-3">
-            <div className="editorial-eyebrow text-muted-foreground text-xs">여는 방법</div>
-            {isIOS ? (
-              <ol className="text-sm text-muted-foreground space-y-2 leading-relaxed list-none">
-                <li>① 위 버튼으로 링크를 복사해요</li>
-                <li>② <strong className="text-foreground">Safari</strong> 앱을 열어요</li>
-                <li>③ 주소창에 붙여넣기 → 이동</li>
-              </ol>
-            ) : (
-              <ol className="text-sm text-muted-foreground space-y-2 leading-relaxed list-none">
-                <li>① 위 버튼으로 링크를 복사해요</li>
-                <li>② <strong className="text-foreground">Chrome</strong> 앱을 열어요</li>
-                <li>③ 주소창에 붙여넣기 → 이동</li>
-              </ol>
-            )}
-          </div>
-
-          <p className="text-xs text-muted-foreground leading-relaxed border-t hairline pt-4">
-            한 번 로그인 후 바탕화면에 추가하면<br />
-            다음부터는 바로 들어올 수 있어요.
-          </p>
-        </div>
+        <button type="button" onClick={openInExternalBrowser} className="w-full h-16 rounded-3xl glass-btn text-lg font-black active:scale-[0.98] transition">
+          {isIOS ? "사파리로 열기" : "크롬으로 열기"}
+        </button>
+        <button type="button" onClick={handleCopy} className="text-xs text-muted-foreground underline">
+          {copied ? `✓ 복사됐어요. ${isIOS ? "사파리" : "크롬"} 주소창에 붙여 넣어 주세요` : "버튼을 눌러도 안 열리면 → 링크 복사하기"}
+        </button>
       </div>
     </div>
   );
@@ -198,6 +166,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
               )}
               Google 계정으로 입장하기
             </Button>
+            <InstallButton />
             {authError && <p className="text-xs text-destructive text-center">{authError}</p>}
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
               단톡방 크루만 들어올 수 있어요.<br />아이폰을 쓰시면 구글 계정이 필요해요 (없으면 먼저 만들어 주세요).
