@@ -21,6 +21,7 @@ import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { quoteOf } from "@/lib/quotes";
 import { Link } from "wouter";
 import { shareProof, type ProofCard } from "@/lib/proofCard";
+import { shareBeforeAfterCard, shareToast } from "@/lib/shareCards";
 import { loadDecor } from "@/lib/decor";
 import { Streamdown } from "streamdown";
 import { shareKakao, isKakaoReady } from "@/lib/kakao";
@@ -1941,6 +1942,7 @@ function HappyDiarySection({ date }: { date: string }) {
 /* ----------------- Season Photos Section ----------------- */
 export function SeasonPhotosSection() {
   const utils = trpc.useUtils();
+  const { user: baUser } = useAuth();
   const myPhotos = trpc.seasons.myPhotos.useQuery();
   const myProgress = trpc.seasons.myProgress.useQuery();
 
@@ -2051,6 +2053,18 @@ export function SeasonPhotosSection() {
             uploading={upload.isPending}
             forceShow={afterPhotos.length > 0 || isLastDay}
           />
+          {/* 📸 비포·애프터 자랑하기 (2026-11-22): 비포·애프터 앞모습이 둘 다 있을 때 */}
+          {(findOne("before", "front") ?? beforePhotos[0]) && (findOne("after", "front") ?? afterPhotos[0]) && (
+            <div className="flex justify-center">
+              <button type="button" className="rounded-full glass-btn px-6 py-3 font-bold"
+                onClick={async () => {
+                  const b: any = findOne("before", "front") ?? beforePhotos[0], a2: any = findOne("after", "front") ?? afterPhotos[0];
+                  const r = await shareBeforeAfterCard({ name: baUser?.name ?? "크루", avatar: (baUser as any)?.avatarUrl, before: b.photoUrl, after: a2.photoUrl,
+                    beforeDate: String(b.takenDate ?? b.createdAt ?? "").slice(0, 10) || undefined, afterDate: String(a2.takenDate ?? a2.createdAt ?? "").slice(0, 10) || undefined });
+                  shareToast(r, toast);
+                }}>📸 비포 · 애프터 자랑하기</button>
+            </div>
+          )}
         </div>
       </div>
     </section>

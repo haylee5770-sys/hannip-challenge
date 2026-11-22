@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useState } from "react";
 import { toast } from "sonner";
+import { shareAwardCard, shareToast } from "@/lib/shareCards";
 
 type W = { userId: number; name: string; count: number };
 const md = (d?: string | null) => (d ? `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일` : "");
@@ -109,6 +110,16 @@ export default function Awards() {
         {isAdmin && !old && d?.season?.id ? <MvpPicker seasonId={d.season.id} /> : null}
       </AwardCard>
 
+      {/* 🏆 수상 자랑하기 (2026-11-22): 최종 발표 후, 상 받은 본인에게만 */}
+      {!old && !live && user && ([[byItge[0], "이게돼 챔피언", "작은 변화를 가장 자주 발견한 크루"], [byTotal[0], "꾸준함 챔피언", "인증을 가장 많이 한 크루"], [mvp[0], "MVP", "방장이 선정한 한 명"]] as const)
+        .filter(([w]) => w && w.userId === user.id).map(([, title, sub]) => (
+          <div key={title} className="flex justify-center">
+            <button type="button" className="rounded-full glass-btn px-6 py-3 font-bold"
+              onClick={async () => shareToast(await shareAwardCard({ name: user.name ?? "크루", avatar: (user as any).avatarUrl, seasonName: seasonName ?? "", title, sub }), toast)}>
+              🏆 {title} 자랑하기
+            </button>
+          </div>
+        ))}
       <p className="text-center text-xs text-muted-foreground leading-relaxed pt-2">슈퍼루틴 시즌 참여자만 받을 수 있어요.<br />선물은 시즌마다 달라질 수 있어요. 방장 마음이에요 😊</p>
     </div>
   );

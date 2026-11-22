@@ -12,6 +12,7 @@ import { todayLocal } from "@shared/utils";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { shareChangeCard, shareToast } from "@/lib/shareCards";
 
 // 2026-11-22: 7D·30D 대신 시즌별로 본다. 기본은 지금 진행 중인 시즌. 시즌이 없으면 '테스트'(새 앱 연 날부터)
 const TEST_SINCE = "2026-11-20";
@@ -147,6 +148,7 @@ export default function Dashboard() {
         </div>
         {cur && <p className="mt-3 text-center text-sm"><b className="text-primary">{cur.name}</b> <span className="text-muted-foreground">· {cur.since.slice(5).replace("-", "/")} ~ {cur.live ? "오늘" : cur.until.slice(5).replace("-", "/")}</span></p>}
         {cur?.id ? <SeasonCounts seasonId={cur.id} /> : null}
+        {cur && <ShareChangeButton seasonId={cur.id} seasonName={cur.name} since={cur.since} weights={weightSeries.map(w => w.weight)} />}
       </section>
 
       {/* Goal & summary */}
@@ -535,6 +537,32 @@ function SeasonCounts({ seasonId }: { seasonId: number }) {
           <div className="text-[11px] text-muted-foreground">{k}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+
+/** 📈 나의 변화 자랑하기 (2026-11-22) */
+function ShareChangeButton({ seasonId, seasonName, since, weights }: { seasonId: number | null; seasonName: string; since: string; weights: number[] }) {
+  const { user } = useAuth();
+  const sum = trpc.rounds.mySeasonSummary.useQuery({ seasonId: seasonId ?? 0 }, { enabled: !!seasonId });
+  const live = trpc.rounds.myCounts.useQuery(undefined, { enabled: !seasonId });
+  const [busy, setBusy] = useState(false);
+  const c: any = seasonId ? sum.data?.counts : live.data?.counts;
+  if (!c) return null;
+  const dayNo = Math.floor((Date.parse(todayLocal()) - Date.parse(since)) / 86400000) + 1;
+  const go = async () => {
+    setBusy(true);
+    try {
+      const r = await shareChangeCard({ name: user?.name ?? "크루", avatar: (user as any)?.avatarUrl, seasonName, dayNo,
+        weightStart: weights.length ? weights[0] : null, weightEnd: weights.length ? weights[weights.length - 1] : null, weights,
+        counts: { total: c.total, meal: (c.meal ?? 0) + (c.smoothie ?? 0), water: c.water, exercise: c.exercise, wake: c.wake, itge: c.itge } });
+      shareToast(r, toast);
+    } finally { setBusy(false); }
+  };
+  return (
+    <div className="mt-4 flex justify-center">
+      <button type="button" disabled={busy} onClick={go} className="rounded-full glass-btn px-6 py-3 font-bold disabled:opacity-50">📈 나의 변화 자랑하기</button>
     </div>
   );
 }

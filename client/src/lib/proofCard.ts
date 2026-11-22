@@ -19,7 +19,7 @@ export type ProofCard = {
 };
 
 /** 카톡 프로필처럼 둥근 네모 사진 */
-async function drawAvatar(g: CanvasRenderingContext2D, src: string | null | undefined, x: number, y: number, s: number, fallbackName: string, accent: string) {
+export async function drawAvatar(g: CanvasRenderingContext2D, src: string | null | undefined, x: number, y: number, s: number, fallbackName: string, accent: string) {
   g.save(); roundRect(g, x, y, s, s, s * 0.36); g.clip();
   let ok = false;
   if (src) { try { const img = await loadImg(src); const k = Math.max(s / img.width, s / img.height); g.drawImage(img, x + (s - img.width * k) / 2, y + (s - img.height * k) / 2, img.width * k, img.height * k); ok = true; } catch {} }
@@ -126,7 +126,7 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   return await new Promise<Blob>((res) => c.toBlob(b => res(b!), "image/png"));
 }
 
-function loadImg(src: string): Promise<HTMLImageElement> {
+export function loadImg(src: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = rej; i.src = src; });
 }
 function wrap(g: CanvasRenderingContext2D, text: string, max: number): string[] {
@@ -148,7 +148,7 @@ function drawBodyText(g: CanvasRenderingContext2D, text: string, x: number, y: n
   lines.slice(0, Math.floor(h / (size * 1.45))).forEach((l, i) => g.fillText(l, x, y + size + i * size * 1.45));
 }
 
-function cssVar(name: string, fallback: string) {
+export function cssVar(name: string, fallback: string) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
 }
@@ -208,7 +208,7 @@ function clip(g: CanvasRenderingContext2D, s: string, max: number) {
   return s + "…";
 }
 
-function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+export function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   g.beginPath();
   g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
   g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
@@ -242,7 +242,12 @@ export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled
     : `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
   const blobs = card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
     : [card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card)];
-  const files = blobs.map((b, i) => new File([b], `hannip_${card.date}${blobs.length > 1 ? `_${i + 1}` : ""}.png`, { type: "image/png" }));
+  return shareImages(blobs, text, `hannip_${card.date}`);
+}
+
+/** 이미지 여러 장을 공유창(카톡 등)으로 — 카톡 안이면 미리보기, PC면 저장 (2026-11-22: 나의 변화·비포애프터·시상식 카드도 같이 씀) */
+export async function shareImages(blobs: Blob[], text: string, baseName: string): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
+  const files = blobs.map((b, i) => new File([b], `${baseName}${blobs.length > 1 ? `_${i + 1}` : ""}.png`, { type: "image/png" }));
   const nav = navigator as any;
   if (!isKakaoInApp() && nav.canShare && nav.canShare({ files })) {
     try {
