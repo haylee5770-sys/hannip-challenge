@@ -25,6 +25,9 @@ export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; f
       <div className="min-h-full flex flex-col items-center">
         <img src="/intro/crew.jpg" alt="슈퍼한입 챌린지 크루" className={`w-full max-w-[640px] mt-[7vh] ${fadeIn ? "intro-crew-in" : ""}`}
           style={{ WebkitMaskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)", maskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)" }} />
+        <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "1.6s" } : undefined}>
+          2025. 1. 24 · 슈퍼한입 슈챌 6기
+        </div>
         <div className="w-full max-w-sm px-6 mt-auto pb-[8vh] pt-6">{children}</div>
       </div>
     </div>
