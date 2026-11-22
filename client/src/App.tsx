@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
+import { SeasonPreview } from "./components/SeasonStart";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
@@ -43,6 +44,8 @@ function Router() {
       </Route>
 
       {/* 2026-11-22: 방장용 가입 화면 미리보기 (저장 안 됨) */}
+      <Route path="/preview/season"><SeasonPreview /></Route>
+
       <Route path="/preview/signup">
         <MembershipGate><SignupFlow preview /></MembershipGate>
       </Route>

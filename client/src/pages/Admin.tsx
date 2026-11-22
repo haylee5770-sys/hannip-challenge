@@ -94,25 +94,25 @@ export default function Admin() {
       </section>
 
       <RoundControl />
-      <CareList />
       <NameRequests />
 
-      <Tabs defaultValue="report" className="py-10">
-        <TabsList className="bg-transparent border-b hairline rounded-none w-full justify-start gap-6 p-0 h-auto mb-8 flex-wrap">
+      {/* 2026-11-22 (해이): 메뉴를 눌러지는 버튼으로 정리. 챙겨야 할 크루는 '멤버' 안으로 */}
+      <Tabs defaultValue="members" className="pt-6 pb-10">
+        <TabsList className="bg-transparent w-full h-auto p-0 mb-6 grid grid-cols-3 gap-2">
           {[
-            { v: "report", label: "01 · REPORT" },
-            { v: "members", label: "02 · MEMBERS" },
-            { v: "roster", label: "03 · 명단" },
-            { v: "crew", label: "의견·신청" },
-            { v: "seasons", label: "04 · SEASONS" },
-            { v: "entrycode", label: "05 · 입장코드" },
-            { v: "invites", label: "06 · INVITES" },
-            { v: "schedules", label: "07 · REMINDERS" },
+            { v: "members", label: "👥 멤버" },
+            { v: "roster", label: "📋 명단" },
+            { v: "crew", label: "💬 의견·신청" },
+            { v: "report", label: "📊 리포트" },
+            { v: "seasons", label: "🗓 시즌" },
+            { v: "entrycode", label: "🔑 입장코드" },
+            { v: "invites", label: "✉️ 초대" },
+            { v: "schedules", label: "⏰ 알림" },
           ].map(t => (
             <TabsTrigger
               key={t.v}
               value={t.v}
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-foreground rounded-none px-0 pb-3 editorial-eyebrow"
+              className="h-11 rounded-2xl border border-border bg-card text-sm font-semibold shadow-none data-[state=active]:border-primary data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none"
             >
               {t.label}
             </TabsTrigger>
@@ -120,7 +120,7 @@ export default function Admin() {
         </TabsList>
 
         <TabsContent value="report"><DailyReport /></TabsContent>
-        <TabsContent value="members"><MembersAdmin /></TabsContent>
+        <TabsContent value="members"><div className="space-y-6"><CareList /><MembersAdmin /></div></TabsContent>
         <TabsContent value="roster"><RosterAdmin /></TabsContent>
         <TabsContent value="crew"><CrewAdmin /></TabsContent>
         <TabsContent value="entrycode"><EntryCodeAdmin /></TabsContent>

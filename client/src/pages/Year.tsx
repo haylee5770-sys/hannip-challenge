@@ -60,7 +60,7 @@ function Final2026({ past }: { past?: boolean }) {
   return (
     <section className="space-y-2">
       {past && <div className="text-xs text-muted-foreground font-semibold pt-4">지난 시즌 · 2026</div>}
-      <button type="button" onClick={click} className="w-full text-left black-glass rounded-3xl p-4">
+      <button type="button" onClick={click} className="w-full text-left rounded-3xl border border-primary/40 bg-primary/10 p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-semibold tracking-wide text-primary">BONUS SEASON</span>
           <span className="text-[11px] text-muted-foreground">{state === "live" ? "진행 중 · 누르면 나의 변화" : state === "done" ? "끝 · 누르면 결과" : "11/24 시작"}</span>
@@ -124,7 +124,7 @@ export default function Year() {
       <YearHead year={String(YEAR)} line1="나의 1년," line2="8번의 시즌" />
 
       {/* 진행 카드 — 블랙 유리 */}
-      <section className="black-glass rounded-3xl p-4">
+      <section className="rounded-3xl border border-primary/40 bg-primary/10 p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-semibold tracking-wide text-muted-foreground">MISSION CLEAR</span>
           <span className="text-sm font-extrabold text-primary">{Math.round((clearCount / ROUNDS.length) * 100)}%</span>
@@ -153,7 +153,7 @@ export default function Year() {
           const live = liveByMonth.get(m);
           const startHere = rounds.find(r => Number(r.days[0].slice(5, 7)) === m);
           return (
-            <div key={m} onClick={() => tapMonth(m)} className="month-glass relative rounded-2xl border border-primary/70 p-2 overflow-hidden cursor-pointer active:scale-[0.98] transition">
+            <div key={m} onClick={() => tapMonth(m)} className="month-glass relative rounded-2xl border-[0.5px] border-primary/35 p-2 overflow-hidden cursor-pointer active:scale-[0.98] transition">
               <div className={cn(clr && "opacity-20")}>
                 <div className="flex justify-between items-baseline mb-1">
                   <span className="text-sm font-extrabold">{m}월</span>

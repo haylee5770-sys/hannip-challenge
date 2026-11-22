@@ -1635,7 +1635,8 @@ const roundsRouter = router({
     .input(z.object({ name: z.string().min(1).max(128), shortName: z.string().max(32), planEnd: dateString, detoxStart: dateString.optional().nullable(), detoxEnd: dateString.optional().nullable() }))
     .mutation(async ({ ctx, input }) => sp.startSeason(ctx.user.id, input, () => rounds.endRound())),
   seasonInfo: approvedProcedure.query(async () => sp.activeSeasonInfo()),
-  allSeasons: approvedProcedure.query(async () => sp.allSeasonInfos()),
+  // 2026-11-22: 새 앱 이전 시험용 회차(10.5기 미니 챌린지 시험 등)는 크루 화면에 안 보이게
+  allSeasons: approvedProcedure.query(async () => (await sp.allSeasonInfos()).filter(s => String(s.startDate) >= "2026-11-20")),
   myEntry: approvedProcedure.query(async ({ ctx }) => sp.myEntry(ctx.user.id)),
   join: approvedProcedure.input(z.object({ track: z.enum(["detox", "routine"]) })).mutation(async ({ ctx, input }) => sp.join(ctx.user.id, input.track)),
   entryCounts: adminProcedure.input(z.object({ seasonId: z.number() })).query(async ({ input }) => sp.entryCounts(input.seasonId)),
