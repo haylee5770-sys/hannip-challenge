@@ -352,3 +352,15 @@
 .past-lock .glass-pill, .past-lock .glass-btn, .past-lock .glass-fill,
 .past-lock label.nudge, .past-lock button.nudge { filter: grayscale(1) brightness(.85); animation: none !important; }
 .past-lock [data-view-ok] { filter: none; }
+
+/* 2026-11-22: 글자를 누르면 휴대폰이 구글 검색(터치 검색)을 띄우지 않게 — 입력 칸만 선택 가능 */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+
+/* 2026-11-22: 화면이 스르륵 나타나기 */
+@keyframes seasonFadeIn { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+.season-fade-in { animation: seasonFadeIn .7s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes seasonLetter { from { opacity: 0; transform: translateY(18px) scale(.96); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+.season-letter { display: inline-block; animation: seasonLetter .6s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes seasonGlow { 0%,100% { text-shadow: 0 0 0 transparent; } 50% { text-shadow: 0 0 24px hsl(var(--primary) / .55); } }
+.season-glow { animation: seasonGlow 2.4s ease-in-out infinite; }

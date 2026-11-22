@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import ProfileSetup from "./ProfileSetup";
+import SignupFlow from "./SignupFlow";
 
 /** 카카오톡·라인 등 인앱 브라우저 여부 판별 */
 function isInAppBrowser() {
@@ -125,25 +126,9 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     refetchOnWindowFocus: false,
   });
 
-  // 온보딩 상태 (신규 멤버)
-  const [onboardStep, setOnboardStep] = useState<"code" | "form">("code");
-  const [seasonCode, setSeasonCode] = useState("");
-  const [realName, setRealName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [joinPurpose, setJoinPurpose] = useState("");
-  const [agreed1, setAgreed1] = useState(false);
-  const [agreed2, setAgreed2] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formLoading, setFormLoading] = useState(false);
-
   // 기존 멤버 입장코드 입력
   const [returningCode, setReturningCode] = useState("");
   const [returningError, setReturningError] = useState<string | null>(null);
-
-  const submitOnboarding = trpc.auth.submitOnboarding.useMutation({
-    onSuccess: () => { utils.auth.me.invalidate(); utils.auth.seasonAccess.invalidate(); },
-    onError: (e) => { setFormError(e.message); setFormLoading(false); },
-  });
 
   const enterSeasonCode = trpc.auth.enterSeasonCode.useMutation({
     onSuccess: () => { utils.auth.seasonAccess.invalidate(); },
@@ -228,7 +213,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
             </Button>
             {authError && <p className="text-xs text-destructive text-center">{authError}</p>}
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              입장코드는 방장에게 받으세요.
+              단톡방 크루만 들어올 수 있어요.
             </p>
           </div>
         </div>
@@ -249,110 +234,22 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     );
   }
 
-  // ── 신청은 했고 방장 수락을 기다리는 중 (2026-11-21) ──
+  // ── 신청은 했고 방장 수락을 기다리는 중 (2026-11-22 문구) ──
   if (user.status === "pending" && (user as any).onboardingDone) {
     return (
-      <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="text-4xl">⏳</div>
-          <h1 className="text-2xl font-semibold">입장 신청이 접수됐어요</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">방장이 확인하고 수락하면 바로 들어올 수 있어요.<br />수락되면 이 화면을 새로고침해 주세요.</p>
-          <Button variant="outline" className="rounded-xl" onClick={() => location.reload()}>새로고침</Button>
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="max-w-sm w-full text-center space-y-4 season-fade-in">
+          <div className="text-5xl">⏳</div>
+          <h1 className="text-2xl font-bold leading-snug">가입 신청이 접수됐어요</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">1차 신청자 명단에 없어 자동으로 가입되지 않았어요.<br />운영자 승인 후 입장할 수 있어요. 조금만 기다려 주세요!</p>
+          <Button variant="outline" className="rounded-2xl" onClick={() => location.reload()}>새로고침</Button>
         </div>
       </div>
     );
   }
 
-  // ── 신규 멤버 (pending) — 온보딩 + 입장코드 ──
-  if (user.status !== "approved") {
-    const handleCodeNext = (e: React.FormEvent) => {
-      e.preventDefault();
-      setFormError(null);
-      if (!seasonCode.trim()) { setFormError("입장코드를 입력해 주세요."); return; }
-      setOnboardStep("form");
-    };
-    const handleOnboardSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      setFormError(null);
-      if (!realName.trim()) { setFormError("성함을 입력해 주세요."); return; }
-      if (!phone.trim()) { setFormError("전화번호를 입력해 주세요."); return; }
-      if (!agreed1 || !agreed2) { setFormError("동의 항목을 모두 확인해 주세요."); return; }
-      setFormLoading(true);
-      submitOnboarding.mutate({ seasonCode, realName, phone, joinPurpose, agreed1, agreed2 });
-    };
-
-    return (
-      <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
-        <div className="max-w-sm w-full">
-          <div className="text-center mb-8">
-            <div className="editorial-eyebrow text-muted-foreground mb-3">
-              {onboardStep === "code" ? "STEP 1 · 입장코드" : "STEP 2 · 기본 정보"}
-            </div>
-            <h1 className="editorial-h1 text-3xl md:text-4xl mb-2">
-              {onboardStep === "code" ? "이번 시즌 코드를 입력해 주세요" : "거의 다 됐어요"}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {onboardStep === "code"
-                ? "방장에게 받은 이번 시즌 코드를 입력해 주세요."
-                : "아래 정보를 입력하면 바로 입장됩니다."}
-            </p>
-          </div>
-
-          {onboardStep === "code" ? (
-            <form onSubmit={handleCodeNext} className="border hairline p-6 space-y-4">
-              <input
-                type="text"
-                placeholder="입장코드"
-                value={seasonCode}
-                onChange={e => setSeasonCode(e.target.value)}
-                className="w-full border border-foreground/30 bg-background px-3 py-2 text-sm outline-none focus:border-foreground tracking-widest uppercase placeholder:tracking-normal placeholder:normal-case"
-              />
-              {formError && <p className="text-xs text-destructive">{formError}</p>}
-              <Button type="submit" className="w-full rounded-none uppercase tracking-wider">확인</Button>
-            </form>
-          ) : (
-            <form onSubmit={handleOnboardSubmit} className="border hairline p-6 space-y-4">
-              <div className="space-y-1">
-                <label className="editorial-eyebrow text-muted-foreground text-xs">실명 성함</label>
-                <input type="text" placeholder="한입스무디 구매 시 사용한 성함" value={realName}
-                  onChange={e => setRealName(e.target.value)}
-                  className="w-full border border-foreground/30 bg-background px-3 py-2 text-sm outline-none focus:border-foreground" />
-              </div>
-              <div className="space-y-1">
-                <label className="editorial-eyebrow text-muted-foreground text-xs">전화번호</label>
-                <input type="tel" placeholder="010-0000-0000" value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  className="w-full border border-foreground/30 bg-background px-3 py-2 text-sm outline-none focus:border-foreground" />
-              </div>
-              <div className="space-y-1">
-                <label className="editorial-eyebrow text-muted-foreground text-xs">가입 목적 (선택)</label>
-                <textarea placeholder="이번 챌린지에서 이루고 싶은 것은?" value={joinPurpose}
-                  onChange={e => setJoinPurpose(e.target.value)} rows={2}
-                  className="w-full border border-foreground/30 bg-background px-3 py-2 text-sm outline-none focus:border-foreground resize-none" />
-              </div>
-              <div className="space-y-3 pt-1">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" checked={agreed1} onChange={e => setAgreed1(e.target.checked)} className="mt-0.5 accent-foreground" />
-                  <span className="text-xs text-muted-foreground leading-relaxed">해이방장의 가이드를 믿고 따르겠습니다. 몸은 반드시 변합니다.</span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" checked={agreed2} onChange={e => setAgreed2(e.target.checked)} className="mt-0.5 accent-foreground" />
-                  <span className="text-xs text-muted-foreground leading-relaxed">가이드를 준수하지 않으면 결과를 보장받을 수 없음을 이해합니다.</span>
-                </label>
-              </div>
-              {formError && <p className="text-xs text-destructive">{formError}</p>}
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => { setOnboardStep("code"); setFormError(null); }} className="rounded-none flex-1">이전</Button>
-                <Button type="submit" disabled={formLoading || submitOnboarding.isPending} className="rounded-none flex-1 uppercase tracking-wider">
-                  {formLoading || submitOnboarding.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "입장하기"}
-                </Button>
-              </div>
-            </form>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // ── 신규 멤버 — 가입 (2026-11-22: 명단 대조) ──
+  if (user.status !== "approved") return <SignupFlow />;
 
   // ── 승인된 멤버 — 시즌 접근 권한 확인 ──
   if (seasonAccess.isLoading) {

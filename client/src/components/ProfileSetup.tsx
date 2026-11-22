@@ -160,6 +160,25 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
 /** 가입 후 필수 정보가 없으면 앱 대신 이 화면 */
 export default function ProfileSetup({ children }: { children: React.ReactNode }) {
   const me = trpc.wellness.myProfile.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
+  // 2026-11-22: 처음 정보를 다 넣으면 축하 화면 한 번
+  const wasSetup = useRef(false);
+  const [congrats, setCongrats] = useState(false);
+  useEffect(() => {
+    if (me.data?.needsSetup) wasSetup.current = true;
+    else if (me.data && wasSetup.current) { wasSetup.current = false; setCongrats(true); }
+  }, [me.data]);
+  if (congrats) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="max-w-sm w-full text-center space-y-5 season-fade-in">
+          <div className="text-6xl">🎉</div>
+          <h1 className="text-3xl font-black leading-snug">가입이 완료됐어요!<br /><span className="text-primary">축하합니다</span></h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">이제부터 시작할 수 있어요.<br />나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.</p>
+          <Button className="w-full h-12 rounded-2xl glass-btn text-base font-bold" onClick={() => setCongrats(false)}>시작하기</Button>
+        </div>
+      </div>
+    );
+  }
   if (me.isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (me.data?.needsSetup) {
     return (

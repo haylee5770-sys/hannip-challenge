@@ -81,10 +81,11 @@ export default function Admin() {
           {[
             { v: "report", label: "01 · REPORT" },
             { v: "members", label: "02 · MEMBERS" },
-            { v: "entrycode", label: "03 · 입장코드" },
-            { v: "invites", label: "04 · INVITES" },
-            { v: "schedules", label: "05 · REMINDERS" },
-            { v: "seasons", label: "06 · SEASONS" },
+            { v: "roster", label: "03 · 명단" },
+            { v: "seasons", label: "04 · SEASONS" },
+            { v: "entrycode", label: "05 · 입장코드" },
+            { v: "invites", label: "06 · INVITES" },
+            { v: "schedules", label: "07 · REMINDERS" },
           ].map(t => (
             <TabsTrigger
               key={t.v}
@@ -98,6 +99,7 @@ export default function Admin() {
 
         <TabsContent value="report"><DailyReport /></TabsContent>
         <TabsContent value="members"><MembersAdmin /></TabsContent>
+        <TabsContent value="roster"><RosterAdmin /></TabsContent>
         <TabsContent value="entrycode"><EntryCodeAdmin /></TabsContent>
         <TabsContent value="invites"><InvitesAdmin /></TabsContent>
         <TabsContent value="schedules"><SchedulesAdmin /></TabsContent>
@@ -168,6 +170,7 @@ function MembersAdmin() {
 
   if (list.isLoading) return <div className="py-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
+  const extras = trpc.admin.userExtras.useQuery();
   // 2026-11-21: 휴대폰에서 글씨가 겹치지 않게 한 사람씩 카드로. 수락을 기다리는 사람을 맨 위에
   const order = { pending: 0, approved: 1, rejected: 2 } as Record<string, number>;
   const rows = (list.data ?? []).slice().sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
@@ -182,6 +185,8 @@ function MembersAdmin() {
               <div className="text-base font-semibold truncate">{u.name ?? "이름 없음"} {(u as any).realName ? <span className="text-xs text-muted-foreground font-normal">({(u as any).realName})</span> : null}</div>
               <div className="text-xs text-muted-foreground truncate">{u.email}</div>
               {(u as any).phone && <div className="text-xs text-muted-foreground">{(u as any).phone}</div>}
+              {extras.data?.[u.id]?.contactEmail && <div className="text-xs text-muted-foreground">✉️ {extras.data[u.id].contactEmail}</div>}
+              {extras.data?.[u.id]?.address && <div className="text-xs text-muted-foreground leading-relaxed">🏠 {extras.data[u.id].address}</div>}
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
@@ -886,6 +891,45 @@ function SeasonEditForm({
           {isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}저장
         </Button>
         <Button size="sm" variant="outline" onClick={onCancel} className="rounded-none">취소</Button>
+      </div>
+    </div>
+  );
+}
+
+
+/** 크루 명단 (2026-11-22): 이름+전화번호가 여기 있는 사람은 가입하면 수락 없이 바로 입장 */
+function RosterAdmin() {
+  const utils = trpc.useUtils();
+  const list = trpc.admin.rosterList.useQuery();
+  const [text, setText] = useState("");
+  const imp = trpc.admin.rosterImport.useMutation({
+    onSuccess: (r) => { utils.admin.rosterList.invalidate(); setText(""); toast.success(`새로 ${r.added}명 · 바뀜 ${r.updated}명${r.skipped.length ? ` · 못 읽은 줄 ${r.skipped.length}개` : ""}`); },
+    onError: (e) => toast.error(e.message),
+  });
+  const del = trpc.admin.rosterDelete.useMutation({ onSuccess: () => utils.admin.rosterList.invalidate() });
+  const rows = list.data ?? [];
+  const joined = rows.filter((r: any) => r.usedByUserId).length;
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-primary p-4 space-y-3">
+        <div className="text-sm font-semibold">명단 붙여 넣기</div>
+        <p className="text-xs text-muted-foreground leading-relaxed">한 줄에 한 사람 · <b className="text-foreground">닉네임, 이름, 전화번호, 주소</b> 순서 (쉼표나 엑셀 칸 그대로). 같은 번호가 있으면 새 내용으로 바뀌어요.<br />여기 있는 사람은 가입할 때 이름·전화번호가 맞으면 <b className="text-foreground">수락 없이 바로 입장</b>해요.</p>
+        <textarea value={text} onChange={e => setText(e.target.value)} rows={6} placeholder={"로제, 이소민, 010-0000-0000, 경기도 …"} className="w-full rounded-xl border border-border bg-background p-3 text-sm" />
+        <Button className="rounded-xl glass-btn" disabled={!text.trim() || imp.isPending} onClick={() => imp.mutate({ text })}>저장</Button>
+      </div>
+      <p className="text-sm font-semibold">명단 {rows.length}명 · 가입 완료 {joined}명</p>
+      <div className="space-y-2">
+        {rows.map((r: any) => (
+          <div key={r.id} className={`rounded-2xl border p-3 flex items-start gap-3 ${r.usedByUserId ? "border-primary/50" : "border-border"}`}>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold">{r.nickname} <span className="text-xs text-muted-foreground font-normal">{r.realName} · {r.phone}</span></div>
+              {r.address && <div className="text-xs text-muted-foreground leading-relaxed">{r.address}</div>}
+              <div className={`text-[11px] mt-1 ${r.usedByUserId ? "text-primary font-semibold" : "text-muted-foreground"}`}>{r.usedByUserId ? `✓ 가입함 (${r.userName ?? ""})` : "아직 가입 전"}</div>
+            </div>
+            <button type="button" className="text-xs text-muted-foreground underline shrink-0"
+              onClick={async () => { if (await askConfirm(`${r.nickname} 님을 명단에서 뺄까요?`, "빼기")) del.mutate({ id: r.id }); }}>빼기</button>
+          </div>
+        ))}
       </div>
     </div>
   );

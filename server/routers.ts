@@ -20,6 +20,7 @@ import { getDailyLines } from "./dailyLines";
 import * as rounds from "./rounds";
 import * as wellness from "./wellness";
 import * as entryCode from "./entryCode";
+import * as roster from "./roster";
 
 
 import { syncSeasonBaselineForUser, computeLeaderboard, getMyCounts, dayNumber, totalDays, generateSeasonReports } from "./seasons";
@@ -753,6 +754,16 @@ const adminRouter = router({
       await db.setSeasonCode(input.seasonId, input.code.trim());
       return { ok: true };
     }),
+
+  /** 크루 명단 (2026-11-22) */
+  rosterList: adminProcedure.query(async () => roster.listRoster()),
+  rosterImport: adminProcedure.input(z.object({ text: z.string().min(1).max(200000) })).mutation(async ({ input }) => roster.importRoster(input.text)),
+  rosterDelete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await roster.deleteRoster(input.id); return { ok: true }; }),
+  userExtras: adminProcedure.query(async () => {
+    const all = await db.listAllUsers();
+    const m = await roster.getUserExtras(all.map(u => u.id));
+    return Object.fromEntries(Array.from(m.entries()));
+  }),
 
   /** 성함·이메일로 멤버 검색 */
   searchMembers: adminProcedure
@@ -1779,32 +1790,58 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
-    /** 온보딩 + 시즌코드 동시 처리 (신규 멤버) */
+    /** 명단 확인 (2026-11-22): 이름+전화번호가 명단에 있으면 닉네임을 알려 준다 */
+    rosterCheck: protectedProcedure
+      .input(z.object({ realName: z.string().min(1).max(64), phone: z.string().min(9).max(32) }))
+      .mutation(async ({ input }) => {
+        const r = await roster.findRosterMatch(input.realName, input.phone);
+        return r ? { matched: true as const, nickname: String(r.nickname), address: (r.address as string | null) ?? null } : { matched: false as const, nickname: null, address: null };
+      }),
+
+    /** 가입 신청 (2026-11-22): 명단에 있으면 바로 입장, 없으면 승인 대기. 입장코드는 더 이상 받지 않는다 */
     submitOnboarding: protectedProcedure
       .input(z.object({
-        seasonCode: z.string().min(1),
+        seasonCode: z.string().optional(),
         realName: z.string().min(1).max(64),
-        phone: z.string().min(1).max(32),
+        phone: z.string().min(9).max(32),
+        nickname: z.string().max(20).optional(),
+        email: z.string().max(320).optional(),
+        address: z.string().max(300).optional(),
         joinPurpose: z.string().max(500).optional(),
         agreed1: z.boolean(),
         agreed2: z.boolean(),
+        privacy: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (!input.agreed1 || !input.agreed2) {
+        if (!input.agreed1 || !input.agreed2 || !input.privacy) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "동의 항목을 모두 확인해 주세요." });
         }
-        const season = await db.getActiveSeason();
-        if (!(await entryCode.entryCodeOk(input.seasonCode))) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "입장코드가 올바르지 않아요. 방장에게 지금 코드를 다시 받아 주세요." });
+        const match = await roster.findRosterMatch(input.realName, input.phone);
+        if (!match) {
+          if (!input.nickname?.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "닉네임을 적어 주세요." });
+          if (!input.address?.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "주소를 적어 주세요." });
         }
         await db.completeOnboarding(ctx.user.id, {
-          realName: input.realName,
-          phone: input.phone,
+          realName: input.realName.trim(),
+          phone: input.phone.trim(),
           joinPurpose: input.joinPurpose,
           agreedToTerms: true,
         });
-        if (season) await db.grantSeasonToken(ctx.user.id, season.id);
-        return { ok: true };
+        await roster.saveSignupExtras(ctx.user.id, {
+          address: (input.address?.trim() || match?.address || null) as any,
+          contactEmail: input.email?.trim() || null,
+          privacyAgreed: true,
+        });
+        if (match) {
+          await db.updateUserProfile(ctx.user.id, { name: String(match.nickname) });
+          await db.updateUserStatus(ctx.user.id, "approved");
+          await roster.markRosterUsed(Number(match.id), ctx.user.id);
+          const season = await db.getActiveSeason();
+          if (season) await db.grantSeasonToken(ctx.user.id, season.id);
+          return { ok: true, matched: true, nickname: String(match.nickname) };
+        }
+        if (input.nickname?.trim()) await db.updateUserProfile(ctx.user.id, { name: input.nickname.trim() });
+        return { ok: true, matched: false, nickname: input.nickname?.trim() ?? null };
       }),
 
     /** 시즌코드 입력 (기존 멤버 — 새 시즌 활성화) */
