@@ -11,6 +11,7 @@ import { askConfirm } from "@/lib/askConfirm";
 import AddressField from "@/components/AddressField";
 import { shrinkFile } from "@/lib/shrinkImage";
 import { useRef } from "react";
+import InstallButton from "@/components/InstallButton";
 
 export default function Profile() {
   const { user, refresh, logout } = useAuth();
@@ -117,6 +118,8 @@ export default function Profile() {
           <AddressField value={address} onChange={setAddress} /></div>
         <Button className="rounded-xl glass-btn" disabled={saveContact.isPending} onClick={() => saveContact.mutate({ phone, address })}>저장</Button>
       </section>
+
+      <div className="mt-8"><InstallButton /></div>
 
       {/* 2026-11-22: 로그아웃은 메뉴에서 빼고 여기 맨 아래에 작게 (실수로 누르지 않게) */}
       <div className="mt-16 mb-4 text-center">
