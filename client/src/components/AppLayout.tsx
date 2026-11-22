@@ -115,7 +115,9 @@ function KakaoInAppNotice() {
 function NameWatermark({ name }: { name: string }) {
   const t = (name || "").replace(/[<>&"]/g, "").slice(0, 20);
   if (!t) return null;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='220' height='140'><text x='10' y='80' transform='rotate(-24 110 70)' font-family='sans-serif' font-size='18' font-weight='700' fill='white'>${t}</text></svg>`;
+  // 2026-11-22: 촘촘하게 (해이 확정) — 한 칸에 두 줄, 엇갈리게
+  const w = Math.max(120, t.length * 18 + 54), h = 88;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><g transform='rotate(-24 ${w / 2} ${h / 2})' font-family='sans-serif' font-size='16' font-weight='700' fill='white'><text x='4' y='26'>${t}</text><text x='${w / 2}' y='70'>${t}</text></g></svg>`;
   return <div aria-hidden className="fixed inset-0 z-[85] pointer-events-none select-none" style={{ opacity: 0.06, backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`, backgroundRepeat: "repeat" }} />;
 }
 
