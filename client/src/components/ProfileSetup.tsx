@@ -74,7 +74,7 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
     if (!by || by < 1930 || by > 2015) return toast.error("태어난 해를 4자리로 입력해 주세요. (예: 1985)");
     if (!h || h < 120 || h > 220) return toast.error("키를 cm로 입력해 주세요.");
     if (!editing && (!w || w < 30 || w > 250)) return toast.error("몸무게를 kg로 입력해 주세요.");
-    if (!activity) return toast.error("평소 활동량을 골라 주세요.");
+    if (!activity) return toast.error("운동량을 골라 주세요.");
     if (note.trim() && !consent) return toast.error("몸 상태 메모를 저장하려면 동의에 체크해 주세요.");
     save.mutate({
       avatarBase64: avatar ?? undefined, sex, birthYear: by, heightCm: h, weightKg: w && w >= 30 && w <= 250 ? w : undefined, activity,
@@ -83,78 +83,119 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
     });
   };
 
+  // 2026-11-22 (해이): 처음 가입은 한 화면에 한 가지씩 — ① 사진 ② 기본 정보 ③ 운동량 ④ 몸 상태 (이전/다음)
+  const [step, setStep] = useState(0);
+  const stepped = !editing;
+  const check = (i: number) => {
+    if (i === 0 && !shownAvatar) { toast.error("카톡방과 같은 프로필 사진을 꼭 올려 주세요."); return false; }
+    if (i === 1) {
+      const by = parseInt(birthYear), h = parseFloat(height), w = parseFloat(weight);
+      if (!by || by < 1930 || by > 2015) { toast.error("태어난 해를 4자리로 입력해 주세요. (예: 1985)"); return false; }
+      if (!h || h < 120 || h > 220) { toast.error("키를 cm로 입력해 주세요."); return false; }
+      if (!editing && (!w || w < 30 || w > 250)) { toast.error("몸무게를 kg로 입력해 주세요."); return false; }
+    }
+    if (i === 2 && !activity) { toast.error("운동량을 골라 주세요."); return false; }
+    return true;
+  };
+  const show = (i: number) => !stepped || step === i;
+  const big = "text-2xl font-black text-center leading-snug";
+
   if (me.isLoading) return <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   return (
-    <div className="space-y-5">
-      {/* 프로필 사진 */}
-      <section className="space-y-2">
-        <div className="text-sm font-semibold">프로필 사진 <span className="text-primary">(필수)</span></div>
-        <div className="flex items-center gap-4">
-          <button type="button" onClick={() => fileRef.current?.click()} className="w-20 h-20 rounded-[28%] overflow-hidden border border-primary/70 hover:bg-primary/10 flex items-center justify-center shrink-0 transition-colors">
-            {shownAvatar ? <img src={shownAvatar} alt="" className="w-full h-full object-cover" /> : <Camera className="h-6 w-6 text-primary" />}
+    <div className="space-y-6">
+      {stepped && (
+        <div className="flex justify-center gap-1.5">
+          {[0, 1, 2, 3].map(i => <span key={i} className={cn("h-2 rounded-full transition-all", i === step ? "w-6 bg-primary" : "w-2 bg-muted")} />)}
+        </div>
+      )}
+
+      {/* ① 프로필 사진 */}
+      {show(0) && (
+        <section className="space-y-4">
+          {stepped ? <h2 className={big}>프로필 사진을<br />넣어 주세요</h2> : <div className="text-sm font-semibold">프로필 사진</div>}
+          <button type="button" onClick={() => fileRef.current?.click()} className={cn("mx-auto rounded-full overflow-hidden border-2 border-dashed border-primary hover:bg-primary/10 flex items-center justify-center transition-colors", stepped ? "w-40 h-40" : "w-24 h-24")}>
+            {shownAvatar ? <img src={shownAvatar} alt="" className="w-full h-full object-cover" /> : <Camera className="h-9 w-9 text-primary" />}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (f) setAvatar(await squareDataUrl(f)); }} />
-          <p className="text-xs leading-relaxed text-rose-300 break-keep">⚠️ <b>카톡방 프로필 사진과 똑같은 사진을 넣어 주세요.</b><br />이 사진이 같아야 누가 올렸는지 매칭돼요.</p>
-        </div>
-      </section>
-
-      {/* 기본 정보 */}
-      <section className="space-y-3">
-        <div>
-          <div className="text-sm font-semibold">기본 정보 <span className="text-primary">(필수)</span></div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">키, 몸무게는 처음 가입 당시 기록이 필수입니다.<br />몸무게는 <b className="text-foreground">시즌이 시작할 때와 끝날 때</b> 한 번씩 잽니다.{editing ? " 몸무게는 오늘 화면의 \u0027체중 기록 추가\u0027에서 바꿔요." : ""}</p>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" className={chip(sex === "female")} onClick={() => setSex("female")}>여자</button>
-          <button type="button" className={chip(sex === "male")} onClick={() => setSex("male")}>남자</button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <label className="text-[11px] text-muted-foreground">태어난 해<input inputMode="numeric" value={birthYear} onChange={e => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="1985" className="mt-1 w-full h-11 rounded-xl border border-border bg-transparent px-3 text-base text-foreground" /></label>
-          <label className="text-[11px] text-muted-foreground">키 (cm)<input inputMode="decimal" value={height} onChange={e => setHeight(e.target.value)} placeholder="162" className="mt-1 w-full h-11 rounded-xl border border-border bg-transparent px-3 text-base text-foreground" /></label>
-          <label className="text-[11px] text-muted-foreground">몸무게 (kg)
-            <input inputMode="decimal" value={weight} disabled={editing} onChange={e => setWeight(e.target.value)} placeholder="58.5" className="mt-1 w-full h-11 rounded-xl border border-border bg-transparent px-3 text-base text-foreground disabled:opacity-60" />
-          </label>
-        </div>
-        <div>
-          <div className="text-[11px] text-muted-foreground mb-1">평소 활동량 (운동 말고 일상)</div>
-          <div className="grid grid-cols-3 gap-2">
-            <button type="button" className={chip(activity === "low")} onClick={() => setActivity("low")}>주로 앉아서</button>
-            <button type="button" className={chip(activity === "mid")} onClick={() => setActivity("mid")}>서서·많이 걸음</button>
-            <button type="button" className={chip(activity === "high")} onClick={() => setActivity("high")}>몸 쓰는 일</button>
+          <div className="text-center">
+            <p className="text-[15px] font-bold text-rose-300 leading-snug">카톡방 프로필 사진과 똑같은 사진을<br />넣어 주세요.</p>
+            <p className="text-xs text-muted-foreground mt-1.5">두 사진이 같아야 누가 올렸는지 매칭돼요.</p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* 선택: 몸 상태 */}
-      <section className="space-y-3 rounded-2xl border border-border p-4">
-        <div>
-          <div className="text-sm font-semibold">몸 상태 <span className="text-muted-foreground font-normal">(선택 · 해당되면 체크)</span></div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">체크하면 앱 안내가 몸 상태에 맞게 바뀌어요. 이 경우 앱 안내보다 의사·전문가 지침이 우선이에요.</p>
-        </div>
-        {sex === "female" && (
-          <div className="flex gap-2 flex-wrap">
-            <button type="button" className={chip(pregnant)} onClick={() => setPregnant(!pregnant)}>임신 중</button>
-            <button type="button" className={chip(lactating)} onClick={() => setLactating(!lactating)}>수유 중</button>
+      {/* ② 기본 정보 */}
+      {show(1) && (
+        <section className="space-y-4">
+          {stepped ? <h2 className={big}>기본 정보를<br />알려 주세요</h2> : <div className="text-sm font-semibold">기본 정보</div>}
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className={cn(chip(sex === "female"), "h-12 text-base")} onClick={() => setSex("female")}>여자</button>
+            <button type="button" className={cn(chip(sex === "male"), "h-12 text-base")} onClick={() => setSex("male")}>남자</button>
           </div>
-        )}
-        <div className="flex gap-2 flex-wrap">
-          {FLAGS.map(f => <button key={f.id} type="button" className={chip(flags.includes(f.id))} onClick={() => setFlags(flags.includes(f.id) ? flags.filter(x => x !== f.id) : [...flags, f.id])}>{f.label}</button>)}
-        </div>
-        <div className="pt-1">
-          <div className="text-sm font-semibold">방장에게 알려 주고 싶은 몸 상태 <span className="text-muted-foreground font-normal">(선택)</span></div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">지금 앓고 있는 질환, 복용 중인 약, 수술·부상 등 <b className="text-foreground">챌린지에 영향을 줄 수 있는 중요한 사항</b>만 적어 주세요. 가벼운 감기나 피로 같은 소소한 건 적지 않아도 돼요. 적어 주신 내용은 <b className="text-foreground">방장만</b> 볼 수 있어요.</p>
-          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={1000} placeholder="특별히 없으면 '없음'이라고 적거나 비워 두셔도 괜찮아요." className="mt-2 w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground/50" />
-          <label className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
-            <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 accent-[var(--primary)]" />
-            <span>위 몸 상태 정보(건강 정보)를 안전한 챌린지 안내를 위해 방장이 보는 것에 동의합니다. 언제든 고치거나 지울 수 있어요.</span>
+          <label className="block text-sm text-muted-foreground">태어난 해<input inputMode="numeric" value={birthYear} onChange={e => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="1985" className="mt-1 w-full h-12 rounded-xl border border-border bg-transparent px-4 text-lg text-foreground" /></label>
+          <label className="block text-sm text-muted-foreground">키 (cm)<input inputMode="decimal" value={height} onChange={e => setHeight(e.target.value)} placeholder="162" className="mt-1 w-full h-12 rounded-xl border border-border bg-transparent px-4 text-lg text-foreground" /></label>
+          <label className="block text-sm text-muted-foreground">몸무게 (kg)
+            <input inputMode="decimal" value={weight} disabled={editing} onChange={e => setWeight(e.target.value)} placeholder="58.5" className="mt-1 w-full h-12 rounded-xl border border-border bg-transparent px-4 text-lg text-foreground disabled:opacity-60" />
           </label>
-        </div>
-      </section>
+          <p className="text-xs text-muted-foreground text-center">몸무게는 시즌 시작·끝에 한 번씩 재요.{editing ? " 몸무게는 오늘 화면의 ‘체중 기록 추가’에서 바꿔요." : ""}</p>
+        </section>
+      )}
 
-      <Button className="w-full h-12 rounded-xl text-base" onClick={submit} disabled={save.isPending}>
-        {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? "저장하기" : "입력 완료하고 시작하기"}
-      </Button>
+      {/* ③ 운동량 */}
+      {show(2) && (
+        <section className="space-y-4">
+          {stepped ? <h2 className={big}>숨이 차고 땀이 날 정도의<br />운동을 얼마나 하세요?</h2> : <div className="text-sm font-semibold">숨이 차고 땀이 날 정도의 운동</div>}
+          <div className="space-y-2">
+            {([["low", "거의 안 해요", "주 1회 미만"], ["mid", "가끔 해요", "주 1~2회"], ["high", "자주 해요", "주 3회 이상"]] as const).map(([v, t, d]) => (
+              <button key={v} type="button" onClick={() => setActivity(v)}
+                className={cn("w-full rounded-2xl border px-5 py-4 text-left transition-colors", activity === v ? "border-primary bg-primary/15" : "border-border")}>
+                <div className={cn("text-lg font-bold", activity === v && "text-primary")}>{t}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{d}</div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ④ 몸 상태 (선택) */}
+      {show(3) && (
+        <section className="space-y-4">
+          {stepped ? <h2 className={big}>해당되는 게 있으면<br />골라 주세요</h2> : <div className="text-sm font-semibold">몸 상태 <span className="text-muted-foreground font-normal">(선택)</span></div>}
+          <p className="text-xs text-muted-foreground text-center">없으면 그냥 넘어가도 돼요. 해당되면 앱 안내보다 의사 지침이 우선이에요.</p>
+          <div className="flex gap-2 flex-wrap justify-center">
+            {sex === "female" && <>
+              <button type="button" className={chip(pregnant)} onClick={() => setPregnant(!pregnant)}>임신 중</button>
+              <button type="button" className={chip(lactating)} onClick={() => setLactating(!lactating)}>수유 중</button>
+            </>}
+            {FLAGS.map(f => <button key={f.id} type="button" className={chip(flags.includes(f.id))} onClick={() => setFlags(flags.includes(f.id) ? flags.filter(x => x !== f.id) : [...flags, f.id])}>{f.label}</button>)}
+          </div>
+          <div className="pt-2">
+            <div className="text-sm font-semibold">방장에게 알려 주고 싶은 것 <span className="text-muted-foreground font-normal">(선택 · 방장만 봐요)</span></div>
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={1000} placeholder="질환·복용 약·수술처럼 챌린지에 영향을 줄 수 있는 것만요. 없으면 비워 두세요." className="mt-2 w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground/50" />
+            {note.trim() && (
+              <label className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
+                <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 accent-[var(--primary)]" />
+                <span>이 내용을 안전한 챌린지 안내를 위해 방장이 보는 것에 동의해요. 언제든 고치거나 지울 수 있어요.</span>
+              </label>
+            )}
+          </div>
+        </section>
+      )}
+
+      {stepped && step < 3 ? (
+        <div className="grid grid-cols-[auto_1fr] gap-2 pt-2">
+          {step > 0 ? <Button variant="outline" className="h-12 rounded-full px-6" onClick={() => setStep(step - 1)}>이전</Button> : <span />}
+          <Button className="h-12 rounded-full text-base glass-btn" onClick={() => { if (check(step)) setStep(step + 1); }}><span className="relative z-[1]">다음</span></Button>
+        </div>
+      ) : (
+        <div className={cn("gap-2 pt-2", stepped ? "grid grid-cols-[auto_1fr]" : "")}>
+          {stepped && <Button variant="outline" className="h-12 rounded-full px-6" onClick={() => setStep(step - 1)}>이전</Button>}
+          <Button className="w-full h-12 rounded-full text-base glass-btn" onClick={() => { if ([0, 1, 2].every(check)) submit(); }} disabled={save.isPending}>
+            <span className="relative z-[1]">{save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? "저장하기" : "입력 완료하고 시작하기"}</span>
+          </Button>
+        </div>
+      )}
       <p className="text-[11px] text-center text-muted-foreground">권장량은 「한국인 영양소 섭취기준」 등 공식 기준으로 계산한 참고 안내예요.</p>
     </div>
   );
@@ -197,8 +238,7 @@ export default function ProfileSetup({ children }: { children: React.ReactNode }
         <div className="max-w-md mx-auto">
           <div className="text-center mb-6">
             <div className="editorial-eyebrow text-primary mb-1">WELCOME</div>
-            <h1 className="text-2xl font-semibold">처음 한 번만 입력해 주세요</h1>
-            <p className="text-sm text-muted-foreground mt-1">내 몸에 맞는 하루 권장량과 운동 안내를 위해 필요해요.</p>
+            <p className="text-xs text-muted-foreground">처음 한 번만 입력하면 돼요</p>
           </div>
           <ProfileForm />
         </div>
