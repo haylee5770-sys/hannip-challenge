@@ -783,6 +783,20 @@ const adminRouter = router({
   addNote: adminProcedure.input(z.object({ userId: z.number(), text: z.string().min(1).max(2000) })).mutation(async ({ input }) => { await roster.addAdminNote(input.userId, input.text.trim()); return { ok: true }; }),
   deleteNote: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await roster.deleteAdminNote(input.id); return { ok: true }; }),
   /** 가입을 처음부터 다시 하게 (2026-11-22: 예전에 거절됐던 계정·시험용) */
+  /** 완전 초기화 (2026-11-22, 시험·안내 영상용): 사진·몸 정보·모든 기록까지 지우고 가입 첫 화면부터. 방장 계정은 안 됨 */
+  fullReset: adminProcedure.input(z.object({ userId: z.number() })).mutation(async ({ input }) => {
+    const conn = await db.getDb(); if (!conn) return { ok: false };
+    const u = (await db.listAllUsers()).find(x => x.id === input.userId);
+    if (!u || u.role === "admin") throw new TRPCError({ code: "BAD_REQUEST", message: "방장 계정은 초기화할 수 없어요" });
+    const tables = ["weights", "goals", "meals", "mealPhotos", "exercises", "exerciseDetails", "reactions", "comments", "seasonParticipants", "seasonPhotos",
+      "seasonReports", "sleeps", "waters", "waistRecords", "seasonTokens", "bodyProfiles", "dailyConditions", "dailyLines", "happyNotes", "itgeNotes",
+      "seasonEntries", "feedbacks", "giftRequests", "adminNotes"];
+    for (const t of tables) { try { await conn.execute(sqlTag`DELETE FROM ${sqlTag.raw(t)} WHERE userId = ${input.userId}`); } catch { /* 표·칸이 없으면 건너뜀 */ } }
+    await conn.execute(sqlTag`UPDATE users SET status='pending', onboardingDone=false, avatarUrl=NULL, bio=NULL WHERE id=${input.userId}`);
+    for (const q of [sqlTag`UPDATE users SET installDone=false, privacyAgreed=false, address=NULL, contactEmail=NULL, pendingName=NULL WHERE id=${input.userId}`,
+      sqlTag`UPDATE roster SET usedByUserId=NULL WHERE usedByUserId=${input.userId}`]) { try { await conn.execute(q); } catch { /* */ } }
+    return { ok: true };
+  }),
   resetSignup: adminProcedure.input(z.object({ userId: z.number() })).mutation(async ({ input }) => {
     const conn = await db.getDb(); if (conn) {
       await conn.execute(sqlTag`UPDATE users SET status='pending', onboardingDone=false WHERE id=${input.userId}`);

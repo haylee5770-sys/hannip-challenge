@@ -193,6 +193,7 @@ function MembersAdmin() {
 
   // 2026-11-22: 훅은 아래 return보다 먼저 (MEMBERS 오류 고침)
   const extras = trpc.admin.userExtras.useQuery();
+  const fullReset = trpc.admin.fullReset.useMutation({ onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success("완전히 처음 상태가 됐어요. 그 계정으로 들어가면 가입 첫 화면부터 나와요"); }, onError: e => toast.error(e.message) });
   const resetSignup = trpc.admin.resetSignup.useMutation({ onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success("이제 그 계정으로 들어가면 가입 화면부터 다시 나와요"); } });
   if (list.isLoading) return <div className="py-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
@@ -238,6 +239,11 @@ function MembersAdmin() {
             {u.role !== "admin" && (
               <Button size="sm" variant="outline" className="rounded-xl"
                 onClick={async () => { if (await askConfirm(`${u.name ?? "이 분"}이 가입을 처음부터 다시 하게 할까요?`, "다시 가입")) resetSignup.mutate({ userId: u.id }); }}>가입 처음부터</Button>
+            )}
+            {u.role !== "admin" && (
+              <Button size="sm" variant="outline" className="rounded-xl border-destructive/50 text-destructive"
+                onClick={async () => { if (await askConfirm(`${u.name ?? "이 분"}을 완전히 처음 상태로 만들까요?
+프로필 사진·몸 정보·식단·물·운동 등 모든 기록이 지워지고 되돌릴 수 없어요. (시험용 계정에만 쓰세요)`, "완전 초기화")) fullReset.mutate({ userId: u.id }); }}>완전 초기화</Button>
             )}
             {u.status === "approved" && (
               <Button size="sm" variant="outline" className="rounded-xl"
