@@ -78,29 +78,41 @@ function FeedbackSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-function RequestSheet({ onClose }: { onClose: () => void }) {
+/** 🏆 상 받기 신청: 이게돼 챔피언 · 꾸준함 챔피언 · MVP 중 내 상을 눌러 → 받을 곳 확인 → 신청 */
+function AwardSheet({ onClose }: { onClose: () => void }) {
   const utils = trpc.useUtils();
-  const opt = trpc.crew.myOptions.useQuery();
-  const [tab, setTab] = useState<"gift" | "event">("gift");
-  const [pick, setPick] = useState<{ kind: "gift" | "event"; refId: number; label: string } | null>(null);
+  const opt = trpc.crew.awardOptions.useQuery();
+  const [pick, setPick] = useState<{ code: number; title: string; gift: string } | null>(null);
   const [edit, setEdit] = useState(false);
   const [phone, setPhone] = useState(""); const [address, setAddress] = useState(""); const [saveDefault, setSaveDefault] = useState(false);
-  const req = trpc.crew.request.useMutation({ onSuccess: () => { toast.success("신청했어요! 방장이 확인하고 보내 드려요 🎁"); utils.crew.myOptions.invalidate(); setPick(null); }, onError: e => toast.error(e.message) });
+  const [done, setDone] = useState(false);
+  const req = trpc.crew.request.useMutation({ onSuccess: () => { setDone(true); utils.crew.awardOptions.invalidate(); }, onError: e => toast.error(e.message) });
   const c = opt.data?.contact;
-  const startPick = (p: { kind: "gift" | "event"; refId: number; label: string }) => { setPick(p); setEdit(false); setPhone(c?.phone ?? ""); setAddress(c?.address ?? ""); };
+  const season = opt.data?.seasonName ?? "";
+  const label = pick ? `${season} ${pick.title} (${pick.gift})`.trim() : "";
+  const send = (extra?: { saveAsDefault?: boolean }) => { if (pick) req.mutate({ kind: "gift", refId: pick.code, label, realName: c?.realName ?? "", phone, address, ...extra }); };
 
+  if (done && pick) return (
+    <Sheet title="🏆 상 받기 신청" onClose={onClose}>
+      <div className="text-center space-y-3 py-4">
+        <div className="text-5xl">🎉</div>
+        <p className="text-lg font-bold">신청이 완료되었습니다!</p>
+        <p className="text-sm text-muted-foreground">{label}<br />방장이 확인하고 보내 드려요.</p>
+        <button type="button" className={glass + " text-center font-bold"} onClick={onClose}>닫기</button>
+      </div>
+    </Sheet>
+  );
   if (pick) return (
     <Sheet title="🎁 선물 받으실 곳이 여기 맞나요?" onClose={onClose}>
-      <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3 text-sm font-semibold">{pick.label}</div>
+      <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3 text-sm font-semibold">{label}</div>
       {!edit ? (<>
         <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 text-sm space-y-1">
           <div><b>{c?.realName}</b> · {phone}</div>
-          <div className="text-muted-foreground leading-relaxed">{address || "주소가 없어요. '다른 곳에서 받을래요'를 눌러 적어 주세요."}</div>
+          <div className="text-muted-foreground leading-relaxed">{address || "주소가 없어요. [다른 곳에서 받을래요]를 눌러 적어 주세요."}</div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button type="button" className="rounded-2xl border border-border py-3 text-sm" onClick={() => setEdit(true)}>다른 곳에서 받을래요</button>
-          <button type="button" disabled={!address || req.isPending} className="rounded-2xl glass-btn py-3 font-bold disabled:opacity-40"
-            onClick={() => req.mutate({ ...pick, realName: c?.realName ?? "", phone, address })}>네, 맞아요</button>
+          <button type="button" disabled={!address || req.isPending} className="rounded-2xl glass-btn py-3 font-bold disabled:opacity-40" onClick={() => send()}>네, 맞아요</button>
         </div>
       </>) : (<>
         <div className="space-y-1"><div className="text-xs text-muted-foreground">전화번호</div><input className={field} value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" /></div>
@@ -108,53 +120,117 @@ function RequestSheet({ onClose }: { onClose: () => void }) {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={saveDefault} onChange={e => setSaveDefault(e.target.checked)} /> 앞으로도 이 주소로 받을게요</label>
         <p className="text-xs text-primary">이 번호와 주소로 선물이 가요. 한 번 더 확인해 주세요.</p>
         <button type="button" disabled={phone.replace(/\D/g, "").length < 10 || address.trim().length < 5 || req.isPending} className="w-full h-12 rounded-2xl glass-btn font-bold disabled:opacity-40"
-          onClick={() => req.mutate({ ...pick, realName: c?.realName ?? "", phone, address, saveAsDefault: saveDefault })}>이 주소로 신청하기</button>
+          onClick={() => send({ saveAsDefault: saveDefault })}>이 주소로 신청하기</button>
       </>)}
       <button type="button" className="text-sm text-muted-foreground underline" onClick={() => setPick(null)}>뒤로</button>
     </Sheet>
   );
-
-  const gifts = opt.data?.gifts ?? [];
-  const events = opt.data?.events ?? [];
-  const mine = new Set(opt.data?.myEventIds ?? []);
   return (
-    <Sheet title="🎁 신청하기" onClose={onClose}>
-      <div className="grid grid-cols-2 gap-2">
-        {([["gift", "선물 신청"], ["event", "이벤트 신청"]] as const).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setTab(k)} className={`rounded-2xl border py-3 font-bold ${tab === k ? "glass-fill" : "border-border text-muted-foreground"}`}>{l}</button>
+    <Sheet title="🏆 상 받기 신청" onClose={onClose}>
+      <p className="text-sm text-muted-foreground">{season ? <><b className="text-foreground">{season}</b> 시상식에서 상을 받으셨나요?</> : "시상식에서 상을 받으셨나요?"}<br />내 상을 눌러 주세요.</p>
+      {opt.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (
+        <div className="space-y-3">
+          {(opt.data?.awards ?? []).map(a => (
+            <button key={a.code} type="button" disabled={a.requested}
+              onClick={() => { setPick(a); setEdit(false); setPhone(c?.phone ?? ""); setAddress(c?.address ?? ""); }}
+              className={glass + " disabled:opacity-50"}>
+              <div className="text-xs text-primary font-semibold">{a.title}은 여기를 눌러 주세요</div>
+              <div className="text-xl font-black mt-0.5">🏆 {a.title}</div>
+              <div className="text-sm text-muted-foreground mt-0.5">{a.requested ? "신청 완료 ✓" : `🎁 ${a.gift}`}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+/** 🎉 이벤트 참여: 열린 이벤트를 누르면 바로 신청 완료 + 신청한 순서대로 이름이 릴레이로 쌓임. 지난 이벤트는 날짜별로 아래에 */
+function EventSheet({ onClose }: { onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const board = trpc.crew.eventBoard.useQuery(undefined, { refetchInterval: 5000 });
+  const [openId, setOpenId] = useState<number | null>(null);
+  const [justJoined, setJustJoined] = useState(false);
+  const join = trpc.crew.joinEvent.useMutation({
+    onSuccess: (r: any) => { if (r?.ok === false) toast.error(r.message); else setJustJoined(true); utils.crew.eventBoard.invalidate(); utils.crew.eventApplicants.invalidate(); },
+    onError: e => toast.error(e.message),
+  });
+  const people = trpc.crew.eventApplicants.useQuery({ eventId: openId ?? 0 }, { enabled: !!openId, refetchInterval: 4000 });
+  const evs = board.data ?? [];
+  const ev = evs.find(e => e.id === openId);
+
+  if (ev) return (
+    <Sheet title="🎉 이벤트 참여" onClose={onClose}>
+      <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3">
+        <div className="font-bold">{ev.title}</div>
+        <div className="text-xs text-muted-foreground">{ev.date} · {ev.open ? "진행 중" : "마감"}</div>
+      </div>
+      {justJoined && <div className="text-center py-2 season-fade-in"><div className="text-4xl">✅</div><div className="text-lg font-bold mt-1">신청이 완료되었습니다!</div></div>}
+      <div className="text-sm font-semibold">신청자 {people.data?.length ?? 0}명 <span className="text-[11px] text-muted-foreground font-normal">· 신청한 순서대로</span></div>
+      <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
+        {(people.data ?? []).map(p => (
+          <div key={p.no} className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-2 season-fade-in">
+            <span className="w-7 text-center text-primary font-black tabular-nums">{p.no}</span><span className="font-semibold">{p.name}</span>
+          </div>
         ))}
       </div>
-      {opt.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : tab === "gift" ? (
-        gifts.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">지금은 받을 선물이 없어요.<br />시상식에서 뽑히면 여기서 신청할 수 있어요 🏆</p> : (
-          <div className="space-y-2">{gifts.map(g => (
-            <button key={g.awardId} type="button" disabled={g.requested} onClick={() => startPick({ kind: "gift", refId: g.awardId, label: `🏆 ${g.label}` })} className={glass + " disabled:opacity-50"}>
-              <div className="font-bold">🏆 {g.label}</div><div className="text-xs text-muted-foreground mt-0.5">{g.requested ? "신청 완료 ✓" : "눌러서 선물 신청"}</div>
-            </button>))}</div>)
+      {ev.open && !ev.joined && !justJoined && (
+        <button type="button" disabled={join.isPending} className="w-full h-12 rounded-2xl glass-btn font-bold" onClick={() => join.mutate({ eventId: ev.id })}>나도 신청하기</button>
+      )}
+      <button type="button" className="text-sm text-muted-foreground underline" onClick={() => { setOpenId(null); setJustJoined(false); }}>이벤트 목록</button>
+    </Sheet>
+  );
+  const open = evs.filter(e => e.open), past = evs.filter(e => !e.open);
+  return (
+    <Sheet title="🎉 이벤트 참여" onClose={onClose}>
+      {board.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : open.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">지금은 열린 이벤트가 없어요.<br />방장이 이벤트를 열면 여기에 떠요.</p>
       ) : (
-        events.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">지금은 열린 이벤트가 없어요.<br />이벤트가 열리면 여기서 신청해요.</p> : (
-          <div className="space-y-2">{events.map((ev: any) => (
-            <button key={ev.id} type="button" disabled={mine.has(Number(ev.id))} onClick={() => startPick({ kind: "event", refId: Number(ev.id), label: ev.title })} className={glass + " disabled:opacity-50"}>
-              <div className="font-bold">{ev.title}</div><div className="text-xs text-muted-foreground mt-0.5">{mine.has(Number(ev.id)) ? "신청 완료 ✓" : "눌러서 신청"}</div>
-            </button>))}</div>)
+        <div className="space-y-3">
+          {open.map(e => (
+            <button key={e.id} type="button" className={glass}
+              onClick={() => { setOpenId(e.id); setJustJoined(false); if (!e.joined) join.mutate({ eventId: e.id }); }}>
+              <div className="text-lg font-black">{e.title}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{e.date} · 신청 {e.count}명 · {e.joined ? "신청 완료 ✓ (눌러서 명단 보기)" : "누르면 바로 신청돼요"}</div>
+            </button>
+          ))}
+        </div>
+      )}
+      {past.length > 0 && (
+        <div className="pt-2 space-y-1.5">
+          <div className="text-xs text-muted-foreground font-semibold">지난 이벤트</div>
+          {past.map(e => (
+            <button key={e.id} type="button" onClick={() => { setOpenId(e.id); setJustJoined(false); }} className="w-full flex items-center justify-between rounded-xl border border-border px-3 py-2 text-sm text-left">
+              <span className="truncate">{e.date} · {e.title}</span><span className="text-xs text-muted-foreground shrink-0 ml-2">{e.count}명</span>
+            </button>
+          ))}
+        </div>
       )}
     </Sheet>
   );
 }
 
 export default function CrewButtons() {
-  const [open, setOpen] = useState<null | "fb" | "req">(null);
+  const [open, setOpen] = useState<null | "fb" | "award" | "event">(null);
   return (
     <section className="space-y-3 pt-4">
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" className={glass + " text-center py-6"} onClick={() => setOpen("award")}>
+          <div className="text-3xl">🏆</div><div className="text-base font-black mt-1">상 받기 신청</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">시상식 수상자</div>
+        </button>
+        <button type="button" className={glass + " text-center py-6"} onClick={() => setOpen("event")}>
+          <div className="text-3xl">🎉</div><div className="text-base font-black mt-1">이벤트 참여</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">누르면 바로 신청</div>
+        </button>
+      </div>
       <button type="button" className={glass} onClick={() => setOpen("fb")}>
-        <div className="text-lg font-bold">💬 의견 보내기</div>
+        <div className="text-base font-bold">💬 의견 보내기</div>
         <div className="text-xs text-muted-foreground mt-0.5">오류를 발견했거나, 이러면 좋겠다 싶을 때</div>
       </button>
-      <button type="button" className={glass} onClick={() => setOpen("req")}>
-        <div className="text-lg font-bold">🎁 신청하기</div>
-        <div className="text-xs text-muted-foreground mt-0.5">선물 신청 · 이벤트 신청 (전화번호·주소는 자동으로 들어가요)</div>
-      </button>
       {open === "fb" && <FeedbackSheet onClose={() => setOpen(null)} />}
-      {open === "req" && <RequestSheet onClose={() => setOpen(null)} />}
+      {open === "award" && <AwardSheet onClose={() => setOpen(null)} />}
+      {open === "event" && <EventSheet onClose={() => setOpen(null)} />}
     </section>
   );
 }

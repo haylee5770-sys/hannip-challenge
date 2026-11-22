@@ -161,3 +161,42 @@ export async function listRequests() {
   return q(sql`SELECT g.id, g.kind, g.label, g.realName, g.phone, g.address, g.sent, g.createdAt, u.name nickname FROM giftRequests g LEFT JOIN users u ON u.id=g.userId ORDER BY g.id DESC LIMIT 500`);
 }
 export async function setRequestSent(id: number, sent: boolean) { await q(sql`UPDATE giftRequests SET sent=${sent} WHERE id=${id}`); }
+
+/* 2026-11-22 개편: 상 받기 신청(상 3개 버튼) · 이벤트 참여(누르면 바로 완료 + 신청자 릴레이) */
+export const AWARD_KINDS = [
+  { code: 1, kind: "itge", title: "이게돼 챔피언", gift: "스무디 15개" },
+  { code: 2, kind: "total", title: "꾸준함 챔피언", gift: "스무디 3종" },
+  { code: 3, kind: "mvp", title: "MVP", gift: "네이버페이 1만 원권" },
+];
+/** 최근 시상한 시즌 이름 + 내가 이미 신청한 상 */
+export async function awardOptions(userId: number) {
+  const s = (await q(sql`SELECT id, name FROM seasons WHERE status='ended' ORDER BY endDate DESC, id DESC LIMIT 1`))[0]
+    ?? (await q(sql`SELECT id, name FROM seasons WHERE status='active' ORDER BY id DESC LIMIT 1`))[0];
+  const seasonName = s?.name ?? "";
+  const mine = await q(sql`SELECT refId, label FROM giftRequests WHERE userId=${userId} AND kind='gift'`);
+  const done = new Set(mine.filter(r => String(r.label).includes(seasonName)).map(r => Number(r.refId)));
+  return { seasonName, awards: AWARD_KINDS.map(a => ({ ...a, requested: done.has(a.code) })) };
+}
+/** 이벤트 목록 (열린 것 먼저, 그다음 지난 것 날짜순) + 신청자 수 + 내가 신청했는지 */
+export async function eventBoard(userId: number) {
+  const evs = await q(sql`SELECT e.id, e.title, e.open, DATE_FORMAT(CONVERT_TZ(e.createdAt,'+00:00','+09:00'),'%Y-%m-%d') d,
+      (SELECT COUNT(*) FROM giftRequests g WHERE g.kind='event' AND g.refId=e.id) cnt,
+      (SELECT COUNT(*) FROM giftRequests g WHERE g.kind='event' AND g.refId=e.id AND g.userId=${userId}) mine
+    FROM openEvents e ORDER BY e.open DESC, e.id DESC LIMIT 100`);
+  return evs.map(e => ({ id: Number(e.id), title: e.title, open: !!e.open, date: e.d, count: Number(e.cnt), joined: Number(e.mine) > 0 }));
+}
+/** 신청한 순서대로 이름 (릴레이) */
+export async function eventApplicants(eventId: number) {
+  const rows = await q(sql`SELECT g.id, u.name, g.createdAt FROM giftRequests g LEFT JOIN users u ON u.id=g.userId WHERE g.kind='event' AND g.refId=${eventId} ORDER BY g.id ASC`);
+  return rows.map((r, i) => ({ no: i + 1, name: r.name ?? "멤버" }));
+}
+export async function joinEvent(userId: number, eventId: number) {
+  const ev = (await q(sql`SELECT id, title, open FROM openEvents WHERE id=${eventId}`))[0];
+  if (!ev || !ev.open) return { ok: false, message: "마감된 이벤트예요." };
+  const ex = (await q(sql`SELECT id FROM giftRequests WHERE kind='event' AND refId=${eventId} AND userId=${userId}`))[0];
+  if (!ex) {
+    const u = (await q(sql`SELECT realName, phone, address FROM users WHERE id=${userId}`))[0] ?? {};
+    await q(sql`INSERT INTO giftRequests (userId, kind, label, refId, realName, phone, address) VALUES (${userId}, 'event', ${ev.title}, ${eventId}, ${u.realName ?? ""}, ${u.phone ?? ""}, ${u.address ?? null})`);
+  }
+  return { ok: true };
+}

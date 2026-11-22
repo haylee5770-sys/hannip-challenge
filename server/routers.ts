@@ -1618,6 +1618,10 @@ const crewRouter = router({
       await sp.addFeedback(ctx.user.id, input.kind, input.text.trim(), url);
       return { ok: true };
     }),
+  awardOptions: approvedProcedure.query(async ({ ctx }) => ({ ...(await sp.awardOptions(ctx.user.id)), contact: await roster.getMyContact(ctx.user.id) })),
+  eventBoard: approvedProcedure.query(async ({ ctx }) => sp.eventBoard(ctx.user.id)),
+  eventApplicants: approvedProcedure.input(z.object({ eventId: z.number() })).query(async ({ input }) => sp.eventApplicants(input.eventId)),
+  joinEvent: approvedProcedure.input(z.object({ eventId: z.number() })).mutation(async ({ ctx, input }) => sp.joinEvent(ctx.user.id, input.eventId)),
   feedbacks: adminProcedure.query(async () => sp.listFeedbacks()),
   feedbackDone: adminProcedure.input(z.object({ id: z.number(), done: z.boolean() })).mutation(async ({ input }) => { await sp.setFeedbackDone(input.id, input.done); return { ok: true }; }),
   myOptions: approvedProcedure.query(async ({ ctx }) => ({
