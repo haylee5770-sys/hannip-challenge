@@ -1,4 +1,5 @@
 import { askConfirm } from "@/lib/askConfirm";
+import { shrinkFile } from "@/lib/shrinkImage";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -236,7 +237,7 @@ export default function Today() {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, w, h);
-        return canvas.toDataURL("image/jpeg", 0.92);
+        return canvas.toDataURL("image/jpeg", 0.85);
       } catch {
         return rawDataUrl;
       }
@@ -469,7 +470,7 @@ function WeightSection({ date, userName, onBrag, weightCount }: { date: string; 
       const k = 1600 / Math.max(img.naturalWidth || 1600, img.naturalHeight || 1600);
       const c = document.createElement("canvas"); c.width = Math.round((img.naturalWidth || 1600) * k); c.height = Math.round((img.naturalHeight || 1600) * k);
       const g = c.getContext("2d")!; g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
-      const data = img.naturalWidth ? c.toDataURL("image/jpeg", 0.92) : raw;
+      const data = img.naturalWidth ? c.toDataURL("image/jpeg", 0.85) : raw;
       setPhoto(data); setNotes([]);
       try {
         const a = await analyze.mutateAsync({ photoBase64: data });
@@ -690,16 +691,11 @@ function MealForm({
     const arr = Array.from(files).slice(0, maxAllowed - photos.length);
     const results: string[] = [];
     for (const f of arr) {
-      if (f.size > 5 * 1024 * 1024) {
-        toast.error("이미지는 5MB 이하만 업로드 가능합니다");
+      if (f.size > 30 * 1024 * 1024) {
+        toast.error("사진이 너무 커요 (30MB 이하)");
         continue;
       }
-      const b64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(f);
-      });
+      const b64 = await shrinkFile(f); // 2026-11-22: 긴 변 1080px로 줄여서 저장
       results.push(b64);
     }
     setPhotos((prev) => [...prev, ...results]);
@@ -1172,9 +1168,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
 
   const handleExPhoto = (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("이미지 파일만 업로드할 수 있어요."); return; }
-    const reader = new FileReader();
-    reader.onload = (e) => setPhoto(e.target?.result as string);
-    reader.readAsDataURL(file);
+    void shrinkFile(file).then(setPhoto); // 2026-11-22: 줄여서 저장
   };
   const submit = () => {
     const m = parseInt(minutes);
@@ -1529,7 +1523,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
           </div>
         ) : (
           <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", !wakePhoto && "nudge")}>
-            <input ref={wakeRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const fl = e.target.files?.[0]; if (!fl) return; const r = new FileReader(); r.onload = () => setWakePhoto(String(r.result)); r.readAsDataURL(fl); }} />
+            <input ref={wakeRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const fl = e.target.files?.[0]; if (!fl) return; void shrinkFile(fl).then(setWakePhoto); }} />
             <Camera className="h-6 w-6 text-primary" />
           </label>
         )}
@@ -1992,12 +1986,7 @@ export function SeasonPhotosSection() {
       toast.error("10MB 이하 이미지만 업로드할 수 있어요.");
       return;
     }
-    const b64 = await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result as string);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
+    const b64 = await shrinkFile(file, 1280, 0.82); // 2026-11-22: 몸 사진은 조금 더 크게
     upload.mutate({ slot, angle, photoBase64: b64 });
   };
 
@@ -2343,16 +2332,11 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
     const arr = Array.from(files).slice(0, 8 - photos.length);
     const results: string[] = [];
     for (const f of arr) {
-      if (f.size > 5 * 1024 * 1024) {
-        toast.error("이미지는 5MB 이하만 업로드 가능합니다");
+      if (f.size > 30 * 1024 * 1024) {
+        toast.error("사진이 너무 커요 (30MB 이하)");
         continue;
       }
-      const b64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(f);
-      });
+      const b64 = await shrinkFile(f); // 2026-11-22: 긴 변 1080px로 줄여서 저장
       results.push(b64);
     }
     setPhotos((prev) => [...prev, ...results]);

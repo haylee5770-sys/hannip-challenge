@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronRight, Users, Trophy, History, ShoppingBag, Gift, Palette, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -275,32 +275,68 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><X className="h-5 w-5" /></span>
               </button>
             </div>
-            <nav className="container flex flex-col py-1 gap-0">
-              {/* 2026-11-22: 활동 / 구매·신청(연두 줄) / 꾸미기·프로필(베이지 줄) / 관리(방장만, 하늘색 줄) */}
-              {(() => {
-                const list: Array<{ label: string; path: string; korean: string; group: string; me?: boolean }> = [];
-                items.forEach(it => { list.push(it); if (it.path === "/decor") list.push({ label: "PROFILE", path: "/profile", korean: user?.name || "프로필", group: "me", me: true }); });
-                return list.map((item, i) => {
-                  const color = GROUP_COLOR[item.group] || undefined;
-                  const newGroup = i > 0 && list[i - 1].group !== item.group;
-                  return (
-                    <div key={item.path}>
-                      {newGroup && <div className="my-1.5" style={{ borderTop: `1.5px solid ${color ?? "currentColor"}` }} />}
-                      <Link href={item.path}>
-                        <button onClick={() => setMobileOpen(false)} className="w-full text-left flex items-baseline gap-3 py-[6px]">
-                          <span className="editorial-eyebrow w-28 shrink-0 whitespace-nowrap" style={{ color: color ?? undefined, opacity: color ? 0.85 : undefined }}>
-                            {!color ? <span className="text-muted-foreground">{item.label}</span> : item.label}
-                          </span>
-                          <span className="font-serif text-lg leading-snug flex items-center gap-2" style={{ color }}>
-                            {item.me && (user as any)?.avatarUrl ? <img src={(user as any).avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover border border-primary" /> : null}
-                            {item.korean}
-                          </span>
-                        </button>
-                      </Link>
-                    </div>
-                  );
-                });
-              })()}
+            {/* 2026-11-22 메뉴 C 시안 (해이 확정): 내 프로필 카드(블랙 유리알) / MY 목록 / CREW 타일(포인트색 아이콘) / 구매·신청(포인트색 유리알) / 관리(방장만) */}
+            <nav className="container flex flex-col pb-6">
+              <div className="black-glass rounded-3xl px-3 py-3 flex items-center gap-3">
+                <Link href="/profile">
+                  <button onClick={() => setMobileOpen(false)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                    {user?.avatarUrl
+                      ? <img src={user.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover border-2 border-primary shrink-0" />
+                      : <span className="h-11 w-11 rounded-full bg-muted border-2 border-primary shrink-0" />}
+                    <span className="min-w-0">
+                      <span className="block font-semibold text-base truncate text-white">{user?.name || "프로필"}</span>
+                      <span className="block text-[11px] text-white/60">내 프로필</span>
+                    </span>
+                  </button>
+                </Link>
+                <span className="flex-1" />
+                <Link href="/decor">
+                  <button onClick={() => setMobileOpen(false)} className="black-glass rounded-full px-3.5 py-2 text-sm font-semibold text-white flex items-center gap-1.5 shrink-0"
+                    style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 1px rgba(255,255,255,.12)" }}>
+                    <Palette className="h-4 w-4" /> 꾸미기
+                  </button>
+                </Link>
+              </div>
+
+              <div className="editorial-eyebrow text-primary mt-4 mb-1 px-1">MY</div>
+              {items.filter(i => i.group === "act" && !["/members", "/awards", "/history"].includes(i.path)).map(item => (
+                <Link key={item.path} href={item.path}>
+                  <button onClick={() => setMobileOpen(false)} className="w-full flex items-center justify-between px-1 py-[7px]">
+                    <span className="font-serif text-lg leading-snug">{item.korean}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </Link>
+              ))}
+
+              <div className="editorial-eyebrow text-primary mt-4 mb-2 px-1">CREW</div>
+              <div className="grid grid-cols-3 gap-2">
+                {([["/members", "멤버", Users], ["/awards", "시상식", Trophy], ["/history", "역대 챌린지", History]] as const).map(([path, label, Icon]) => (
+                  <Link key={path} href={path}>
+                    <button onClick={() => setMobileOpen(false)} className="w-full rounded-2xl bg-card border border-border py-3 flex flex-col items-center gap-1.5">
+                      <Icon className="h-5 w-5 text-primary" />
+                      <span className="text-[13px]">{label}</span>
+                    </button>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 mt-5">
+                {([["/shop", "구매하기", ShoppingBag], ["/apply", "신청하기", Gift]] as const).map(([path, label, Icon]) => (
+                  <Link key={path} href={path}>
+                    <button onClick={() => setMobileOpen(false)} className="glass-btn w-full py-3 text-[15px] flex items-center justify-center gap-1.5">
+                      <Icon className="h-4 w-4 relative z-[1]" /><span className="relative z-[1]">{label}</span>
+                    </button>
+                  </Link>
+                ))}
+              </div>
+
+              {isAdmin && (
+                <Link href="/admin">
+                  <button onClick={() => setMobileOpen(false)} className="mt-5 mx-auto flex items-center gap-1.5 text-sm" style={{ color: "#7cc4ff" }}>
+                    <KeyRound className="h-4 w-4" /> 관리 <span className="text-[11px] opacity-70">(방장만)</span>
+                  </button>
+                </Link>
+              )}
             </nav>
           </div>
         )}
