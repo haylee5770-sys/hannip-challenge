@@ -16,24 +16,25 @@ import { useEffect } from "react";
 import { isKakaoInApp, openInExternalBrowser } from "@/lib/proofCard";
 import type { ConfirmReq } from "@/lib/askConfirm";
 
+// 2026-11-22 방장 지정 순서 · 묶음: act 활동 / buy 구매·신청(연두) / me 꾸미기·프로필(베이지) / 관리(방장만, 하늘색)
 const NAV_ITEMS = [
-  // 2026-11-20 방장 지정 순서
-  { label: "TODAY", path: "/today", korean: "오늘" },
-  { label: "YEAR", path: "/year", korean: "1년" },
-  { label: "ITGE", path: "/itge", korean: "이게돼" },
-  { label: "MY CHANGE", path: "/dashboard", korean: "나의 변화" },
-  { label: "BEFORE·AFTER", path: "/before-after", korean: "비포 애프터" },
-  { label: "MEMBERS", path: "/members", korean: "멤버" },
-  { label: "AWARDS", path: "/awards", korean: "시상식" },
-  { label: "HISTORY", path: "/history", korean: "역대 챌린지" },
-  { label: "SHOP", path: "/shop", korean: "구매하기" },
-  { label: "STYLE", path: "/decor", korean: "꾸미기" },
-  { label: "APPLY", path: "/apply", korean: "신청하기" },
+  { label: "TODAY", path: "/today", korean: "오늘", group: "act" },
+  { label: "YEAR", path: "/year", korean: "1년", group: "act" },
+  { label: "ITGE", path: "/itge", korean: "이게돼", group: "act" },
+  { label: "MY CHANGE", path: "/dashboard", korean: "나의 변화", group: "act" },
+  { label: "BEFORE·AFTER", path: "/before-after", korean: "비포 애프터", group: "act" },
+  { label: "AWARDS", path: "/awards", korean: "시상식", group: "act" },
+  { label: "HISTORY", path: "/history", korean: "역대 챌린지", group: "act" },
+  { label: "MEMBERS", path: "/members", korean: "멤버", group: "act" },
+  { label: "SHOP", path: "/shop", korean: "구매하기", group: "buy" },
+  { label: "APPLY", path: "/apply", korean: "신청하기", group: "buy" },
+  { label: "STYLE", path: "/decor", korean: "꾸미기", group: "me" },
 ];
 
 const ADMIN_ITEMS = [
-  { label: "ADMIN", path: "/admin", korean: "관리" },
+  { label: "ADMIN", path: "/admin", korean: "관리", group: "admin" },
 ];
+const GROUP_COLOR: Record<string, string> = { act: "", buy: "#b6f24a", me: "#e8c9a0", admin: "#7cc4ff" };
 
 /** 카톡 안 브라우저일 때: 인증 사진을 화면에 띄워 길게 눌러 저장 + 크롬으로 열기 안내 */
 function ProofPreview() {
@@ -275,25 +276,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </button>
             </div>
             <nav className="container flex flex-col py-1 gap-0">
-              {items.map(item => (
-                <Link key={item.path} href={item.path}>
-                  <button
-                    onClick={() => setMobileOpen(false)}
-                    className="w-full text-left flex items-baseline gap-3 py-[7px]"
-                  >
-                    <span className="editorial-eyebrow text-muted-foreground w-28 shrink-0 whitespace-nowrap">{item.label}</span>
-                    <span className="font-serif text-lg leading-snug">{item.korean}</span>
-                  </button>
-                </Link>
-              ))}
-              <div className="pt-1 border-t hairline mt-1">
-                <Link href="/profile">
-                  <button onClick={() => setMobileOpen(false)} className="w-full text-left flex items-baseline gap-3 py-[7px]">
-                    <span className="editorial-eyebrow text-muted-foreground w-20">PROFILE</span>
-                    <span className="font-serif text-lg leading-snug">{user?.name || "프로필"}</span>
-                  </button>
-                </Link>
-              </div>
+              {/* 2026-11-22: 활동 / 구매·신청(연두 줄) / 꾸미기·프로필(베이지 줄) / 관리(방장만, 하늘색 줄) */}
+              {(() => {
+                const list: Array<{ label: string; path: string; korean: string; group: string; me?: boolean }> = [];
+                items.forEach(it => { list.push(it); if (it.path === "/decor") list.push({ label: "PROFILE", path: "/profile", korean: user?.name || "프로필", group: "me", me: true }); });
+                return list.map((item, i) => {
+                  const color = GROUP_COLOR[item.group] || undefined;
+                  const newGroup = i > 0 && list[i - 1].group !== item.group;
+                  return (
+                    <div key={item.path}>
+                      {newGroup && <div className="my-1.5" style={{ borderTop: `1.5px solid ${color ?? "currentColor"}` }} />}
+                      <Link href={item.path}>
+                        <button onClick={() => setMobileOpen(false)} className="w-full text-left flex items-baseline gap-3 py-[6px]">
+                          <span className="editorial-eyebrow w-28 shrink-0 whitespace-nowrap" style={{ color: color ?? undefined, opacity: color ? 0.85 : undefined }}>
+                            {!color ? <span className="text-muted-foreground">{item.label}</span> : item.label}
+                          </span>
+                          <span className="font-serif text-lg leading-snug flex items-center gap-2" style={{ color }}>
+                            {item.me && (user as any)?.avatarUrl ? <img src={(user as any).avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover border border-primary" /> : null}
+                            {item.korean}
+                          </span>
+                        </button>
+                      </Link>
+                    </div>
+                  );
+                });
+              })()}
             </nav>
           </div>
         )}
