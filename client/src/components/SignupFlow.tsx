@@ -164,9 +164,8 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
           <div className="space-y-5">
             {/* 2026-11-22 해이 확정 문구 */}
             <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] p-4 text-[13px] leading-[1.8] text-foreground/85">
-              🔒 적어 주신 <b>이름 · 전화번호 · 주소</b>는 <b>선물 발송</b>과 <b>구매 기록 확인</b>에만 쓰여요.<br />
-              로그인한 <b>구글 이메일</b>은 계정을 잊었을 때 찾아 드리려고 <b>방장만 볼 수 있게</b> 저장해요. (비밀번호는 알 수 없어요.)<br />
-              <b>모든 기록은 오직 이 구글 계정으로 모여요. 꼭 기억해 주세요!</b>
+              🔒 <b>모든 기록은 처음 가입한 구글 계정 하나로 모여요.</b><br />
+              다른 계정으로 들어오면 기록이 따로 쌓이니, 꼭 이 계정으로 들어와 주세요.
             </div>
             <div className="space-y-3">
               <label className="flex items-start gap-3 cursor-pointer rounded-2xl bg-white/[0.03] border border-white/10 p-4">
@@ -175,16 +174,15 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
               </label>
               <label className="flex items-start gap-3 cursor-pointer rounded-2xl bg-white/[0.03] border border-white/10 p-4">
                 <input type="checkbox" checked={a3} onChange={e => setA3(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-[hsl(var(--primary))]" />
-                <span className="text-[13.5px] leading-[1.75] text-foreground/90">위 개인정보(이름 · 전화번호 · 주소 · 로그인 구글 이메일)를 선물 발송 · 구매 기록 확인 · 계정 찾기에 쓰는 데 동의합니다.</span>
+                <span className="text-[13.5px] leading-[1.75] text-foreground/90">내 정보를 선물 발송, 구매 기록 확인, 계정 찾기에 쓰는 데 동의합니다.</span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer rounded-2xl bg-white/[0.03] border border-white/10 p-4">
                 <input type="checkbox" checked={a2} onChange={e => setA2(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-[hsl(var(--primary))]" />
                 <span className="text-[13.5px] leading-[1.75] text-foreground/90">
-                  이 앱은 <b>슈퍼한입 챌린지 크루만을 위한 시크릿 공간</b>이에요. 아래 두 가지를 지키겠습니다.
-                  <span className="block mt-1.5">- 앱의 기획 · 구성 · 콘텐츠를 <b>모방하거나 무단으로 사용하지 않겠습니다.</b></span>
-                  <span className="block">- 크루들의 기록 등 앱 안의 내용을 <b>캡처하거나 복사해 다른 곳에 유포하지 않겠습니다.</b></span>
-                  <span className="block mt-1.5">위 두 가지를 어길 경우 <b>저작권 · 초상권 · 개인정보 침해로 법적 책임을 질 수 있음</b>을 이해합니다.</span>
-                  <span className="block mt-1.5 text-[11px] text-muted-foreground">앱의 모든 내용은 '자랑하기'를 통해 카톡방에 정식으로 공유할 수 있으나, 앱 화면 자체를 직접 캡처하면 내 닉네임이 워터마크로 찍혀요.</span>
+                  이 앱은 <b>슈퍼한입 챌린지 크루만의 시크릿 공간</b>이에요.
+                  <span className="block mt-1.5">- 앱의 기획 · 구성 · 콘텐츠를 무단으로 사용하지 않겠습니다.</span>
+                  <span className="block">- 크루들의 기록 등 앱 안의 내용을 캡처해 유포하지 않겠습니다.</span>
+                  <span className="block mt-1.5 text-[11px] text-muted-foreground">나의 성과는 '자랑하기'로 카톡방에 정식으로 공유할 수 있으니 마음껏 활용해 주세요. 단, 앱 화면을 직접 캡처하면 내 닉네임이 워터마크로 찍혀요.</span>
                 </span>
               </label>
             </div>
