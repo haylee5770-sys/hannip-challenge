@@ -75,7 +75,7 @@ function PastAwards() {
               <div className="px-4 pb-3 space-y-1.5">
                 {s.awards.map(a => (
                   <div key={a.label} className="flex items-center gap-2 text-sm">
-                    <span className="w-14 shrink-0 text-xs text-primary font-semibold">{a.label}</span>
+                    <span className="w-20 shrink-0 text-xs text-primary font-semibold">{a.label}</span>
                     <span className="flex-1 font-semibold">{a.name}</span>
                     {a.note && <span className="text-xs text-muted-foreground">{a.note}</span>}
                   </div>
