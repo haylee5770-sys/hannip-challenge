@@ -9,6 +9,7 @@ export const TEN_KG: Ten[] = [
   { name: "보아", kg: 12.1, seasons: "2기~3기" },
   { name: "아이유", kg: 11.2, seasons: "10기~12기" },
   { name: "설인아", kg: 11.1, seasons: "6기~8기" },
+  { name: "고윤정", kg: 11, seasons: "11기~14기" },
   { name: "제니", kg: 10.2, seasons: "8기~12기" },
   { name: "지현", kg: 10, seasons: "5기~6기" },
   { name: "준희", kg: 10, seasons: "2기~3기" },
