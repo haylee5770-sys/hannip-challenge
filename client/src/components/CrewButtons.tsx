@@ -167,7 +167,7 @@ export function EventSheet({ onClose, inline }: { onClose: () => void; inline?: 
   const ev = evs.find(e => e.id === openId);
 
   if (ev) return (
-    <Sheet inline={inline} title="🎉 이벤트 참여" onClose={onClose}>
+    <Sheet inline={inline} title="🎉 이벤트 신청" onClose={onClose}>
       <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3">
         <div className="font-bold">{ev.title}</div>
         <div className="text-xs text-muted-foreground">{ev.date} · {ev.open ? "진행 중" : "마감"}</div>
@@ -189,7 +189,7 @@ export function EventSheet({ onClose, inline }: { onClose: () => void; inline?: 
   );
   const open = evs.filter(e => e.open), past = evs.filter(e => !e.open);
   return (
-    <Sheet inline={inline} title="🎉 이벤트 참여" onClose={onClose}>
+    <Sheet inline={inline} title="🎉 이벤트 신청" onClose={onClose}>
       {board.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : open.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">지금은 열린 이벤트가 없어요.<br />방장이 이벤트를 열면 여기에 떠요.</p>
       ) : (
@@ -227,7 +227,7 @@ export default function CrewButtons() {
           <div className="text-[11px] text-muted-foreground mt-0.5">시상식 수상자</div>
         </button>
         <button type="button" className={glass + " text-center py-6"} onClick={() => setOpen("event")}>
-          <div className="text-3xl">🎉</div><div className="text-base font-black mt-1">이벤트 참여</div>
+          <div className="text-3xl">🎉</div><div className="text-base font-black mt-1">이벤트 신청</div>
           <div className="text-[11px] text-muted-foreground mt-0.5">누르면 바로 신청</div>
         </button>
       </div>

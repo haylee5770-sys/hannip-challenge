@@ -28,9 +28,7 @@ const NAV_ITEMS = [
   { label: "HISTORY", path: "/history", korean: "역대 챌린지" },
   { label: "SHOP", path: "/shop", korean: "구매하기" },
   { label: "STYLE", path: "/decor", korean: "꾸미기" },
-  { label: "AWARD", path: "/award-apply", korean: "상 받기 신청" },
-  { label: "EVENT", path: "/events", korean: "이벤트 참여" },
-  { label: "VOICE", path: "/feedback", korean: "의견 보내기" },
+  { label: "APPLY", path: "/apply", korean: "신청하기" },
 ];
 
 const ADMIN_ITEMS = [
