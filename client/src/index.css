@@ -387,7 +387,14 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 .intro-fadeout { animation: introFadeOut .9s ease both; }
 
 @keyframes introCrewIn { from { opacity: 0; transform: scale(1.04); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-.intro-crew-in { animation: introCrewZoom 3.6s cubic-bezier(.45,0,.2,1) both; transform-origin: 52.7% 26%; }
+.intro-crew-in { animation: introCrewPan 7.6s cubic-bezier(.45,0,.25,1) both; transform-origin: 0 0; }
 
 /* 2026-11-22: 크루 사진 — 처음엔 얼굴이 크게(확대) 보이다가 작아지면서 위로 자리 잡기 */
 @keyframes introCrewZoom { 0% { opacity: 0; transform: translateY(26vh) scale(1.62); filter: blur(4px); } 12% { opacity: 1; filter: none; transform: translateY(26vh) scale(1.62); } 50% { opacity: 1; transform: translateY(26vh) scale(1.62); } 100% { opacity: 1; transform: none; } }
+
+/* 2026-11-22: 문구 화면이 천천히 걷히며 크루 사진으로 (툭 끊기지 않게) */
+@keyframes introOverlayOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+.intro-overlay-out { animation: introOverlayOut 1.6s ease-in-out both; }
+
+/* 2026-11-22: 크루 사진 — 왼쪽 얼굴부터 한 명씩 훑고 나서 전체 샷으로 */
+@keyframes introCrewPan { 0% { opacity: 0; filter: blur(4px); transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); } 10% { opacity: 1; filter: none; transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); } 18% { opacity: 1; filter: none; transform: translate(-41.77%, calc(43vh - 78.22%)) scale(2.6); } 26% { opacity: 1; filter: none; transform: translate(-41.77%, calc(43vh - 78.22%)) scale(2.6); } 34% { opacity: 1; filter: none; transform: translate(-87.14%, calc(43vh - 39.66%)) scale(2.6); } 42% { opacity: 1; filter: none; transform: translate(-87.14%, calc(43vh - 39.66%)) scale(2.6); } 50% { opacity: 1; filter: none; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); } 58% { opacity: 1; filter: none; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); } 65% { opacity: 1; filter: none; transform: translate(-125.81%, calc(43vh - 24.24%)) scale(2.6); } 71% { opacity: 1; filter: none; transform: translate(-125.81%, calc(43vh - 24.24%)) scale(2.6); } 77% { opacity: 1; filter: none; transform: translate(-160.02%, calc(43vh - 35.25%)) scale(2.6); } 83% { opacity: 1; filter: none; transform: translate(-160.02%, calc(43vh - 35.25%)) scale(2.6); } 100% { opacity: 1; transform: none; } }

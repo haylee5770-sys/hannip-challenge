@@ -9,10 +9,17 @@ import { useEffect, useRef, useState } from "react";
 let introAudio: HTMLAudioElement | null = null;
 function playIntroMusic() {
   try {
-    if (!introAudio) { introAudio = new Audio("/intro/music.m4a"); introAudio.volume = 0.9; }
+    if (!introAudio) { introAudio = new Audio("/intro/music.m4a"); introAudio.volume = 0.9; introAudio.loop = true; }
     const p = introAudio.play();
     if (p && typeof p.catch === "function") p.catch(() => { /* 휴대폰이 막으면 화면을 누를 때 재생 */ });
   } catch { /* 소리 없이 진행 */ }
+}
+
+/** 버튼(크롬으로 열기 / 구글 입장)을 누르면 음악을 천천히 줄이며 멈춘다 */
+export function stopIntroMusic() {
+  const a = introAudio; if (!a) return;
+  const step = () => { if (a.volume > 0.08) { a.volume = Math.max(0, a.volume - 0.08); setTimeout(step, 60); } else { a.pause(); } };
+  step();
 }
 
 type Phase = "bloom" | "line1" | "line2" | "crew" | "done";
@@ -25,7 +32,7 @@ export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; f
       <div className="min-h-full flex flex-col items-center">
         <img src="/intro/crew.jpg" alt="슈퍼한입 챌린지 크루" className={`w-full max-w-[640px] mt-[7vh] ${fadeIn ? "intro-crew-in" : ""}`}
           style={{ WebkitMaskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)", maskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)" }} />
-        <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "3.5s" } : undefined}>
+        <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "7.4s" } : undefined}>
           2025. 1. 24 · 슈퍼바프 1기
           <div className="mt-1 text-[11px] font-medium tracking-[0.12em] text-zinc-600">(슈퍼한입 챌린지 6기)</div>
         </div>
@@ -51,12 +58,18 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     at(500, () => setPhase("line1"));
     at(5100, () => setPhase("line2"));
     at(9700, () => setPhase("crew"));
-    at(13400, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
+    at(17600, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
     return () => { timers.current.forEach(clearTimeout); window.removeEventListener("pointerdown", tap); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (phase === "done") return <>{children}</>;
-  if (phase === "crew") return <CrewScreen fadeIn />;
+  if (phase === "crew") return (
+    <>
+      <CrewScreen fadeIn />
+      {/* 보라·초록 화면이 천천히 걷히면서 크루 사진으로 바뀜 */}
+      <div className="fixed inset-0 z-[200] overflow-hidden bg-[#121417] intro-overlay-out pointer-events-none"><div className="intro-bloom intro-bloom-on" /></div>
+    </>
+  );
   return (
     <div className="fixed inset-0 z-[200] overflow-hidden bg-[#121417] flex items-center justify-center select-none">
       <div className="intro-bloom intro-bloom-on" />
