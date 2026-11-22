@@ -50,6 +50,7 @@ export default function History() {
           <h2 className="text-3xl font-black">🏅 10kg 이상 감량</h2>
           <p className="text-sm font-semibold text-primary mt-1">포기하지 않은 꾸준함이 만든 기적</p>
         </div>
+        <div className="h-2" />
         <div className="grid grid-cols-2 gap-2">
           {TEN_KG.map(t => (
             <button type="button" key={t.name} onClick={() => setOpen(t)} className="text-left rounded-2xl border border-primary/40 bg-primary/10 px-3 py-3 active:scale-[0.98] transition">
@@ -70,8 +71,9 @@ export default function History() {
       <section className="space-y-3">
         <div className="px-1">
           <h2 className="text-3xl font-black">✨ 5kg 이상 감량</h2>
-          <p className="text-sm font-semibold text-primary mt-1">오직 한 번의 챌린지에서</p>
+          <p className="text-sm font-semibold text-primary mt-1">오직 한 번의 챌린지에서 5kg 이상 감량한 크루</p>
         </div>
+        <div className="h-2" />
         <div className="rounded-2xl border border-primary/30 bg-primary/5 divide-y divide-primary/15">
           {[...FIVE_KG].sort((a, b) => parseFloat(a.no) - parseFloat(b.no)).map((f, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-2.5 text-sm">

@@ -60,7 +60,7 @@ function PastAwards() {
   const [open, setOpen] = useState<string | null>(null);
   return (
     <section className="pt-8 space-y-2">
-      <div className="editorial-eyebrow text-primary px-1">역대 수상자</div>
+      <h2 className="text-center text-2xl font-black py-2">👑 역대 수상자 🏆</h2>
       {PAST_AWARDS.map(s => {
         const names = s.awards.map(a => a.name).join(", ");
         const on = open === s.no;
