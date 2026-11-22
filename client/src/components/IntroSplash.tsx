@@ -22,6 +22,9 @@ export function stopIntroMusic() {
   step();
 }
 
+/** 사진 속 크루 닉네임 — 왼쪽부터 얼굴 훑는 순서 (해이 지정 2026-11-22) */
+const CREW_NAMES = ["혜교", "지연", "해이", "카리나", "수지", "청하"];
+
 type Phase = "bloom" | "line1" | "line2" | "crew" | "done";
 const fromKakao = () => { try { return new URLSearchParams(location.search).get("from") === "kakao"; } catch { return false; } };
 
@@ -48,6 +51,7 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     return "bloom";
   });
   const timers = useRef<number[]>([]);
+  const [nameIdx, setNameIdx] = useState(-1);
   useEffect(() => {
     if (phase === "done") return;
     playIntroMusic(); // 될 때만 소리 (대부분 휴대폰은 화면을 누른 뒤부터)
@@ -58,28 +62,35 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     at(500, () => setPhase("line1"));
     at(5100, () => setPhase("line2"));
     at(9700, () => setPhase("crew"));
+    // 얼굴을 훑을 때 머리 위에 닉네임 (사진 이동 7.6초 중 각 얼굴에 머무는 때)
+    const PAN = 7600, CREW = 9700;
+    ([[0, 0.02, 0.16], [1, 0.18, 0.31], [2, 0.34, 0.47], [3, 0.50, 0.62], [4, 0.65, 0.75], [5, 0.77, 0.88]] as const)
+      .forEach(([i, a, b]) => { at(CREW + a * PAN + 250, () => setNameIdx(i)); at(CREW + b * PAN, () => setNameIdx(n => (n === i ? -1 : n))); });
     at(17600, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
     return () => { timers.current.forEach(clearTimeout); window.removeEventListener("pointerdown", tap); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (phase === "done") return <>{children}</>;
-  if (phase === "crew") return (
-    <>
-      <CrewScreen fadeIn />
-      {/* 보라·초록 화면이 천천히 걷히면서 크루 사진으로 바뀜 */}
-      <div className="fixed inset-0 z-[200] overflow-hidden bg-[#121417] intro-overlay-out pointer-events-none"><div className="intro-bloom intro-bloom-on" /></div>
-    </>
-  );
+  // 같은 화면(보라·초록 + 아이콘)을 그대로 둔 채 천천히 걷어 내면, 아래에서 크루 사진이 드러난다 (툭 끊기지 않게)
+  const leaving = phase === "crew";
   return (
-    <div className="fixed inset-0 z-[200] overflow-hidden bg-[#121417] flex items-center justify-center select-none">
-      <div className="intro-bloom intro-bloom-on" />
-      <div className="relative px-8 text-center flex flex-col items-center">
-        <img src="/icons/icon-512.png" alt="슈퍼한입 챌린지" className="intro-icon intro-icon-pop mb-10" />
-        <div className="min-h-[96px] flex items-center justify-center">
-        {phase === "line1" && <p key="l1" className="intro-line text-[28px] font-black text-white leading-snug">인생을 바꾸는<br />가장 쉬운 방법</p>}
-        {phase === "line2" && <p key="l2" className="intro-line text-[22px] font-bold text-white leading-relaxed">꾸준함이 자존감이 되고,<br />자존감이 인생을 바꾼다</p>}
+    <>
+      {leaving && <CrewScreen fadeIn />}
+      {leaving && nameIdx >= 0 && (
+        <div key={nameIdx} className="fixed inset-x-0 top-[calc(50vh-150px)] z-[150] text-center pointer-events-none intro-name">
+          <span className="inline-block rounded-full bg-black/55 backdrop-blur px-5 py-1.5 text-white text-xl font-black tracking-wider">{CREW_NAMES[nameIdx]}</span>
+        </div>
+      )}
+      <div className={`fixed inset-0 z-[200] overflow-hidden bg-[#121417] flex items-center justify-center select-none ${leaving ? "intro-overlay-out pointer-events-none" : ""}`}>
+        <div className="intro-bloom intro-bloom-on" />
+        <div className="relative px-8 text-center flex flex-col items-center">
+          <img src="/icons/icon-512.png" alt="슈퍼한입 챌린지" className={`intro-icon mb-10 ${leaving ? "intro-icon-away" : "intro-icon-pop"}`} />
+          <div className="min-h-[96px] flex items-center justify-center">
+          {phase === "line1" && <p key="l1" className="intro-line text-[28px] font-black text-white leading-snug">인생을 바꾸는<br />가장 쉬운 방법</p>}
+          {phase === "line2" && <p key="l2" className="intro-line text-[22px] font-bold text-white leading-relaxed">꾸준함이 자존감이 되고,<br />자존감이 인생을 바꾼다</p>}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

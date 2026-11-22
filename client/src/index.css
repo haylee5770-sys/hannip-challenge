@@ -394,7 +394,11 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 
 /* 2026-11-22: 문구 화면이 천천히 걷히며 크루 사진으로 (툭 끊기지 않게) */
 @keyframes introOverlayOut { 0% { opacity: 1; } 100% { opacity: 0; } }
-.intro-overlay-out { animation: introOverlayOut 1.6s ease-in-out both; }
+.intro-overlay-out { animation: introOverlayOut 2.2s cubic-bezier(.4,0,.2,1) both; }
 
 /* 2026-11-22: 크루 사진 — 왼쪽 얼굴부터 한 명씩 훑고 나서 전체 샷으로 */
 @keyframes introCrewPan { 0% { opacity: 0; filter: blur(4px); transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); } 10% { opacity: 1; filter: none; transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); } 18% { opacity: 1; filter: none; transform: translate(-41.77%, calc(43vh - 78.22%)) scale(2.6); } 26% { opacity: 1; filter: none; transform: translate(-41.77%, calc(43vh - 78.22%)) scale(2.6); } 34% { opacity: 1; filter: none; transform: translate(-87.14%, calc(43vh - 39.66%)) scale(2.6); } 42% { opacity: 1; filter: none; transform: translate(-87.14%, calc(43vh - 39.66%)) scale(2.6); } 50% { opacity: 1; filter: none; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); } 58% { opacity: 1; filter: none; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); } 65% { opacity: 1; filter: none; transform: translate(-125.81%, calc(43vh - 24.24%)) scale(2.6); } 71% { opacity: 1; filter: none; transform: translate(-125.81%, calc(43vh - 24.24%)) scale(2.6); } 77% { opacity: 1; filter: none; transform: translate(-160.02%, calc(43vh - 35.25%)) scale(2.6); } 83% { opacity: 1; filter: none; transform: translate(-160.02%, calc(43vh - 35.25%)) scale(2.6); } 100% { opacity: 1; transform: none; } }
+@keyframes introIconAway { from { opacity: 1; transform: scale(1.08); } to { opacity: 0; transform: scale(1.5); filter: blur(6px); } }
+.intro-icon-away { animation: introIconAway 1.6s ease-in both; }
+@keyframes introName { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.intro-name { animation: introName .5s ease-out both; }
