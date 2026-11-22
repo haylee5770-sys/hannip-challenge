@@ -382,10 +382,12 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 @keyframes introLine { 0% { opacity: 0; transform: translateY(16px); filter: blur(10px); letter-spacing: .25em; }
   25%, 70% { opacity: 1; transform: none; filter: none; letter-spacing: 0; }
   100% { opacity: 0; transform: translateY(-14px) scale(1.04); filter: blur(12px); letter-spacing: .2em; } }
-.intro-line { animation: introLine 2.6s ease-in-out both; text-shadow: 0 2px 20px rgba(0,0,0,.45); }
-.intro-line:nth-child(1) { animation-duration: 2.5s; }
+.intro-line { animation: introLine 3.1s ease-in-out both; text-shadow: 0 2px 20px rgba(0,0,0,.45); }
 @keyframes introFadeOut { from { opacity: 0; } to { opacity: 1; } }
 .intro-fadeout { animation: introFadeOut .9s ease both; }
 
 @keyframes introCrewIn { from { opacity: 0; transform: scale(1.04); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-.intro-crew-in { animation: introCrewIn 1.1s ease both; }
+.intro-crew-in { animation: introCrewZoom 1.9s cubic-bezier(.2,.7,.2,1) both; transform-origin: 50% 45%; }
+
+/* 2026-11-22: 크루 사진 — 처음엔 얼굴이 크게(확대) 보이다가 작아지면서 위로 자리 잡기 */
+@keyframes introCrewZoom { 0% { opacity: 0; transform: translateY(16vh) scale(2.1); filter: blur(4px); } 18% { opacity: 1; filter: none; transform: translateY(16vh) scale(2.1); } 100% { opacity: 1; transform: none; } }
