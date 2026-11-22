@@ -387,7 +387,7 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 .intro-fadeout { animation: introFadeOut .9s ease both; }
 
 @keyframes introCrewIn { from { opacity: 0; transform: scale(1.04); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-.intro-crew-in { animation: introCrewSlide 13s linear both; transform-origin: 0 0; }
+.intro-crew-in { animation: introCrewSlide 11s linear both; transform-origin: 0 0; }
 
 /* 2026-11-22: 크루 사진 — 처음엔 얼굴이 크게(확대) 보이다가 작아지면서 위로 자리 잡기 */
 @keyframes introCrewZoom { 0% { opacity: 0; transform: translateY(26vh) scale(1.62); filter: blur(4px); } 12% { opacity: 1; filter: none; transform: translateY(26vh) scale(1.62); } 50% { opacity: 1; transform: translateY(26vh) scale(1.62); } 100% { opacity: 1; transform: none; } }
@@ -422,5 +422,5 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
   100% { opacity: 1; transform: none; filter: blur(0) brightness(1); } }
 .intro-crew-name { font-family: 'Nanum Myeongjo', 'Gowun Batang', serif; font-weight: 700; font-size: 10px; letter-spacing: .16em; color: #fff;
   text-shadow: 0 0 6px rgba(0,0,0,.9), 0 0 14px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.95); }
-.intro-crew-in .intro-crew-name { animation: introCrewNameSize 13s linear both; }
-@keyframes introCrewNameSize { 0%, 84% { font-size: 7px; letter-spacing: .14em; } 84.1%, 100% { font-size: 10px; letter-spacing: .16em; } }
+.intro-crew-in .intro-crew-name { animation: introCrewNameSize 11s linear both; }
+@keyframes introCrewNameSize { 0%, 72% { font-size: 7px; letter-spacing: .14em; opacity: 1; } 80%, 100% { font-size: 7px; letter-spacing: .14em; opacity: 0; } }

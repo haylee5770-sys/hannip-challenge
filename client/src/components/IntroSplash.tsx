@@ -44,11 +44,11 @@ export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; f
         <div className={`relative w-[130%] max-w-[832px] shrink-0 mt-[7vh] ${fadeIn ? "intro-crew-in" : ""}`}>
           <img src="/intro/crew.jpg" alt="슈퍼한입 챌린지 크루" className="w-full block"
             style={{ WebkitMaskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)", maskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)" }} />
-          {CREW_NAMES.map(c => (
-            <span key={c.name} className="intro-crew-name absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap" style={{ left: `${c.x}%`, top: `${c.y}%` }}>{c.name}</span>
+          {fadeIn && CREW_NAMES.map(c => (
+            <span key={c.name} className="intro-crew-name absolute -translate-x-1/2 -translate-y-[150%] whitespace-nowrap" style={{ left: `${c.x}%`, top: `${c.y}%` }}>{c.name}</span>
           ))}
         </div>
-        <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "12.6s" } : undefined}>
+        <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "10.2s" } : undefined}>
           2025. 1. 24 · 슈퍼바프 1기
           <div className="mt-1 text-[11px] font-medium tracking-[0.12em] text-zinc-600">(슈퍼한입 챌린지 6기)</div>
         </div>
@@ -78,7 +78,7 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     at(500, () => setPhase("line1"));
     at(5100, () => setPhase("line2"));
     at(9700, () => setPhase("crew"));
-    at(23000, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
+    at(21000, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
     return () => { timers.current.forEach(clearTimeout); window.removeEventListener("pointerdown", tap); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
