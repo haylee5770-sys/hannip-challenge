@@ -387,7 +387,7 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 .intro-fadeout { animation: introFadeOut .9s ease both; }
 
 @keyframes introCrewIn { from { opacity: 0; transform: scale(1.04); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-.intro-crew-in { animation: introCrewPan3 16s linear both; transform-origin: 0 0; }
+.intro-crew-in { animation: introCrewSlide 13s linear both; transform-origin: 0 0; }
 
 /* 2026-11-22: 크루 사진 — 처음엔 얼굴이 크게(확대) 보이다가 작아지면서 위로 자리 잡기 */
 @keyframes introCrewZoom { 0% { opacity: 0; transform: translateY(26vh) scale(1.62); filter: blur(4px); } 12% { opacity: 1; filter: none; transform: translateY(26vh) scale(1.62); } 50% { opacity: 1; transform: translateY(26vh) scale(1.62); } 100% { opacity: 1; transform: none; } }
@@ -411,3 +411,13 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 @keyframes introName2 { 0% { opacity: 0; transform: translateY(10px); filter: blur(6px); letter-spacing: .5em; } 30%,70% { opacity: 1; transform: none; filter: none; letter-spacing: .22em; } 100% { opacity: 0; transform: translateY(-6px); filter: blur(6px); letter-spacing: .3em; } }
 .intro-name2 { animation: introName2 2.1s ease-in-out both; font-family: 'Nanum Myeongjo', 'Gowun Batang', serif; font-weight: 700;
   color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.4); }
+
+/* 2026-11-22 (해이): 확대된 채 위아래 없이 왼쪽→오른쪽으로 같은 속도로 천천히 → 끝에서 작아지며 제자리. 이름은 사진에 붙어 함께 움직임 */
+@keyframes introCrewSlide {
+  0% { opacity: 0; transform: translate(0%, calc(43vh - 130%)) scale(2.6); animation-timing-function: linear; }
+  5% { opacity: 1; transform: translate(-8%, calc(43vh - 130%)) scale(2.6); animation-timing-function: linear; }
+  76% { opacity: 1; transform: translate(-160%, calc(43vh - 130%)) scale(2.6); animation-timing-function: cubic-bezier(.45,0,.2,1); }
+  100% { opacity: 1; transform: none; } }
+.intro-crew-name { font-family: 'Nanum Myeongjo', 'Gowun Batang', serif; font-weight: 700; font-size: 8.5px; letter-spacing: .18em; color: #fff;
+  text-shadow: 0 1px 5px rgba(0,0,0,.6); animation: introCrewNameOut 13s linear both; }
+@keyframes introCrewNameOut { 0%, 74% { opacity: 1; } 84%, 100% { opacity: 0; } }
