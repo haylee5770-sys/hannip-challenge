@@ -24,7 +24,7 @@ export function Podium({ title, sub, list, unit }: { title: string; sub: string;
 }
 
 function Ranks({ list, unit, emptyText = "아직 기록이 없어요." }: { list: W[]; unit: string; emptyText?: string }) {
-  if (!list.length) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+  if (!list.length) return emptyText ? <p className="text-xs text-muted-foreground">{emptyText}</p> : null;
   return (
     <div className="space-y-2">
       {list.map((w, i) => (
@@ -38,18 +38,18 @@ function Ranks({ list, unit, emptyText = "아직 기록이 없어요." }: { list
   );
 }
 
-function AwardCard({ sub, title, gift, desc, children }: { sub: string; title: string; gift: string; desc: string; children: React.ReactNode }) {
-  // 2026-11-22: 세 상이 첫 화면을 꽉 채우도록 (내용은 줄이지 않고 글씨·간격만 조절)
+function AwardCard({ sub, title, gift, desc, children }: { sub: string; title: string; gift: string; desc: string; children?: React.ReactNode }) {
+  // 2026-11-22 (해이): 명예의 전당 색(포인트색 테두리·옅은 바탕). 왼쪽 = 설명 한 줄·상 이름·선물 / 오른쪽 절반 = 설명 글(연하게)
   return (
-    <section className="flex-1 rounded-3xl black-glass px-4 py-3.5 flex flex-col justify-center gap-1.5">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="text-primary text-[11px] font-semibold">{sub}</div>
-          <h2 className="text-xl font-black leading-tight text-white">{title}</h2>
+    <section className="flex-1 rounded-3xl border border-primary/40 bg-primary/10 px-4 py-3.5 flex flex-col justify-center gap-2">
+      <div className="grid grid-cols-2 gap-3 items-center">
+        <div className="min-w-0 space-y-1">
+          <div className="text-primary text-[11px] font-semibold leading-snug break-keep">{sub}</div>
+          <h2 className="text-xl font-black leading-tight">{title}</h2>
+          <div className="inline-block rounded-full bg-primary/20 px-2.5 py-0.5 text-[12px] font-bold">🎁 {gift}</div>
         </div>
-        <div className="shrink-0 rounded-full border border-primary/50 px-2.5 py-1 text-xs font-bold text-white">🎁 {gift}</div>
+        <p className="text-[12px] text-muted-foreground/80 leading-relaxed break-keep">{desc}</p>
       </div>
-      <p className="text-[12px] text-white/65 leading-snug break-keep">{desc}</p>
       {children}
     </section>
   );
@@ -121,7 +121,7 @@ export default function Awards() {
   const byItge = old ? [] : ((d!.byItge ?? []) as W[]);
   const byTotal = old ? [] : ((d!.byTotal ?? []) as W[]);
   const mvp = old ? [] : (((d as any).mvp ?? []) as W[]);
-  const wait = old ? "시즌이 끝나면 발표돼요." : "아직 기록이 없어요.";
+  const wait = old ? "" : "아직 기록이 없어요.";
 
   return (
     <div>
@@ -131,6 +131,7 @@ export default function Awards() {
         <div className="text-lg md:text-xl font-semibold text-foreground/85 break-keep">{seasonName}</div>
         <h1 className="text-2xl md:text-4xl font-semibold">🏆 시상식</h1>
         <p className="text-xs text-muted-foreground mt-0.5">{range}</p>
+        {old && <p className="text-[11px] text-primary mt-0.5">시즌이 끝나면 발표돼요</p>}
       </section>
 
       <AwardCard sub="작은 변화를 가장 자주 발견한 크루" title="이게돼 챔피언" gift="스무디 15개"
