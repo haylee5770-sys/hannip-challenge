@@ -21,6 +21,8 @@ import * as rounds from "./rounds";
 import * as wellness from "./wellness";
 import * as entryCode from "./entryCode";
 import * as roster from "./roster";
+import * as purchases from "./purchases";
+import * as naver from "./naverCommerce";
 import * as sp from "./seasonPlus";
 
 
@@ -770,9 +772,21 @@ const adminRouter = router({
   deleteNote: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await roster.deleteAdminNote(input.id); return { ok: true }; }),
   /** 가입을 처음부터 다시 하게 (2026-11-22: 예전에 거절됐던 계정·시험용) */
   resetSignup: adminProcedure.input(z.object({ userId: z.number() })).mutation(async ({ input }) => {
-    const conn = await db.getDb(); if (conn) await conn.execute(sqlTag`UPDATE users SET status='pending', onboardingDone=false WHERE id=${input.userId}`);
+    const conn = await db.getDb(); if (conn) {
+      await conn.execute(sqlTag`UPDATE users SET status='pending', onboardingDone=false WHERE id=${input.userId}`);
+      // 2026-11-22: 처음부터 다시 시험할 수 있게 동의·설치 완료·명단 연결도 풀어 준다 (사진·몸 정보·기록은 그대로)
+      await conn.execute(sqlTag`UPDATE users SET installDone=false, privacyAgreed=false WHERE id=${input.userId}`).catch(() => {});
+      await conn.execute(sqlTag`UPDATE roster SET usedByUserId=NULL WHERE usedByUserId=${input.userId}`).catch(() => {});
+    }
     return { ok: true };
   }),
+  /** 구매 기록 (2026-11-22): 방장만 */
+  purchasesFor: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => purchases.forUser(input.userId)),
+  purchaseSummary: adminProcedure.query(async () => purchases.summaryByUser()),
+  purchaseRanking: adminProcedure.input(z.object({ since: z.string().nullable().optional() })).query(async ({ input }) => purchases.ranking(input.since ?? null)),
+  purchaseStats: adminProcedure.query(async () => ({ ...(await purchases.stats()), naver: await naver.naverStatus() })),
+  purchaseImport: adminProcedure.input(z.object({ text: z.string().min(1).max(5_000_000) })).mutation(async ({ input }) => purchases.importExcel(input.text)),
+  naverSync: adminProcedure.mutation(async () => naver.syncNaverOrders()),
   /** 크루 명단 (2026-11-22) */
   rosterList: adminProcedure.query(async () => roster.listRoster()),
   rosterImport: adminProcedure.input(z.object({ text: z.string().min(1).max(200000) })).mutation(async ({ input }) => roster.importRoster(input.text)),
