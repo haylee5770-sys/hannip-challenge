@@ -29,7 +29,7 @@ export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; f
           2025. 1. 24 · 슈퍼바프 1기
           <div className="mt-1 text-[11px] font-medium tracking-[0.12em] text-zinc-600">(슈퍼한입 챌린지 6기)</div>
         </div>
-        <div className="w-full max-w-sm px-6 mt-auto pb-[8vh] pt-6">{children}</div>
+        <div className="w-full max-w-sm px-6 mt-auto pb-[16vh] pt-6">{children}</div>
       </div>
     </div>
   );
@@ -49,9 +49,9 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     window.addEventListener("pointerdown", tap);
     const at = (ms: number, f: () => void) => timers.current.push(window.setTimeout(f, ms));
     at(500, () => setPhase("line1"));
-    at(3700, () => setPhase("line2"));
-    at(6900, () => setPhase("crew"));
-    at(8800, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
+    at(5100, () => setPhase("line2"));
+    at(9700, () => setPhase("crew"));
+    at(13400, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
     return () => { timers.current.forEach(clearTimeout); window.removeEventListener("pointerdown", tap); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

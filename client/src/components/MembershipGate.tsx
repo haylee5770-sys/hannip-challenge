@@ -52,7 +52,7 @@ function InAppBrowserBlock() {
   return (
     <CrewScreen>
       <div className="text-center space-y-3">
-        <button type="button" onClick={openInExternalBrowser} className="w-full h-16 rounded-3xl bg-[#1d1f23] text-white text-lg font-black shadow-[0_12px_30px_rgba(0,0,0,.35)] active:scale-[0.98] transition">
+        <button type="button" onClick={openInExternalBrowser} className="black-glass w-full h-16 rounded-full border border-white/25 text-white text-lg font-black active:scale-[0.98] transition">
           {isIOS ? "사파리로 열기" : "크롬으로 열기"}
         </button>
         <button type="button" onClick={handleCopy} className="text-xs text-zinc-600 underline">
@@ -140,7 +140,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
         <CrewScreen>
           <div className="space-y-3 text-center">
             <Button type="button" onClick={handleGoogleLogin} disabled={authLoading}
-              className="w-full h-16 rounded-3xl bg-[#1d1f23] hover:bg-[#2a2d33] text-white text-lg font-black shadow-[0_12px_30px_rgba(0,0,0,.35)]">
+              className="black-glass w-full h-16 rounded-full border border-white/25 text-white text-lg font-black">
               {authLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : (
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1H12v3.9h5.36c-.23 1.5-1.6 4.4-5.36 4.4-3.23 0-5.86-2.67-5.86-5.95S8.77 7.5 12 7.5c1.84 0 3.07.78 3.78 1.45l2.58-2.49C16.78 4.96 14.6 4 12 4 6.98 4 3 8 3 13s3.98 9 9 9c5.2 0 8.64-3.65 8.64-8.78 0-.59-.06-1.04-.13-1.49z"/></svg>
               )}
