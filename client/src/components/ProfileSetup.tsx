@@ -94,7 +94,7 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
             {shownAvatar ? <img src={shownAvatar} alt="" className="w-full h-full object-cover" /> : <Camera className="h-6 w-6 text-primary" />}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (f) setAvatar(await squareDataUrl(f)); }} />
-          <p className="text-xs leading-relaxed text-rose-300">⚠️ <b>카톡방 프로필 사진과 똑같은 사진</b>을 넣어 주세요.<br />같아야 누가 올렸는지 매칭돼요.</p>
+          <p className="text-xs leading-relaxed text-rose-300 break-keep">⚠️ <b>카톡방 프로필 사진과 똑같은 사진을 넣어 주세요.</b><br />이 사진이 같아야 누가 올렸는지 매칭돼요.</p>
         </div>
       </section>
 
@@ -143,7 +143,7 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
         <div className="pt-1">
           <div className="text-sm font-semibold">방장에게 알려 주고 싶은 몸 상태 <span className="text-muted-foreground font-normal">(선택)</span></div>
           <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">지금 앓고 있는 질환, 복용 중인 약, 수술·부상 등 <b className="text-foreground">챌린지에 영향을 줄 수 있는 중요한 사항</b>만 적어 주세요. 가벼운 감기나 피로 같은 소소한 건 적지 않아도 돼요. 적어 주신 내용은 <b className="text-foreground">방장만</b> 볼 수 있어요.</p>
-          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={1000} className="mt-2 w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm" />
+          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={1000} placeholder="특별히 없으면 '없음'이라고 적거나 비워 두셔도 괜찮아요." className="mt-2 w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground/50" />
           <label className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
             <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 accent-[var(--primary)]" />
             <span>위 몸 상태 정보(건강 정보)를 안전한 챌린지 안내를 위해 방장이 보는 것에 동의합니다. 언제든 고치거나 지울 수 있어요.</span>
