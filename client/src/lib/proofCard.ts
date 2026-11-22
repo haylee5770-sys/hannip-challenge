@@ -277,7 +277,9 @@ export function isKakaoInApp(): boolean {
 
 /** 카톡 안 브라우저에서 휴대폰 기본 브라우저(크롬·삼성인터넷)로 다시 열기 */
 export function openInExternalBrowser() {
-  const url = location.href;
+  // 2026-11-22: 크롬·사파리에서 인트로를 다시 보여 주지 않도록 표시를 붙인다
+  const u = new URL(location.href); u.searchParams.set("from", "kakao");
+  const url = u.toString();
   if (/Android/i.test(navigator.userAgent)) {
     // 안드로이드: 크롬을 콕 집어서 연다. 크롬이 없으면 기본 브라우저로.
     const noScheme = url.replace(/^https?:\/\//, "");

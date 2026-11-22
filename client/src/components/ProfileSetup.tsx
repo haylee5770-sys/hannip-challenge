@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import InstallButton from "./InstallButton";
 
 const FLAGS: Array<{ id: "diabetes" | "kidney" | "thyroid" | "eating" | "heart" | "doctor"; label: string }> = [
   { id: "diabetes", label: "당뇨 또는 혈당약 복용" },
@@ -174,6 +175,7 @@ export default function ProfileSetup({ children }: { children: React.ReactNode }
           <div className="text-6xl">🎉</div>
           <h1 className="text-3xl font-black leading-snug">가입이 완료됐어요!<br /><span className="text-primary">축하합니다</span></h1>
           <p className="text-sm text-muted-foreground leading-relaxed">이제부터 시작할 수 있어요.<br />나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.</p>
+          <InstallButton />
           <Button className="w-full h-12 rounded-2xl glass-btn text-base font-bold" onClick={() => setCongrats(false)}>시작하기</Button>
         </div>
       </div>

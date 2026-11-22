@@ -8,8 +8,7 @@ import ProfileSetup from "./ProfileSetup";
 import SignupFlow from "./SignupFlow";
 import SeasonStart from "./SeasonStart";
 import { openInExternalBrowser } from "@/lib/proofCard";
-import InstallButton from "./InstallButton";
-import IntroSplash from "./IntroSplash";
+import IntroSplash, { CrewScreen } from "./IntroSplash";
 
 /** 카카오톡·라인 등 인앱 브라우저 여부 판별 */
 function isInAppBrowser() {
@@ -49,23 +48,18 @@ function InAppBrowserBlock() {
     }
   };
 
-  // 2026-11-22: 큰 버튼 하나. 안 열릴 때만 쓰는 '링크 복사'는 맨 아래 작게
+  // 2026-11-22: 크루 사진 화면 + 아래 큰 버튼 하나. 안 열릴 때만 쓰는 '링크 복사'는 작게
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="max-w-sm w-full text-center space-y-6">
-        <div>
-          <img src="/icons/icon-192.png" alt="" className="mx-auto h-20 w-20 rounded-[22px] mb-5 shadow-lg" />
-          <h2 className="text-lg font-bold leading-snug">{isIOS ? "사파리" : "크롬"}에서 열어 주세요</h2>
-          <p className="text-sm text-muted-foreground mt-2">{isKakao ? "카카오톡" : "이 앱"} 안에서는 입장할 수 없어요.</p>
-        </div>
-        <button type="button" onClick={openInExternalBrowser} className="w-full h-16 rounded-3xl glass-btn text-lg font-black active:scale-[0.98] transition">
+    <CrewScreen>
+      <div className="text-center space-y-3">
+        <button type="button" onClick={openInExternalBrowser} className="w-full h-16 rounded-3xl bg-[#1d1f23] text-white text-lg font-black shadow-[0_12px_30px_rgba(0,0,0,.35)] active:scale-[0.98] transition">
           {isIOS ? "사파리로 열기" : "크롬으로 열기"}
         </button>
-        <button type="button" onClick={handleCopy} className="text-xs text-muted-foreground underline">
+        <button type="button" onClick={handleCopy} className="text-xs text-zinc-600 underline">
           {copied ? `✓ 복사됐어요. ${isIOS ? "사파리" : "크롬"} 주소창에 붙여 넣어 주세요` : "버튼을 눌러도 안 열리면 → 링크 복사하기"}
         </button>
       </div>
-    </div>
+    </CrewScreen>
   );
 }
 
@@ -143,35 +137,19 @@ export default function MembershipGate({ children }: { children: React.ReactNode
   if (!user) {
     return (
       <IntroSplash>
-      <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
-        <div className="max-w-sm w-full">
-          {/* 2026-11-22: 처음 들어오면 환영 인사부터 */}
-          <div className="text-center mb-8 space-y-3 season-fade-in">
-            <img src="/icons/icon-512.png" alt="슈퍼한입 챌린지" className="mx-auto h-28 w-28 rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,.45)]" />
-            <div className="pt-1 text-xs text-primary font-medium">인생을 바꾸는 가장 쉬운 방법</div>
-          </div>
-          <div className="rounded-3xl border border-white/10 p-6 space-y-3 season-fade-in" style={{ animationDelay: ".4s" }}>
-            <Button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={authLoading}
-              className="w-full h-12 rounded-2xl glass-btn font-bold"
-            >
-              {authLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M21.35 11.1H12v3.9h5.36c-.23 1.5-1.6 4.4-5.36 4.4-3.23 0-5.86-2.67-5.86-5.95S8.77 7.5 12 7.5c1.84 0 3.07.78 3.78 1.45l2.58-2.49C16.78 4.96 14.6 4 12 4 6.98 4 3 8 3 13s3.98 9 9 9c5.2 0 8.64-3.65 8.64-8.78 0-.59-.06-1.04-.13-1.49z"/>
-                </svg>
+        <CrewScreen>
+          <div className="space-y-3 text-center">
+            <Button type="button" onClick={handleGoogleLogin} disabled={authLoading}
+              className="w-full h-16 rounded-3xl bg-[#1d1f23] hover:bg-[#2a2d33] text-white text-lg font-black shadow-[0_12px_30px_rgba(0,0,0,.35)]">
+              {authLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : (
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1H12v3.9h5.36c-.23 1.5-1.6 4.4-5.36 4.4-3.23 0-5.86-2.67-5.86-5.95S8.77 7.5 12 7.5c1.84 0 3.07.78 3.78 1.45l2.58-2.49C16.78 4.96 14.6 4 12 4 6.98 4 3 8 3 13s3.98 9 9 9c5.2 0 8.64-3.65 8.64-8.78 0-.59-.06-1.04-.13-1.49z"/></svg>
               )}
               Google 계정으로 입장하기
             </Button>
-            <InstallButton />
-            {authError && <p className="text-xs text-destructive text-center">{authError}</p>}
-            <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              단톡방 크루만 들어올 수 있어요.<br />아이폰을 쓰시면 구글 계정이 필요해요 (없으면 먼저 만들어 주세요).
-            </p>
+            {authError && <p className="text-xs text-red-700">{authError}</p>}
+            <p className="text-xs text-zinc-600 leading-relaxed">단톡방 크루만 들어올 수 있어요.<br />아이폰을 쓰시면 구글 계정이 필요해요 (없으면 먼저 만들어 주세요).</p>
           </div>
-        </div>
-      </div>
+        </CrewScreen>
       </IntroSplash>
     );
   }
