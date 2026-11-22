@@ -38,26 +38,46 @@ function CareList() {
 }
 
 function RoundControl() {
+  // 2026-11-22: 시즌 시작 — 이름·끝나는 날·(있으면) 3일 디톡스 날짜. 시작하면 모두의 번호가 1부터, 크루는 앱을 열 때 '새로운 시즌' 화면에서 참여를 고른다
   const utils = trpc.useUtils();
-  const cur = trpc.rounds.current.useQuery();
+  const cur = trpc.rounds.seasonInfo.useQuery();
+  const counts = trpc.rounds.entryCounts.useQuery({ seasonId: cur.data?.id ?? 0 }, { enabled: !!cur.data?.id });
   const after = () => { utils.rounds.invalidate(); };
-  const start = trpc.rounds.start.useMutation({ onSuccess: (r) => { toast.success(`${r.seasonNumber}회차 시작! 모두의 번호가 1번부터 시작돼요.`); after(); }, onError: e => toast.error(e.message) });
-  const end = trpc.rounds.end.useMutation({ onSuccess: (r) => { r.ok ? toast.success("챌린지 종료! 시상식에 결과가 올라갔어요.") : toast.error((r as any).message ?? "진행 중인 챌린지가 없어요"); after(); }, onError: e => toast.error(e.message) });
+  const [name, setName] = useState("2026 파이널 시즌");
+  const [shortName, setShortName] = useState("26 파이널");
+  const [planEnd, setPlanEnd] = useState("2026-12-23");
+  const [detox, setDetox] = useState(false);
+  const [dS, setDS] = useState(""); const [dE, setDE] = useState("");
+  const start = trpc.rounds.startSeason.useMutation({ onSuccess: () => { toast.success("시즌 시작! 모두의 번호가 1번부터 시작되고, 크루들에게 '새로운 시즌' 화면이 떠요."); after(); }, onError: e => toast.error(e.message) });
+  const end = trpc.rounds.end.useMutation({ onSuccess: (r) => { r.ok ? toast.success("시즌 종료! 시상식에 결과가 올라갔어요.") : toast.error((r as any).message ?? "진행 중인 시즌이 없어요"); after(); }, onError: e => toast.error(e.message) });
   const busy = start.isPending || end.isPending;
+  const inp = "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm";
   return (
     <section className="mt-6 rounded-2xl bg-card border border-primary/50 p-5 space-y-3">
       <div className="text-sm">
-        {cur.data ? <>지금 진행 중: <b className="text-primary">{cur.data.name}</b> <span className="text-muted-foreground">({cur.data.startDate}~)</span></> : <span className="text-muted-foreground">지금 진행 중인 챌린지가 없어요.</span>}
+        {cur.data ? <>지금 진행 중: <b className="text-primary">{cur.data.name}</b> <span className="text-muted-foreground">({cur.data.startDate} ~ {cur.data.planEnd ?? ""})</span>
+          {counts.data && <div className="text-xs text-muted-foreground mt-1">참여: 슈퍼루틴 {counts.data.routine}명 · 3일 디톡스 {counts.data.detox}명</div>}</>
+          : <span className="text-muted-foreground">지금은 테스트 기간이에요. (기록은 남지만 시즌 번호·시상에는 들어가지 않아요)</span>}
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <button type="button" disabled={busy} onClick={async () => { if (await askConfirm("3일 디톡스를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.", "시작")) start.mutate({ type: "detox" }); }}
-          className="rounded-xl bg-primary text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 3일 디톡스 시작</button>
-        <button type="button" disabled={busy} onClick={async () => { if (await askConfirm("미니 챌린지를 시작할까요? 모두의 인증 번호가 1번부터 다시 시작돼요.", "시작")) start.mutate({ type: "mini" }); }}
-          className="rounded-xl bg-primary/80 text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 미니 챌린지 시작</button>
+      <div className="rounded-xl border border-border p-3 space-y-2">
+        <div className="text-sm font-semibold">새 시즌 시작</div>
+        <label className="block text-xs text-muted-foreground">시즌 이름<input className={inp} value={name} onChange={e => setName(e.target.value)} /></label>
+        <label className="block text-xs text-muted-foreground">짧은 이름 (나의 변화 버튼)<input className={inp} value={shortName} onChange={e => setShortName(e.target.value)} placeholder="예: 27-1" /></label>
+        <label className="block text-xs text-muted-foreground">끝나는 날<input type="date" className={inp} value={planEnd} onChange={e => setPlanEnd(e.target.value)} /></label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={detox} onChange={e => setDetox(e.target.checked)} /> 3일 디톡스 포함 (참여 버튼 2개)</label>
+        {detox && <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs text-muted-foreground">디톡스 시작<input type="date" className={inp} value={dS} onChange={e => setDS(e.target.value)} /></label>
+          <label className="text-xs text-muted-foreground">디톡스 끝<input type="date" className={inp} value={dE} onChange={e => setDE(e.target.value)} /></label>
+        </div>}
+        <button type="button" disabled={busy || !name.trim() || !planEnd || (detox && (!dS || !dE))}
+          onClick={async () => { if (await askConfirm(`'${name}'을 오늘 시작할까요?
+모두의 인증 번호가 1번부터 다시 시작돼요.`, "시작")) start.mutate({ name: name.trim(), shortName: shortName.trim(), planEnd, detoxStart: detox ? dS : null, detoxEnd: detox ? dE : null }); }}
+          className="w-full rounded-xl bg-primary text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 시즌 시작</button>
+        <p className="text-[11px] text-muted-foreground">예: 슈퍼루틴 2027 시즌 1 · 27-1 · 끝 2027-02-19 · 디톡스 2027-01-12 ~ 01-14</p>
       </div>
-      <button type="button" disabled={busy || !cur.data} onClick={async () => { if (await askConfirm("챌린지를 종료하고 시상식에 결과를 올릴까요?", "종료")) end.mutate(); }}
-        className="w-full rounded-xl border-2 border-primary text-primary font-bold py-4 text-base disabled:opacity-40">■ 챌린지 종료 · 결산하기</button>
-      <p className="text-[11px] text-muted-foreground">종료하면 이게돼 챔피언·꾸준함 챔피언이 자동 계산돼 '시상식'과 '역대 챌린지'에 올라가요.</p>
+      <button type="button" disabled={busy || !cur.data} onClick={async () => { if (await askConfirm("시즌을 종료하고 시상식에 결과를 올릴까요?", "종료")) end.mutate(); }}
+        className="w-full rounded-xl border-2 border-primary text-primary font-bold py-4 text-base disabled:opacity-40">■ 시즌 종료 · 결산하기</button>
+      <p className="text-[11px] text-muted-foreground">종료하면 이게돼 챔피언·꾸준함 챔피언 후보가 자동 계산돼 '시상식'에 올라가요(슈퍼루틴 참여자만). MVP는 시상식 화면에서 직접 골라요.</p>
     </section>
   );
 }

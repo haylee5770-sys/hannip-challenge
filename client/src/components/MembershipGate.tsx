@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import ProfileSetup from "./ProfileSetup";
 import SignupFlow from "./SignupFlow";
+import SeasonStart from "./SeasonStart";
 
 /** 카카오톡·라인 등 인앱 브라우저 여부 판별 */
 function isInAppBrowser() {
@@ -305,5 +306,5 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     );
   }
 
-  return <ProfileSetup>{children}</ProfileSetup>;
+  return <ProfileSetup><SeasonStart>{children}</SeasonStart></ProfileSetup>;
 }

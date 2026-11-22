@@ -12,42 +12,41 @@ import { todayLocal } from "@shared/utils";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import SeasonReport from "./SeasonReport";
 
-const ranges = [
-  { label: "7D", days: 7 },
-  { label: "30D", days: 30 },
-  { label: "90D", days: 90 },
-  { label: "ALL", days: 9999 },
-];
+// 2026-11-22: 7D·30D 대신 시즌별로 본다. 기본은 지금 진행 중인 시즌. 시즌이 없으면 '테스트'(새 앱 연 날부터)
+const TEST_SINCE = "2026-11-20";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [range, setRange] = useState(30);
-
-  const since = useMemo(() => {
-    if (range >= 9999) return undefined;
-    const d = new Date();
-    d.setDate(d.getDate() - range + 1);
-    return formatDate(d);
-  }, [range]);
-
   const today = todayLocal();
+  const seasonsQ = trpc.rounds.allSeasons.useQuery();
+  const tabs = useMemo(() => {
+    const ss = (seasonsQ.data ?? []).filter(x => x.startDate >= TEST_SINCE);
+    const t = ss.map(x => ({ key: String(x.id), id: x.id as number | null, label: x.shortName || x.name, name: x.name, since: x.startDate, until: x.status === "active" ? today : (x.planEnd ?? today), live: x.status === "active" }));
+    if (!t.some(x => x.live)) t.unshift({ key: "test", id: null, label: "테스트", name: "테스트 기간", since: TEST_SINCE, until: today, live: true });
+    return t;
+  }, [seasonsQ.data, today]);
+  const [picked, setPicked] = useState<string | null>(null);
+  const cur = tabs.find(t => t.key === picked) ?? tabs.find(t => t.live) ?? tabs[tabs.length - 1];
+  const since = cur?.since ?? TEST_SINCE;
+  const until = cur?.until ?? today;
   // 몸무게는 한 달에 한 번(매달 1일)만 재므로 기간과 상관없이 전체를 보여 준다 (2026-11-21)
-  const weights = trpc.weights.myHistory.useQuery({});
+  const weightsAll = trpc.weights.myHistory.useQuery({});
+  const weights = { data: (weightsAll.data ?? []).filter(w => w.recordedDate >= since && w.recordedDate <= until), refetch: weightsAll.refetch, isLoading: weightsAll.isLoading };
   const goal = trpc.goals.mine.useQuery();
 
   const myMeals = trpc.meals.byUserRange.useQuery(
-    { userId: user?.id ?? 0, since: since ?? "1970-01-01", until: today },
+    { userId: user?.id ?? 0, since, until },
     { enabled: !!user?.id }
   );
   const myEx = trpc.exercises.byUserRange.useQuery(
-    { userId: user?.id ?? 0, since: since ?? "1970-01-01", until: today },
+    { userId: user?.id ?? 0, since, until },
     { enabled: !!user?.id }
   );
-  const sleeps = trpc.sleep.list.useQuery({ since });
+  const sleepsAll = trpc.sleep.list.useQuery({ since });
+  const sleeps = { data: (sleepsAll.data ?? []).filter(x => x.recordedDate <= until) };
   const waterRange = trpc.waters.myRange.useQuery(
-    { since: since ?? "1970-01-01", until: today },
+    { since, until },
     { enabled: !!user }
   );
   const waterSeries = useMemo(() => {
@@ -134,19 +133,20 @@ export default function Dashboard() {
     <div>
       {/* Cover */}
       <section className="pb-6 border-b hairline">
-        <PageTitle eyebrow="DASHBOARD" title="나의 변화" />
-        <div className="mt-3 flex justify-center gap-1">
-          {ranges.map(r => (
+        <PageTitle eyebrow="MY CHANGE" title="나의 변화" />
+        <div className="mt-3 flex justify-center gap-1 flex-wrap">
+          {tabs.map(t => (
             <button
-              key={r.label}
-              onClick={() => setRange(r.days)}
-              className={`editorial-eyebrow px-3 py-2 border hairline transition-colors ${range === r.days ? "bg-foreground text-background" : "hover:bg-secondary"}`}
-              style={{ transitionDuration: "180ms" }}
+              key={t.key}
+              onClick={() => setPicked(t.key)}
+              className={`px-3 py-2 rounded-full border text-xs font-bold transition-colors ${cur?.key === t.key ? "glass-fill" : "border-border text-muted-foreground"}`}
             >
-              {r.label}
+              {t.label}
             </button>
           ))}
         </div>
+        {cur && <p className="mt-3 text-center text-sm"><b className="text-primary">{cur.name}</b> <span className="text-muted-foreground">· {cur.since.slice(5).replace("-", "/")} ~ {cur.live ? "오늘" : cur.until.slice(5).replace("-", "/")}</span></p>}
+        {cur?.id ? <SeasonCounts seasonId={cur.id} /> : null}
       </section>
 
       {/* Goal & summary */}
@@ -383,7 +383,6 @@ export default function Dashboard() {
 
       {/* 시즌 리포트 — 대시보드에 합침 (2026-11-20: 한 달의 변화를 한곳에서) */}
       <section className="py-10 border-t hairline mt-10">
-        <SeasonReport />
       </section>
     </div>
   );
@@ -517,6 +516,25 @@ function GoalCard({
           현재 {latestWeight.toFixed(1)} kg
         </div>
       )}
+    </div>
+  );
+}
+
+
+/** 이 시즌 내 인증 횟수 (2026-11-22) */
+function SeasonCounts({ seasonId }: { seasonId: number }) {
+  const q = trpc.rounds.mySeasonSummary.useQuery({ seasonId });
+  const c = q.data?.counts;
+  if (!c) return null;
+  const items: Array<[string, number]> = [["전체 인증", c.total], ["식단", c.meal + c.smoothie], ["물", c.water], ["운동", c.exercise], ["기상", c.wake], ["이게돼", c.itge]];
+  return (
+    <div className="mt-4 grid grid-cols-3 gap-2">
+      {items.map(([k, v]) => (
+        <div key={k} className="rounded-2xl border border-border bg-card/60 py-3 text-center">
+          <div className="text-2xl font-black text-primary tabular-nums">{v}</div>
+          <div className="text-[11px] text-muted-foreground">{k}</div>
+        </div>
+      ))}
     </div>
   );
 }
