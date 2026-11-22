@@ -16,15 +16,16 @@ const FLAGS: Array<{ id: "diabetes" | "kidney" | "thyroid" | "eating" | "heart" 
   { id: "doctor", label: "의사에게 식단·운동 제한을 받음" },
 ];
 
-/** 사진을 정사각형 512px로 줄여 dataURL로 */
+/** 사진은 크루가 준 그대로(자르지 않고) 크기만 줄여서 dataURL로 (2026-11-22: 얼굴 위주로 자르지 않기) */
 function squareDataUrl(file: File): Promise<string> {
   return new Promise((res, rej) => {
     const r = new FileReader();
     r.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const s = Math.min(img.width, img.height); const c = document.createElement("canvas"); c.width = c.height = 512;
-        c.getContext("2d")!.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 512, 512);
+        const k = Math.min(1, 900 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
         res(c.toDataURL("image/jpeg", 0.88));
       };
       img.onerror = rej; img.src = r.result as string;
