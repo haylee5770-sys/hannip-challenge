@@ -115,9 +115,9 @@ function KakaoInAppNotice() {
 function NameWatermark({ name }: { name: string }) {
   const t = (name || "").replace(/[<>&"]/g, "").slice(0, 20);
   if (!t) return null;
-  // 2026-11-22: 촘촘하게 (해이 확정) — 한 칸에 두 줄, 엇갈리게
-  const w = Math.max(120, t.length * 18 + 54), h = 88;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><g transform='rotate(-24 ${w / 2} ${h / 2})' font-family='sans-serif' font-size='16' font-weight='700' fill='white'><text x='4' y='26'>${t}</text><text x='${w / 2}' y='70'>${t}</text></g></svg>`;
+  // 2026-11-22: 성긴 간격으로, 모든 이름이 똑같은 간격(한 칸에 이름 하나, 가운데)
+  const w = Math.max(200, t.length * 18 + 90), h = 120;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><text x='${w / 2}' y='${h / 2}' text-anchor='middle' dominant-baseline='middle' transform='rotate(-24 ${w / 2} ${h / 2})' font-family='sans-serif' font-size='16' font-weight='700' fill='white'>${t}</text></svg>`;
   return <div aria-hidden className="fixed inset-0 z-[85] pointer-events-none select-none" style={{ opacity: 0.022, backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`, backgroundRepeat: "repeat" }} />;
 }
 
