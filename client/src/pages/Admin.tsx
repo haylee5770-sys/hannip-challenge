@@ -943,7 +943,7 @@ function RosterAdmin() {
       <div className="rounded-2xl border border-primary p-4 space-y-3">
         <div className="text-sm font-semibold">명단 붙여 넣기</div>
         <p className="text-xs text-muted-foreground leading-relaxed">한 줄에 한 사람 · <b className="text-foreground">닉네임, 이름, 전화번호, 주소</b> 순서 (쉼표나 엑셀 칸 그대로). 같은 번호가 있으면 새 내용으로 바뀌어요.<br />여기 있는 사람은 가입할 때 이름·전화번호가 맞으면 <b className="text-foreground">수락 없이 바로 입장</b>해요.</p>
-        <textarea value={text} onChange={e => setText(e.target.value)} rows={6} placeholder={"로제, 이소민, 010-0000-0000, 경기도 …"} className="w-full rounded-xl border border-border bg-background p-3 text-sm" />
+        <textarea value={text} onChange={e => setText(e.target.value)} rows={10} placeholder={"로제, 이소민, 010-0000-0000, 경기도 …"} className="w-full min-h-[14rem] rounded-xl border border-border bg-background p-3 text-base leading-relaxed" />
         <Button className="rounded-xl glass-btn" disabled={!text.trim() || imp.isPending} onClick={() => imp.mutate({ text })}>저장</Button>
       </div>
       <p className="text-sm font-semibold">명단 {rows.length}명 · 가입 완료 {joined}명</p>
