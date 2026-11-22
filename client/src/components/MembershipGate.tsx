@@ -53,8 +53,10 @@ function InAppBrowserBlock() {
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="max-w-sm w-full text-center space-y-6">
         <div>
-          <div className="text-xs tracking-[0.3em] text-primary font-bold mb-3">SUPER HANNIP</div>
-          <h1 className="text-2xl font-black leading-snug">{isIOS ? "사파리" : "크롬"}에서 열어 주세요</h1>
+          <div className="text-5xl mb-3">💚</div>
+          <h1 className="text-[26px] font-black leading-snug">환영합니다!</h1>
+          <p className="text-sm text-muted-foreground mt-1 mb-5">슈퍼한입 챌린지에 오신 걸 환영해요.</p>
+          <h2 className="text-lg font-bold leading-snug">먼저 {isIOS ? "사파리" : "크롬"}에서 열어 주세요</h2>
           <p className="text-sm text-muted-foreground mt-2">{isKakao ? "카카오톡" : "이 앱"} 안에서는 입장할 수 없어요.</p>
         </div>
         <button type="button" onClick={openInExternalBrowser} className="w-full h-16 rounded-3xl glass-btn text-lg font-black active:scale-[0.98] transition">
@@ -143,16 +145,18 @@ export default function MembershipGate({ children }: { children: React.ReactNode
     return (
       <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
         <div className="max-w-sm w-full">
-          <div className="text-center mb-8">
-            <div className="editorial-eyebrow text-muted-foreground mb-3">MEMBERS ONLY</div>
-            <h1 className="editorial-h1 text-4xl md:text-5xl mb-3">
-              super hannip <span className="italic font-serif font-light">Challenge</span>
-            </h1>
+          {/* 2026-11-22: 처음 들어오면 환영 인사부터 */}
+          <div className="text-center mb-8 space-y-3 season-fade-in">
+            <div className="text-5xl">💚</div>
+            <h1 className="text-[26px] font-black leading-snug">환영합니다!</h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              오직 초대된 분들을 위한 프라이빗 웰니스 커뮤니티
+              <span className="text-foreground font-semibold">슈퍼한입 챌린지</span>에 오신 걸 환영해요.<br />
+              꾸준함이 자존감이 되고, 자존감이 인생을 바꿔요.
             </p>
+            <div className="pt-2 text-xs text-primary font-medium">인생을 바꾸는 가장 쉬운 방법</div>
+            <div className="editorial-h2 text-2xl tracking-tight">super hannip <span className="italic font-serif font-light">Challenge</span></div>
           </div>
-          <div className="border hairline p-6 space-y-3">
+          <div className="rounded-3xl border border-white/10 p-6 space-y-3 season-fade-in" style={{ animationDelay: ".4s" }}>
             <Button
               type="button"
               onClick={handleGoogleLogin}
