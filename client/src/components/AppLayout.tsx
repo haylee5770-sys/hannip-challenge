@@ -269,28 +269,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* 2026-11-22: 메뉴를 열면 메뉴만 화면 가득 (아래 페이지 내용은 안 보이게) */}
         {mobileOpen && (
           <div className="md:hidden fixed inset-0 z-[95] bg-background overflow-y-auto">
-            <div className="container flex justify-end pt-5">
+            <div className="container flex justify-end pt-3">
               <button onClick={() => setMobileOpen(false)} className="h-11 w-11 rounded-full p-[2px] bg-primary" aria-label="닫기">
                 <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><X className="h-5 w-5" /></span>
               </button>
             </div>
-            <nav className="container flex flex-col py-4 gap-3">
+            <nav className="container flex flex-col py-1 gap-0">
               {items.map(item => (
                 <Link key={item.path} href={item.path}>
                   <button
                     onClick={() => setMobileOpen(false)}
-                    className="w-full text-left flex items-baseline gap-3 py-2"
+                    className="w-full text-left flex items-baseline gap-3 py-[7px]"
                   >
                     <span className="editorial-eyebrow text-muted-foreground w-28 shrink-0 whitespace-nowrap">{item.label}</span>
-                    <span className="font-serif text-xl">{item.korean}</span>
+                    <span className="font-serif text-lg leading-snug">{item.korean}</span>
                   </button>
                 </Link>
               ))}
-              <div className="pt-3 border-t hairline mt-2">
+              <div className="pt-1 border-t hairline mt-1">
                 <Link href="/profile">
-                  <button onClick={() => setMobileOpen(false)} className="w-full text-left flex items-baseline gap-3 py-2">
+                  <button onClick={() => setMobileOpen(false)} className="w-full text-left flex items-baseline gap-3 py-[7px]">
                     <span className="editorial-eyebrow text-muted-foreground w-20">PROFILE</span>
-                    <span className="font-serif text-xl">{user?.name || "프로필"}</span>
+                    <span className="font-serif text-lg leading-snug">{user?.name || "프로필"}</span>
                   </button>
                 </Link>
               </div>

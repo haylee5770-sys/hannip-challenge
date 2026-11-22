@@ -115,7 +115,7 @@ export default function Profile() {
       <div className="mt-16 mb-4 text-center">
         <button type="button" className="text-xs text-muted-foreground/60 underline"
           onClick={async () => { if (await askConfirm(`정말 로그아웃할까요?
-다시 들어오려면 카카오 로그인을 다시 해야 해요.`, "로그아웃")) logout(); }}>
+다시 들어오려면 구글 로그인을 다시 해야 해요.`, "로그아웃")) logout(); }}>
           로그아웃
         </button>
       </div>
