@@ -24,7 +24,14 @@ function shrink(file: File): Promise<string> {
   });
 }
 
-function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function Sheet({ title, onClose, children, inline }: { title: string; onClose: () => void; children: React.ReactNode; inline?: boolean }) {
+  // 2026-11-22: 메뉴에서 연 페이지면 화면 그대로(팝업 아님)
+  if (inline) return (
+    <div className="max-w-md mx-auto space-y-4 season-fade-in">
+      <h1 className="text-2xl font-black">{title}</h1>
+      {children}
+    </div>
+  );
   return (
     <div className="fixed inset-0 z-[110] bg-black/70 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-card border border-border p-5 space-y-4 season-fade-in" onClick={e => e.stopPropagation()}>
@@ -35,7 +42,7 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function FeedbackSheet({ onClose }: { onClose: () => void }) {
+export function FeedbackSheet({ onClose, inline }: { onClose: () => void; inline?: boolean }) {
   const [kind, setKind] = useState<"bug" | "idea">("bug");
   const [text, setText] = useState("");
   const [img, setImg] = useState<string | null>(null);
@@ -47,7 +54,7 @@ function FeedbackSheet({ onClose }: { onClose: () => void }) {
     try { if (navigator.share) await navigator.share({ text: msg }); else { await navigator.clipboard.writeText(msg); toast.success("글을 복사했어요. 카톡방에 붙여 넣어 주세요."); } } catch { /* 취소 */ }
   };
   if (sent) return (
-    <Sheet title="💬 의견 보내기" onClose={onClose}>
+    <Sheet inline={inline} title="💬 의견 보내기" onClose={onClose}>
       <div className="text-center space-y-3 py-4">
         <div className="text-5xl">💚</div>
         <p className="font-bold">보내 주셔서 고마워요!</p>
@@ -58,7 +65,7 @@ function FeedbackSheet({ onClose }: { onClose: () => void }) {
     </Sheet>
   );
   return (
-    <Sheet title="💬 의견 보내기" onClose={onClose}>
+    <Sheet inline={inline} title="💬 의견 보내기" onClose={onClose}>
       <div className="grid grid-cols-2 gap-2">
         {([["bug", "🐞 오류 발견"], ["idea", "💡 의견 내기"]] as const).map(([k, l]) => (
           <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-2xl border py-3 font-bold ${kind === k ? "glass-fill" : "border-border text-muted-foreground"}`}>{l}</button>
@@ -79,7 +86,7 @@ function FeedbackSheet({ onClose }: { onClose: () => void }) {
 }
 
 /** 🏆 상 받기 신청: 이게돼 챔피언 · 꾸준함 챔피언 · MVP 중 내 상을 눌러 → 받을 곳 확인 → 신청 */
-function AwardSheet({ onClose }: { onClose: () => void }) {
+export function AwardSheet({ onClose, inline }: { onClose: () => void; inline?: boolean }) {
   const utils = trpc.useUtils();
   const opt = trpc.crew.awardOptions.useQuery();
   const [pick, setPick] = useState<{ code: number; title: string; gift: string } | null>(null);
@@ -93,7 +100,7 @@ function AwardSheet({ onClose }: { onClose: () => void }) {
   const send = (extra?: { saveAsDefault?: boolean }) => { if (pick) req.mutate({ kind: "gift", refId: pick.code, label, realName: c?.realName ?? "", phone, address, ...extra }); };
 
   if (done && pick) return (
-    <Sheet title="🏆 상 받기 신청" onClose={onClose}>
+    <Sheet inline={inline} title="🏆 상 받기 신청" onClose={onClose}>
       <div className="text-center space-y-3 py-4">
         <div className="text-5xl">🎉</div>
         <p className="text-lg font-bold">신청이 완료되었습니다!</p>
@@ -103,7 +110,7 @@ function AwardSheet({ onClose }: { onClose: () => void }) {
     </Sheet>
   );
   if (pick) return (
-    <Sheet title="🎁 선물 받으실 곳이 여기 맞나요?" onClose={onClose}>
+    <Sheet inline={inline} title="🎁 선물 받으실 곳이 여기 맞나요?" onClose={onClose}>
       <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3 text-sm font-semibold">{label}</div>
       {!edit ? (<>
         <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 text-sm space-y-1">
@@ -126,7 +133,7 @@ function AwardSheet({ onClose }: { onClose: () => void }) {
     </Sheet>
   );
   return (
-    <Sheet title="🏆 상 받기 신청" onClose={onClose}>
+    <Sheet inline={inline} title="🏆 상 받기 신청" onClose={onClose}>
       <p className="text-sm text-muted-foreground">{season ? <><b className="text-foreground">{season}</b> 시상식에서 상을 받으셨나요?</> : "시상식에서 상을 받으셨나요?"}<br />내 상을 눌러 주세요.</p>
       {opt.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (
         <div className="space-y-3">
@@ -146,7 +153,7 @@ function AwardSheet({ onClose }: { onClose: () => void }) {
 }
 
 /** 🎉 이벤트 참여: 열린 이벤트를 누르면 바로 신청 완료 + 신청한 순서대로 이름이 릴레이로 쌓임. 지난 이벤트는 날짜별로 아래에 */
-function EventSheet({ onClose }: { onClose: () => void }) {
+export function EventSheet({ onClose, inline }: { onClose: () => void; inline?: boolean }) {
   const utils = trpc.useUtils();
   const board = trpc.crew.eventBoard.useQuery(undefined, { refetchInterval: 5000 });
   const [openId, setOpenId] = useState<number | null>(null);
@@ -160,7 +167,7 @@ function EventSheet({ onClose }: { onClose: () => void }) {
   const ev = evs.find(e => e.id === openId);
 
   if (ev) return (
-    <Sheet title="🎉 이벤트 참여" onClose={onClose}>
+    <Sheet inline={inline} title="🎉 이벤트 참여" onClose={onClose}>
       <div className="rounded-2xl border border-primary/40 bg-primary/5 p-3">
         <div className="font-bold">{ev.title}</div>
         <div className="text-xs text-muted-foreground">{ev.date} · {ev.open ? "진행 중" : "마감"}</div>
@@ -182,7 +189,7 @@ function EventSheet({ onClose }: { onClose: () => void }) {
   );
   const open = evs.filter(e => e.open), past = evs.filter(e => !e.open);
   return (
-    <Sheet title="🎉 이벤트 참여" onClose={onClose}>
+    <Sheet inline={inline} title="🎉 이벤트 참여" onClose={onClose}>
       {board.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : open.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">지금은 열린 이벤트가 없어요.<br />방장이 이벤트를 열면 여기에 떠요.</p>
       ) : (

@@ -27,6 +27,9 @@ import Ranking from "@/pages/Ranking";
 import Reveal from "@/pages/Reveal";
 import SeasonReport from "@/pages/SeasonReport";
 import Archive from "@/pages/Archive";
+import AwardApply from "@/pages/AwardApply";
+import Events from "@/pages/Events";
+import Feedback from "@/pages/Feedback";
 import { useEffect } from "react";
 import SignupFlow from "./components/SignupFlow";
 
@@ -67,6 +70,9 @@ function Router() {
           <Route path="/itge" component={Itge} />
           <Route path="/awards" component={Awards} />
           <Route path="/history" component={History} />
+          <Route path="/award-apply" component={AwardApply} />
+          <Route path="/events" component={Events} />
+          <Route path="/feedback" component={Feedback} />
               <Route path="/404" component={NotFound} />
               <Route component={NotFound} />
             </Switch>

@@ -28,6 +28,9 @@ const NAV_ITEMS = [
   { label: "HISTORY", path: "/history", korean: "역대 챌린지" },
   { label: "SHOP", path: "/shop", korean: "구매하기" },
   { label: "STYLE", path: "/decor", korean: "꾸미기" },
+  { label: "AWARD", path: "/award-apply", korean: "상 받기 신청" },
+  { label: "EVENT", path: "/events", korean: "이벤트 참여" },
+  { label: "VOICE", path: "/feedback", korean: "의견 보내기" },
 ];
 
 const ADMIN_ITEMS = [
@@ -249,8 +252,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <ConfirmHost />
 
         {/* Mobile drawer */}
+        {/* 2026-11-22: 메뉴를 열면 메뉴만 화면 가득 (아래 페이지 내용은 안 보이게) */}
         {mobileOpen && (
-          <div className="md:hidden border-t hairline">
+          <div className="md:hidden fixed inset-0 z-[95] bg-background overflow-y-auto">
+            <div className="container flex justify-end pt-5">
+              <button onClick={() => setMobileOpen(false)} className="h-11 w-11 rounded-full p-[2px] bg-primary" aria-label="닫기">
+                <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><X className="h-5 w-5" /></span>
+              </button>
+            </div>
             <nav className="container flex flex-col py-4 gap-3">
               {items.map(item => (
                 <Link key={item.path} href={item.path}>
