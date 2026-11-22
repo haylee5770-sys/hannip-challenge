@@ -136,11 +136,23 @@ const membersRouter = router({
       name: z.string().min(1).max(64).optional(),
       bio: z.string().max(500).nullable().optional(),
       avatarUrl: z.string().max(2048).nullable().optional(),
+      avatarBase64: z.string().max(15_000_000).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await db.updateUserProfile(ctx.user.id, input);
-      return { ok: true };
+      // 2026-11-22: 사진은 폰 앨범에서 골라 올린다 / 닉네임은 방장 승인 후에 바뀐다 (방장 본인은 바로)
+      const patch: { bio?: string | null; avatarUrl?: string | null; name?: string } = {};
+      if (input.bio !== undefined) patch.bio = input.bio;
+      if (input.avatarBase64) patch.avatarUrl = (await uploadDataUrl(input.avatarBase64, `avatars/${ctx.user.id}/${Date.now()}`)).url;
+      let pendingName: string | null = null;
+      const nm = input.name?.trim();
+      if (nm && nm !== (ctx.user.name ?? "")) {
+        if (ctx.user.role === "admin") patch.name = nm;
+        else { await roster.setPendingName(ctx.user.id, nm); pendingName = nm; }
+      }
+      if (Object.keys(patch).length) await db.updateUserProfile(ctx.user.id, patch);
+      return { ok: true, pendingName };
     }),
+  myPendingName: protectedProcedure.query(async ({ ctx }) => ({ pendingName: await roster.getPendingName(ctx.user.id) })),
 });
 
 /* ----------------- Weights ----------------- */
@@ -780,6 +792,9 @@ const adminRouter = router({
     }
     return { ok: true };
   }),
+  /** 닉네임 변경 요청 (2026-11-22) */
+  nameRequests: adminProcedure.query(async () => roster.listPendingNames()),
+  decideName: adminProcedure.input(z.object({ userId: z.number(), ok: z.boolean() })).mutation(async ({ input }) => { await roster.decidePendingName(input.userId, input.ok); return { ok: true }; }),
   /** 구매 기록 (2026-11-22): 방장만 */
   purchasesFor: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => purchases.forUser(input.userId)),
   purchaseSummary: adminProcedure.query(async () => purchases.summaryByUser()),

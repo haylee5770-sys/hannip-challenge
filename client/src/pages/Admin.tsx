@@ -95,6 +95,7 @@ export default function Admin() {
 
       <RoundControl />
       <CareList />
+      <NameRequests />
 
       <Tabs defaultValue="report" className="py-10">
         <TabsList className="bg-transparent border-b hairline rounded-none w-full justify-start gap-6 p-0 h-auto mb-8 flex-wrap">
@@ -960,6 +961,28 @@ function RosterAdmin() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+/** 닉네임 변경 요청 (2026-11-22): 크루가 바꾼 닉네임은 방장이 승인해야 바뀐다 */
+function NameRequests() {
+  const utils = trpc.useUtils();
+  const q = trpc.admin.nameRequests.useQuery();
+  const decide = trpc.admin.decideName.useMutation({ onSuccess: () => utils.admin.nameRequests.invalidate() });
+  const rows = (q.data ?? []) as any[];
+  if (!rows.length) return null;
+  return (
+    <div className="rounded-2xl border border-primary p-4 space-y-2">
+      <div className="text-sm font-bold">✏️ 닉네임 변경 요청 {rows.length}건</div>
+      {rows.map(r => (
+        <div key={r.id} className="flex items-center gap-2 text-sm">
+          <span className="flex-1">{r.name} → <b className="text-primary">{r.pendingName}</b></span>
+          <button type="button" className="rounded-full glass-btn px-3 py-1 text-xs" onClick={() => decide.mutate({ userId: r.id, ok: true })}>승인</button>
+          <button type="button" className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground" onClick={() => decide.mutate({ userId: r.id, ok: false })}>거절</button>
+        </div>
+      ))}
     </div>
   );
 }

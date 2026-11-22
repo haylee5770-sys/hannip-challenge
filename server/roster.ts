@@ -30,6 +30,7 @@ export async function ensureRosterSchema() {
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS contactEmail VARCHAR(320)", "users.contactEmail"],
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS installDone BOOLEAN NOT NULL DEFAULT false", "users.installDone"],
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS privacyAgreed BOOLEAN NOT NULL DEFAULT false", "users.privacyAgreed"],
+    ["ALTER TABLE users ADD COLUMN IF NOT EXISTS pendingName VARCHAR(64)", "users.pendingName"],
   ];
   for (const [s, label] of stmts) {
     try { await q(sql.raw(s)); console.log("[ensureSchema] ok", label); }
@@ -114,3 +115,14 @@ export async function deleteAdminNote(id: number) { await q(sql`DELETE FROM admi
 /* 바탕화면 설치 (2026-11-22): 설치를 마쳐야 앱으로 들어갈 수 있다 */
 export async function getInstallDone(userId: number) { return !!(await q(sql`SELECT installDone FROM users WHERE id = ${userId}`))[0]?.installDone; }
 export async function setInstallDone(userId: number) { await q(sql`UPDATE users SET installDone = true WHERE id = ${userId}`); }
+
+/* 닉네임 변경 (2026-11-22): 크루가 바꾸면 '방장 확인 중'으로 두고, 방장이 승인하면 바뀐다 */
+export async function setPendingName(userId: number, name: string) { await q(sql`UPDATE users SET pendingName = ${name} WHERE id = ${userId}`); }
+export async function getPendingName(userId: number) { return ((await q(sql`SELECT pendingName FROM users WHERE id = ${userId}`))[0]?.pendingName as string | null) ?? null; }
+export async function listPendingNames() {
+  return q(sql`SELECT id, name, pendingName, avatarUrl FROM users WHERE pendingName IS NOT NULL AND pendingName <> '' ORDER BY id`);
+}
+export async function decidePendingName(userId: number, ok: boolean) {
+  if (ok) await q(sql`UPDATE users SET name = pendingName, pendingName = NULL WHERE id = ${userId} AND pendingName IS NOT NULL`);
+  else await q(sql`UPDATE users SET pendingName = NULL WHERE id = ${userId}`);
+}

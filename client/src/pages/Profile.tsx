@@ -9,6 +9,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { askConfirm } from "@/lib/askConfirm";
 import AddressField from "@/components/AddressField";
+import { shrinkFile } from "@/lib/shrinkImage";
+import { useRef } from "react";
 
 export default function Profile() {
   const { user, refresh, logout } = useAuth();
@@ -29,11 +31,16 @@ export default function Profile() {
     }
   }, [user]);
 
+  // 2026-11-22: 사진은 앨범에서 고르기 / 닉네임은 방장 확인 후 바뀜
+  const pending = trpc.members.myPendingName.useQuery();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [newPhoto, setNewPhoto] = useState<string | null>(null);
   const update = trpc.members.updateProfile.useMutation({
-    onSuccess: () => {
-      toast.success("프로필이 저장되었습니다");
-      refresh();
+    onSuccess: (r) => {
+      toast.success(r.pendingName ? `저장했어요. 닉네임 '${r.pendingName}'은 방장 확인 후 바뀌어요` : "프로필이 저장되었습니다");
+      setNewPhoto(null); pending.refetch(); refresh();
     },
+    onError: (e) => toast.error(e.message),
   });
 
   return (
@@ -50,24 +57,33 @@ export default function Profile() {
       <section className="py-10 grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-5">
           <div className="aspect-[3/4] bg-secondary border hairline overflow-hidden">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            {newPhoto || avatarUrl ? (
+              <img src={newPhoto || avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center editorial-h1 text-7xl text-muted-foreground italic font-serif">
                 {(name ?? "?").charAt(0)}
               </div>
             )}
           </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={async e => { const f = e.target.files?.[0]; if (f) setNewPhoto(await shrinkFile(f, 900, 0.85)); e.target.value = ""; }} />
+          <button type="button" onClick={() => fileRef.current?.click()} className="mt-3 w-full black-glass rounded-full py-3 text-sm font-semibold text-white">
+            📷 사진 바꾸기
+          </button>
+          <p className="mt-1.5 text-[11px] text-muted-foreground text-center">카톡방 프로필 사진과 같은 사진을 넣어 주세요.</p>
         </div>
 
         <div className="col-span-12 md:col-span-7 space-y-5">
           <div>
-            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">이름</Label>
+            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">닉네임</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="rounded-none border-0 border-b border-foreground/30 px-0 text-2xl font-serif h-12 focus-visible:ring-0 focus-visible:border-foreground"
             />
+            {pending.data?.pendingName
+              ? <p className="mt-1.5 text-xs text-primary">'{pending.data.pendingName}'(으)로 바꾸기 — 방장 확인 중이에요</p>
+              : <p className="mt-1.5 text-[11px] text-muted-foreground">닉네임을 바꾸면 방장이 확인한 뒤에 바뀌어요.</p>}
           </div>
           <div>
             <Label className="editorial-eyebrow text-muted-foreground mb-2 block">자기소개</Label>
@@ -79,18 +95,9 @@ export default function Profile() {
               className="rounded-none border-foreground/30 font-serif"
             />
           </div>
-          <div>
-            <Label className="editorial-eyebrow text-muted-foreground mb-2 block">프로필 사진 URL</Label>
-            <Input
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://..."
-              className="rounded-none border-foreground/30 font-serif"
-            />
-          </div>
           <div className="pt-3">
             <Button
-              onClick={() => update.mutate({ name: name.trim(), bio: bio.trim() || null, avatarUrl: avatarUrl.trim() || null })}
+              onClick={() => update.mutate({ name: name.trim(), bio: bio.trim() || null, ...(newPhoto ? { avatarBase64: newPhoto } : {}) })}
               disabled={update.isPending}
               className="rounded-none uppercase tracking-wider px-8"
             >

@@ -270,49 +270,48 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* 2026-11-22: 메뉴를 열면 메뉴만 화면 가득 (아래 페이지 내용은 안 보이게) */}
         {mobileOpen && (
           <div className="md:hidden fixed inset-0 z-[95] bg-background overflow-y-auto">
-            <div className="container flex justify-end pt-3">
-              <button onClick={() => setMobileOpen(false)} className="h-11 w-11 rounded-full p-[2px] bg-primary" aria-label="닫기">
-                <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><X className="h-5 w-5" /></span>
+            <div className="container flex justify-end pt-4">
+              <button onClick={() => setMobileOpen(false)} className="h-9 w-9 rounded-full p-[1.5px] bg-primary" aria-label="닫기">
+                <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><X className="h-4 w-4" /></span>
               </button>
             </div>
-            {/* 2026-11-22 메뉴 C 시안 (해이 확정): 내 프로필 카드(블랙 유리알) / MY 목록 / CREW 타일(포인트색 아이콘) / 구매·신청(포인트색 유리알) / 관리(방장만) */}
-            <nav className="container flex flex-col pb-6">
-              <div className="black-glass rounded-3xl px-3 py-3 flex items-center gap-3">
+            {/* 2026-11-22 메뉴 C-2 (해이 확정): 위 [프로필 수정][앱 꾸미기] 블랙 유리알 두 칸 / MY 유리 막대 / CREW 타일 / 아래 구매·신청 유리알 + 관리 버튼 */}
+            <nav className="container flex flex-col pb-8 min-h-[calc(100dvh-4.5rem)]">
+              <div className="grid grid-cols-2 gap-2.5 mt-2">
                 <Link href="/profile">
-                  <button onClick={() => setMobileOpen(false)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                  <button onClick={() => setMobileOpen(false)} className="black-glass w-full h-14 rounded-2xl flex items-center justify-center gap-2 text-[15px] font-semibold text-white">
                     {user?.avatarUrl
-                      ? <img src={user.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover border-2 border-primary shrink-0" />
-                      : <span className="h-11 w-11 rounded-full bg-muted border-2 border-primary shrink-0" />}
-                    <span className="min-w-0">
-                      <span className="block font-semibold text-base truncate text-white">{user?.name || "프로필"}</span>
-                      <span className="block text-[11px] text-white/60">내 프로필</span>
-                    </span>
+                      ? <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover border-2 border-primary" />
+                      : <span className="h-8 w-8 rounded-full bg-muted border-2 border-primary" />}
+                    프로필 수정
                   </button>
                 </Link>
-                <span className="flex-1" />
                 <Link href="/decor">
-                  <button onClick={() => setMobileOpen(false)} className="black-glass rounded-full px-3.5 py-2 text-sm font-semibold text-white flex items-center gap-1.5 shrink-0"
-                    style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 1px rgba(255,255,255,.12)" }}>
-                    <Palette className="h-4 w-4" /> 꾸미기
+                  <button onClick={() => setMobileOpen(false)} className="black-glass w-full h-14 rounded-2xl flex items-center justify-center gap-2 text-[15px] font-semibold text-white">
+                    <Palette className="h-5 w-5" /> 앱 꾸미기
                   </button>
                 </Link>
               </div>
 
-              <div className="editorial-eyebrow text-primary mt-4 mb-1 px-1">MY</div>
-              {items.filter(i => i.group === "act" && !["/members", "/awards", "/history"].includes(i.path)).map(item => (
-                <Link key={item.path} href={item.path}>
-                  <button onClick={() => setMobileOpen(false)} className="w-full flex items-center justify-between px-1 py-[7px]">
-                    <span className="font-serif text-lg leading-snug">{item.korean}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                </Link>
-              ))}
+              <div className="editorial-eyebrow text-primary mt-7 mb-2 px-1">MY</div>
+              <div className="flex flex-col gap-2">
+                {items.filter(i => i.group === "act" && !["/members", "/awards", "/history"].includes(i.path)).map(item => (
+                  <Link key={item.path} href={item.path}>
+                    <button onClick={() => setMobileOpen(false)}
+                      className="w-full h-12 rounded-2xl flex items-center justify-between px-4 border border-white/10 bg-white/[0.06]"
+                      style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.12)" }}>
+                      <span className="text-[17px] font-medium">{item.korean}</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </Link>
+                ))}
+              </div>
 
-              <div className="editorial-eyebrow text-primary mt-4 mb-2 px-1">CREW</div>
+              <div className="editorial-eyebrow text-primary mt-7 mb-2 px-1">CREW</div>
               <div className="grid grid-cols-3 gap-2">
                 {([["/members", "멤버", Users], ["/awards", "시상식", Trophy], ["/history", "역대 챌린지", History]] as const).map(([path, label, Icon]) => (
                   <Link key={path} href={path}>
-                    <button onClick={() => setMobileOpen(false)} className="w-full rounded-2xl bg-card border border-border py-3 flex flex-col items-center gap-1.5">
+                    <button onClick={() => setMobileOpen(false)} className="w-full rounded-2xl bg-card border border-primary/25 py-3.5 flex flex-col items-center gap-1.5">
                       <Icon className="h-5 w-5 text-primary" />
                       <span className="text-[13px]">{label}</span>
                     </button>
@@ -320,10 +319,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 mt-5">
+              <div className="flex-1 min-h-6" />
+
+              <div className="grid grid-cols-2 gap-2.5">
                 {([["/shop", "구매하기", ShoppingBag], ["/apply", "신청하기", Gift]] as const).map(([path, label, Icon]) => (
                   <Link key={path} href={path}>
-                    <button onClick={() => setMobileOpen(false)} className="glass-btn w-full py-3 text-[15px] flex items-center justify-center gap-1.5">
+                    <button onClick={() => setMobileOpen(false)} className="glass-btn w-full h-12 text-[15px] flex items-center justify-center gap-1.5">
                       <Icon className="h-4 w-4 relative z-[1]" /><span className="relative z-[1]">{label}</span>
                     </button>
                   </Link>
@@ -332,8 +333,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
               {isAdmin && (
                 <Link href="/admin">
-                  <button onClick={() => setMobileOpen(false)} className="mt-5 mx-auto flex items-center gap-1.5 text-sm" style={{ color: "#7cc4ff" }}>
-                    <KeyRound className="h-4 w-4" /> 관리 <span className="text-[11px] opacity-70">(방장만)</span>
+                  <button onClick={() => setMobileOpen(false)} className="mt-2.5 w-full h-11 rounded-full flex items-center justify-center gap-1.5 text-sm font-semibold"
+                    style={{ color: "#7cc4ff", border: "1px solid rgba(124,196,255,.45)", background: "rgba(124,196,255,.10)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.18)" }}>
+                    <KeyRound className="h-4 w-4" /> 관리 <span className="text-[11px] opacity-70">방장만</span>
                   </button>
                 </Link>
               )}
