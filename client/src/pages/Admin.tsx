@@ -193,6 +193,7 @@ function MembersAdmin() {
   if (list.isLoading) return <div className="py-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
   const extras = trpc.admin.userExtras.useQuery();
+  const resetSignup = trpc.admin.resetSignup.useMutation({ onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success("이제 그 계정으로 들어가면 가입 화면부터 다시 나와요"); } });
   // 2026-11-21: 휴대폰에서 글씨가 겹치지 않게 한 사람씩 카드로. 수락을 기다리는 사람을 맨 위에
   const order = { pending: 0, approved: 1, rejected: 2 } as Record<string, number>;
   const rows = (list.data ?? []).slice().sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
@@ -231,6 +232,10 @@ function MembersAdmin() {
             )}
             {u.status === "rejected" && (
               <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setStatus.mutate({ userId: u.id, status: "approved" })}>다시 수락</Button>
+            )}
+            {u.role !== "admin" && (
+              <Button size="sm" variant="outline" className="rounded-xl"
+                onClick={async () => { if (await askConfirm(`${u.name ?? "이 분"}이 가입을 처음부터 다시 하게 할까요?`, "다시 가입")) resetSignup.mutate({ userId: u.id }); }}>가입 처음부터</Button>
             )}
             {u.status === "approved" && (
               <Button size="sm" variant="outline" className="rounded-xl"

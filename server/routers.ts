@@ -766,6 +766,11 @@ const adminRouter = router({
   notesFor: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => roster.listAdminNotes(input.userId)),
   addNote: adminProcedure.input(z.object({ userId: z.number(), text: z.string().min(1).max(2000) })).mutation(async ({ input }) => { await roster.addAdminNote(input.userId, input.text.trim()); return { ok: true }; }),
   deleteNote: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await roster.deleteAdminNote(input.id); return { ok: true }; }),
+  /** 가입을 처음부터 다시 하게 (2026-11-22: 예전에 거절됐던 계정·시험용) */
+  resetSignup: adminProcedure.input(z.object({ userId: z.number() })).mutation(async ({ input }) => {
+    const conn = await db.getDb(); if (conn) await conn.execute(sqlTag`UPDATE users SET status='pending', onboardingDone=false WHERE id=${input.userId}`);
+    return { ok: true };
+  }),
   /** 크루 명단 (2026-11-22) */
   rosterList: adminProcedure.query(async () => roster.listRoster()),
   rosterImport: adminProcedure.input(z.object({ text: z.string().min(1).max(200000) })).mutation(async ({ input }) => roster.importRoster(input.text)),
