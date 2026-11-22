@@ -423,4 +423,4 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 .intro-crew-name { font-family: 'Nanum Myeongjo', 'Gowun Batang', serif; font-weight: 700; font-size: 10px; letter-spacing: .16em; color: #fff;
   text-shadow: 0 0 6px rgba(0,0,0,.9), 0 0 14px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.95); }
 .intro-crew-in .intro-crew-name { animation: introCrewNameSize 13s linear both; }
-@keyframes introCrewNameSize { 0%, 84% { font-size: 7px; letter-spacing: .14em; } 84.1%, 100% { font-size: 10px; letter-spacing: .16em; } } }
+@keyframes introCrewNameSize { 0%, 84% { font-size: 7px; letter-spacing: .14em; } 84.1%, 100% { font-size: 10px; letter-spacing: .16em; } }
