@@ -38,8 +38,9 @@ function Ranks({ list, unit, emptyText = "아직 기록이 없어요." }: { list
   );
 }
 
-function AwardCard({ sub, title, gift, desc, children }: { sub: string; title: string; gift: string; desc: string; children?: React.ReactNode }) {
-  // 2026-11-22 (해이): 명예의 전당 색(포인트색 테두리·옅은 바탕). 왼쪽 = 설명 한 줄·상 이름·선물 / 오른쪽 절반 = 설명 글(연하게)
+function AwardCard({ sub, title, gift, desc, winner, children }: { sub: string; title: string; gift: string; desc: string; winner?: string | null; children?: React.ReactNode }) {
+  // 2026-11-22 (해이): 왼쪽 = 설명 한 줄·상 이름·선물 / 오른쪽 = 발표 전엔 설명 글이 흐릿 + 큰 '?' (누르면 글이 또렷), 발표 후엔 받은 사람 이름
+  const [reveal, setReveal] = useState(false);
   return (
     <section className="flex-1 rounded-3xl border border-primary/40 bg-primary/10 px-4 py-3.5 flex flex-col justify-center gap-2">
       <div className="grid grid-cols-2 gap-3 items-center">
@@ -48,7 +49,17 @@ function AwardCard({ sub, title, gift, desc, children }: { sub: string; title: s
           <h2 className="text-xl font-black leading-tight">{title}</h2>
           <div className="inline-block rounded-full bg-primary/20 px-2.5 py-0.5 text-[12px] font-bold">🎁 {gift}</div>
         </div>
-        <p className="text-[12px] text-muted-foreground/80 leading-relaxed break-keep">{desc}</p>
+        {winner ? (
+          <div className="text-center">
+            <div className="text-[11px] text-primary font-semibold">🏆 수상</div>
+            <div className="text-2xl font-black break-keep">{winner}</div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setReveal(v => !v)} className="relative min-h-[4.5rem] text-left">
+            <p className={cn("text-[12px] leading-relaxed break-keep transition", reveal ? "text-muted-foreground" : "text-muted-foreground/70 blur-[3px] select-none")}>{desc}</p>
+            {!reveal && <span className="absolute inset-0 flex items-center justify-center text-6xl font-black text-primary drop-shadow">?</span>}
+          </button>
+        )}
       </div>
       {children}
     </section>
@@ -134,20 +145,20 @@ export default function Awards() {
         {old && <p className="text-[11px] text-primary mt-0.5">시즌이 끝나면 발표돼요</p>}
       </section>
 
-      <AwardCard sub="작은 변화를 가장 자주 발견한 크루" title="이게돼 챔피언" gift="스무디 15개"
+      <AwardCard sub="작은 변화를 가장 자주 발견한 크루" title="이게돼 챔피언" gift="스무디 15개" winner={!old && !live ? byItge[0]?.name : null}
         desc="슈퍼루틴 시즌 동안 “이게 돼!” 하고 나를 가장 많이 칭찬한 크루예요. 여러분이 스스로를 계속 칭찬했으면 좋겠어요. 이 상은 그래서 있어요.">
-        <Ranks list={live ? byItge : byItge.slice(0, 1)} unit={live ? "개" : ""} emptyText={wait} />
+        {live && <Ranks list={byItge} unit="개" emptyText={wait} />}
         {live && byItge.length > 0 && <p className="text-[11px] text-muted-foreground">지금은 이게돼를 쓴 횟수예요. 최종 챔피언은 방장이 글을 보고 정해요.</p>}
       </AwardCard>
 
-      <AwardCard sub="인증을 가장 많이 한 크루" title="꾸준함 챔피언" gift="스무디 3종"
+      <AwardCard sub="인증을 가장 많이 한 크루" title="꾸준함 챔피언" gift="스무디 3종" winner={!old && !live ? byTotal[0]?.name : null}
         desc="하루도 빠짐없이 나와의 약속을 지킨 크루예요. 꾸준함이 자존감이 되고, 자존감이 인생을 바꿔요.">
-        <Ranks list={live ? byTotal : byTotal.slice(0, 1)} unit="회" emptyText={wait} />
+        {live && <Ranks list={byTotal} unit="회" emptyText={wait} />}
       </AwardCard>
 
-      <AwardCard sub="방장이 선정한 한 명" title="MVP" gift="네이버페이 1만 원권"
+      <AwardCard sub="방장이 선정한 한 명" title="MVP" gift="네이버페이 1만 원권" winner={!old && !live ? mvp[0]?.name : null}
         desc="숫자로는 다 보이지 않는 따뜻한 응원과 에너지로 우리 방을 밝혀 준 크루에게 드려요.">
-        <Ranks list={mvp} unit="" emptyText={live ? "시즌이 끝나면 방장이 발표해요." : wait} />
+        
         {isAdmin && !old && d?.season?.id ? <MvpPicker seasonId={d.season.id} /> : null}
       </AwardCard>
 
