@@ -9,6 +9,7 @@ import SignupFlow from "./SignupFlow";
 import SeasonStart from "./SeasonStart";
 import { openInExternalBrowser } from "@/lib/proofCard";
 import InstallButton from "./InstallButton";
+import IntroSplash from "./IntroSplash";
 
 /** 카카오톡·라인 등 인앱 브라우저 여부 판별 */
 function isInAppBrowser() {
@@ -53,10 +54,8 @@ function InAppBrowserBlock() {
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="max-w-sm w-full text-center space-y-6">
         <div>
-          <div className="text-5xl mb-3">💚</div>
-          <h1 className="text-[26px] font-black leading-snug">환영합니다!</h1>
-          <p className="text-sm text-muted-foreground mt-1 mb-5">슈퍼한입 챌린지에 오신 걸 환영해요.</p>
-          <h2 className="text-lg font-bold leading-snug">먼저 {isIOS ? "사파리" : "크롬"}에서 열어 주세요</h2>
+          <img src="/icons/icon-192.png" alt="" className="mx-auto h-20 w-20 rounded-[22px] mb-5 shadow-lg" />
+          <h2 className="text-lg font-bold leading-snug">{isIOS ? "사파리" : "크롬"}에서 열어 주세요</h2>
           <p className="text-sm text-muted-foreground mt-2">{isKakao ? "카카오톡" : "이 앱"} 안에서는 입장할 수 없어요.</p>
         </div>
         <button type="button" onClick={openInExternalBrowser} className="w-full h-16 rounded-3xl glass-btn text-lg font-black active:scale-[0.98] transition">
@@ -82,7 +81,7 @@ function toKoreanError(msg: string): string {
 
 export default function MembershipGate({ children }: { children: React.ReactNode }) {
   // 2026-11-22: 입장은 구글 하나만 → 카톡·인스타 등 앱 안 브라우저에서는 크롬(아이폰은 사파리)으로 옮겨 열게 한다
-  if (isInAppBrowser()) return <InAppBrowserBlock />;
+  if (isInAppBrowser()) return <IntroSplash><InAppBrowserBlock /></IntroSplash>;
 
   const { user, loading } = useAuth();
   const utils = trpc.useUtils();
@@ -143,18 +142,13 @@ export default function MembershipGate({ children }: { children: React.ReactNode
   // ── 비로그인 ──
   if (!user) {
     return (
+      <IntroSplash>
       <div className="min-h-screen bg-background paper-grain flex items-center justify-center px-6">
         <div className="max-w-sm w-full">
           {/* 2026-11-22: 처음 들어오면 환영 인사부터 */}
           <div className="text-center mb-8 space-y-3 season-fade-in">
-            <div className="text-5xl">💚</div>
-            <h1 className="text-[26px] font-black leading-snug">환영합니다!</h1>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              <span className="text-foreground font-semibold">슈퍼한입 챌린지</span>에 오신 걸 환영해요.<br />
-              꾸준함이 자존감이 되고, 자존감이 인생을 바꿔요.
-            </p>
-            <div className="pt-2 text-xs text-primary font-medium">인생을 바꾸는 가장 쉬운 방법</div>
-            <div className="editorial-h2 text-2xl tracking-tight">super hannip <span className="italic font-serif font-light">Challenge</span></div>
+            <img src="/icons/icon-512.png" alt="슈퍼한입 챌린지" className="mx-auto h-28 w-28 rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,.45)]" />
+            <div className="pt-1 text-xs text-primary font-medium">인생을 바꾸는 가장 쉬운 방법</div>
           </div>
           <div className="rounded-3xl border border-white/10 p-6 space-y-3 season-fade-in" style={{ animationDelay: ".4s" }}>
             <Button
@@ -178,6 +172,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
           </div>
         </div>
       </div>
+      </IntroSplash>
     );
   }
 
