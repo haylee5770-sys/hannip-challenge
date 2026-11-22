@@ -11,14 +11,15 @@ if (typeof window !== "undefined") {
 }
 const isStandalone = () => typeof window !== "undefined" && (window.matchMedia?.("(display-mode: standalone)").matches || (navigator as any).standalone === true);
 
-export default function InstallButton() {
+export default function InstallButton({ onDone }: { onDone?: () => void } = {}) {
   const [, force] = useState(0);
   const [help, setHelp] = useState(false);
   useEffect(() => { const f = () => force(n => n + 1); listeners.add(f); return () => { listeners.delete(f); }; }, []);
   if (isStandalone()) return null;
+
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const click = async () => {
-    if (deferred) { deferred.prompt(); try { await deferred.userChoice; } catch { /* 취소 */ } deferred = null; force(n => n + 1); }
+    if (deferred) { deferred.prompt(); try { const c = await deferred.userChoice; if (c?.outcome === "accepted") onDone?.(); } catch { /* 취소 */ } deferred = null; force(n => n + 1); }
     else setHelp(true);
   };
   return (
@@ -45,10 +46,12 @@ export default function InstallButton() {
             )}
             <p className="text-xs text-muted-foreground">다음부터는 바탕화면의 '챌린지 보드' 아이콘으로 바로 들어와요.</p>
             {ios && <div className="text-center text-3xl animate-bounce">⬇️</div>}
-            <button type="button" onClick={() => setHelp(false)} className="w-full rounded-2xl glass-btn py-3 font-bold">알겠어요</button>
+            <button type="button" onClick={() => { setHelp(false); onDone?.(); }} className="w-full rounded-2xl glass-btn py-3 font-bold">{ios ? "홈 화면에 추가했어요" : "설치했어요"}</button>
           </div>
         </div>
       )}
     </>
   );
 }
+
+export { isStandalone };

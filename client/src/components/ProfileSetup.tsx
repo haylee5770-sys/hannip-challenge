@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import InstallButton from "./InstallButton";
+import InstallButton, { isStandalone } from "./InstallButton";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const FLAGS: Array<{ id: "diabetes" | "kidney" | "thyroid" | "eating" | "heart" | "doctor"; label: string }> = [
   { id: "diabetes", label: "당뇨 또는 혈당약 복용" },
@@ -169,15 +170,22 @@ export default function ProfileSetup({ children }: { children: React.ReactNode }
     if (me.data?.needsSetup) wasSetup.current = true;
     else if (me.data && wasSetup.current) { wasSetup.current = false; setCongrats(true); }
   }, [me.data]);
-  if (congrats) {
+  // 2026-11-22: 바탕화면 설치를 마쳐야 앱으로 (설치 전에 나갔다 와도 이 화면부터). 바탕화면 아이콘으로 열면 통과. 방장은 통과
+  const { user: me2 } = useAuth();
+  const inst = trpc.members.installStatus.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
+  const markInstalled = trpc.members.markInstalled.useMutation({ onSuccess: () => { inst.refetch(); setCongrats(false); } });
+  const standalone = typeof window !== "undefined" && isStandalone();
+  useEffect(() => { if (standalone && inst.data && !inst.data.done) markInstalled.mutate(); }, [standalone, inst.data?.done]); // eslint-disable-line react-hooks/exhaustive-deps
+  const needInstall = !standalone && me2?.role !== "admin" && inst.data && !inst.data.done && !me.data?.needsSetup && !me.isLoading;
+  if (congrats || needInstall) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="max-w-sm w-full text-center space-y-5 season-fade-in">
           <div className="text-6xl">🎉</div>
-          <h1 className="text-3xl font-black leading-snug">가입이 완료됐어요!<br /><span className="text-primary">축하합니다</span></h1>
+          <h1 className="text-3xl font-black leading-snug">{congrats ? <>가입이 완료됐어요!<br /><span className="text-primary">축하합니다</span></> : <>바탕화면에<br /><span className="text-primary">설치해 주세요</span></>}</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">이제부터 시작할 수 있어요.<br />나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.</p>
-          <InstallButton />
-          <Button className="w-full h-12 rounded-2xl glass-btn text-base font-bold" onClick={() => setCongrats(false)}>시작하기</Button>
+          <p className="text-sm font-semibold">마지막 단계! 바탕화면에 설치하면 시작할 수 있어요.</p>
+          <InstallButton onDone={() => markInstalled.mutate()} />
         </div>
       </div>
     );

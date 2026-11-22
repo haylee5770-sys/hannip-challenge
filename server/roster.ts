@@ -28,6 +28,7 @@ export async function ensureRosterSchema() {
       KEY adminNotes_user (userId)
     )`, "adminNotes"],
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS contactEmail VARCHAR(320)", "users.contactEmail"],
+    ["ALTER TABLE users ADD COLUMN IF NOT EXISTS installDone BOOLEAN NOT NULL DEFAULT false", "users.installDone"],
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS privacyAgreed BOOLEAN NOT NULL DEFAULT false", "users.privacyAgreed"],
   ];
   for (const [s, label] of stmts) {
@@ -109,3 +110,7 @@ export async function listAdminNotes(userId: number) {
 }
 export async function addAdminNote(userId: number, text: string) { await q(sql`INSERT INTO adminNotes (userId, text) VALUES (${userId}, ${text})`); }
 export async function deleteAdminNote(id: number) { await q(sql`DELETE FROM adminNotes WHERE id = ${id}`); }
+
+/* 바탕화면 설치 (2026-11-22): 설치를 마쳐야 앱으로 들어갈 수 있다 */
+export async function getInstallDone(userId: number) { return !!(await q(sql`SELECT installDone FROM users WHERE id = ${userId}`))[0]?.installDone; }
+export async function setInstallDone(userId: number) { await q(sql`UPDATE users SET installDone = true WHERE id = ${userId}`); }

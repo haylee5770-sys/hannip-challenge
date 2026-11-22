@@ -96,6 +96,8 @@ const invitationsRouter = router({
 
 /* ----------------- Members ----------------- */
 const membersRouter = router({
+  installStatus: protectedProcedure.query(async ({ ctx }) => ({ done: await roster.getInstallDone(ctx.user.id) })),
+  markInstalled: protectedProcedure.mutation(async ({ ctx }) => { await roster.setInstallDone(ctx.user.id); return { ok: true }; }),
   /** 선물 받을 곳 (2026-11-22): 내 전화번호·주소 보기/고치기 */
   myContact: protectedProcedure.query(async ({ ctx }) => roster.getMyContact(ctx.user.id)),
   updateContact: protectedProcedure
