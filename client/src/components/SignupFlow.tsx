@@ -21,6 +21,7 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
   const [email, setEmail] = useState("");
   const [a1, setA1] = useState(false); const [a2, setA2] = useState(false); const [a3, setA3] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [pvIn, setPvIn] = useState(true); // 미리보기: 명단에 있는 사람으로 볼지
 
   const check = trpc.auth.rosterCheck.useMutation({
     onSuccess: (r) => {
@@ -40,8 +41,8 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
     e.preventDefault(); setErr(null);
     if (!realName.trim()) return setErr("이름을 적어 주세요.");
     if (phoneDigits.length < 10) return setErr("전화번호를 끝까지 적어 주세요.");
-    // 미리보기(방장): 전화번호 끝자리가 홀수면 '명단에 있음', 짝수면 '명단에 없음' 흐름
-    if (preview) { const odd = Number(phoneDigits.slice(-1)) % 2 === 1; if (odd) { setMatched(true); setNickname("로제"); setAddress("서울특별시 ○○구 ○○로 12, 101동 1001호"); setEditAddr(false); setStep("pick"); } else { setMatched(false); setStep("manual"); } return; }
+    // 미리보기(방장): 위에서 고른 쪽(명단에 있는 사람 / 없는 사람) 흐름을 보여 준다
+    if (preview) { if (pvIn) { setMatched(true); setNickname("로제"); setAddress("서울특별시 ○○구 ○○로 12, 101동 1001호"); setEditAddr(false); setStep("pick"); } else { setMatched(false); setStep("manual"); } return; }
     check.mutate({ realName, phone });
   };
   const goSubmit = () => {
@@ -54,7 +55,15 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-10">
       <div className="max-w-sm w-full space-y-6 season-fade-in" key={step}>
-        {preview && <div className="rounded-xl bg-amber-400/15 border border-amber-400/50 px-3 py-2 text-xs text-center">👀 방장 미리보기 · 저장되지 않아요<br />전화번호 끝자리 <b>홀수</b> = 명단에 있는 사람 · <b>짝수</b> = 명단에 없는 사람</div>}
+        {preview && (
+          <div className="rounded-2xl bg-amber-400/15 border border-amber-400/50 p-3 space-y-2 text-center">
+            <div className="text-xs">👀 <b>방장 미리보기</b> · 아무거나 넣어도 저장되지 않아요</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => { setPvIn(true); setStep("hello"); }} className={`rounded-xl py-2 text-xs font-bold border ${pvIn ? "bg-amber-400 text-black border-amber-400" : "border-amber-400/50"}`}>명단에 있는 사람</button>
+              <button type="button" onClick={() => { setPvIn(false); setStep("hello"); }} className={`rounded-xl py-2 text-xs font-bold border ${!pvIn ? "bg-amber-400 text-black border-amber-400" : "border-amber-400/50"}`}>명단에 없는 사람</button>
+            </div>
+          </div>
+        )}
         {step === "donePreview" && (
           <div className="text-center space-y-4">
             <div className="text-5xl">📷</div>
