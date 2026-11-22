@@ -20,6 +20,13 @@ export async function ensureRosterSchema() {
       createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`, "roster"],
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT", "users.address"],
+    [`CREATE TABLE IF NOT EXISTS adminNotes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      text TEXT NOT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY adminNotes_user (userId)
+    )`, "adminNotes"],
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS contactEmail VARCHAR(320)", "users.contactEmail"],
     ["ALTER TABLE users ADD COLUMN IF NOT EXISTS privacyAgreed BOOLEAN NOT NULL DEFAULT false", "users.privacyAgreed"],
   ];
@@ -84,3 +91,18 @@ export async function getUserExtras(userIds: number[]) {
   const rows = await q(sql`SELECT id, address, contactEmail FROM users WHERE id IN (${sql.join(userIds.map(i => sql`${i}`), sql`, `)})`);
   return new Map(rows.map(r => [Number(r.id), { address: r.address ?? null, contactEmail: r.contactEmail ?? null }]));
 }
+
+export async function getMyContact(userId: number) {
+  const r = (await q(sql`SELECT realName, phone, address FROM users WHERE id = ${userId}`))[0];
+  return { realName: r?.realName ?? "", phone: r?.phone ?? "", address: r?.address ?? "" };
+}
+export async function updateMyContact(userId: number, d: { phone: string; address: string }) {
+  await q(sql`UPDATE users SET phone = ${d.phone}, address = ${d.address} WHERE id = ${userId}`);
+}
+
+/* 방장 메모 (2026-11-22): 멤버마다 날짜별로 쌓이는 특이사항. 방장만 본다 */
+export async function listAdminNotes(userId: number) {
+  return q(sql`SELECT id, text, createdAt FROM adminNotes WHERE userId = ${userId} ORDER BY id DESC`);
+}
+export async function addAdminNote(userId: number, text: string) { await q(sql`INSERT INTO adminNotes (userId, text) VALUES (${userId}, ${text})`); }
+export async function deleteAdminNote(id: number) { await q(sql`DELETE FROM adminNotes WHERE id = ${id}`); }

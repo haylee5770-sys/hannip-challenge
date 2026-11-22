@@ -74,8 +74,10 @@ export async function itemCounts(userId: number, since: string, until: string): 
 }
 
 /* ---------- 순위 (모든 멤버) ---------- */
-async function rankAll(since: string, until: string) {
-  const users = await db.listApprovedUsers();
+async function rankAll(since: string, until: string, seasonId?: number) {
+  // 2026-11-22: 시즌에 참여 선택이 있으면 '슈퍼루틴' 참여자만 상 대상
+  const only = seasonId ? await (await import("./seasonPlus")).routineUserIds(seasonId) : null;
+  const users = (await db.listApprovedUsers()).filter(u => !only || only.has(u.id));
   const rows = await Promise.all(users.map(async u => ({ userId: u.id, name: u.name ?? "멤버", c: await itemCounts(u.id, since, until) })));
   const byItge = rows.filter(r => r.c.itge > 0).sort((a, b) => b.c.itge - a.c.itge).slice(0, 3).map(r => ({ userId: r.userId, name: r.name, count: r.c.itge }));
   const byTotal = rows.filter(r => r.c.total > 0).sort((a, b) => b.c.total - a.c.total).slice(0, 3).map(r => ({ userId: r.userId, name: r.name, count: r.c.total }));
@@ -101,8 +103,8 @@ export async function endRound() {
   const today = kstToday();
   const since = String(cur.startDate).slice(0, 10);
   await q(sql`UPDATE seasons SET endDate=${today}, totalDays=${Math.max(1, Math.round((Date.parse(today) - Date.parse(since)) / 86400000) + 1)}, status='ended' WHERE id=${cur.id}`);
-  const r = await rankAll(since, today);
-  await q(sql`DELETE FROM roundAwards WHERE seasonId=${cur.id}`);
+  const r = await rankAll(since, today, cur.id);
+  await q(sql`DELETE FROM roundAwards WHERE seasonId=${cur.id} AND kind <> 'mvp'`);
   for (const [kind, list] of [["itge", r.byItge], ["total", r.byTotal]] as const) {
     let i = 1;
     for (const w of list) { await q(sql`INSERT INTO roundAwards (seasonId, kind, rankNo, userId, name, count) VALUES (${cur.id}, ${kind}, ${i++}, ${w.userId}, ${w.name}, ${w.count})`); }
@@ -116,6 +118,7 @@ async function storedAwards(seasonId: number) {
   return {
     byItge: rows.filter(r => r.kind === "itge").map(r => ({ id: r.id, userId: r.userId, name: r.name, count: r.count, rankNo: r.rankNo })),
     byTotal: rows.filter(r => r.kind === "total").map(r => ({ id: r.id, userId: r.userId, name: r.name, count: r.count, rankNo: r.rankNo })),
+    mvp: rows.filter(r => r.kind === "mvp").map(r => ({ id: r.id, userId: r.userId, name: r.name, count: r.count, rankNo: r.rankNo })),
   };
 }
 
@@ -123,11 +126,12 @@ export async function ceremony() {
   const cur = await activeRound();
   if (cur) {
     const since = String(cur.startDate).slice(0, 10);
-    const live = await rankAll(since, kstToday());
-    return { status: "live" as const, season: { id: cur.id, name: cur.name, startDate: since, endDate: null as string | null }, ...live };
+    const live = await rankAll(since, kstToday(), cur.id);
+    const planEnd = (await q(sql`SELECT DATE_FORMAT(planEnd,'%Y-%m-%d') p FROM seasons WHERE id=${cur.id}`).catch(() => []))[0]?.p ?? null;
+    return { status: "live" as const, season: { id: cur.id, name: cur.name, startDate: since, endDate: planEnd as string | null }, ...live, mvp: [] as any[] };
   }
   const ended = await q(sql`SELECT id, name, DATE_FORMAT(startDate,'%Y-%m-%d') s, DATE_FORMAT(endDate,'%Y-%m-%d') e FROM seasons WHERE status='ended' ORDER BY endDate DESC, id DESC LIMIT 1`);
-  if (!ended[0]) return { status: "none" as const, season: null, byItge: [], byTotal: [], participants: 0 };
+  if (!ended[0]) return { status: "none" as const, season: null, byItge: [], byTotal: [], mvp: [] as any[], participants: 0 };
   const a = await storedAwards(ended[0].id);
   return { status: "final" as const, season: { id: ended[0].id, name: ended[0].name, startDate: ended[0].s, endDate: ended[0].e }, ...a, participants: 0 };
 }

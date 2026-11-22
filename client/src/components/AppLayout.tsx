@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { label: "TODAY", path: "/today", korean: "오늘" },
   { label: "YEAR", path: "/year", korean: "1년" },
   { label: "ITGE", path: "/itge", korean: "이게돼" },
-  { label: "DASHBOARD", path: "/dashboard", korean: "대시보드" },
+  { label: "MY CHANGE", path: "/dashboard", korean: "나의 변화" },
   { label: "BEFORE·AFTER", path: "/before-after", korean: "비포 애프터" },
   { label: "MEMBERS", path: "/members", korean: "멤버" },
   { label: "AWARDS", path: "/awards", korean: "시상식" },
@@ -111,7 +111,12 @@ function YearProgressBar() {
   const q = trpc.happy.yearProgress.useQuery(undefined, { retry: false, refetchOnWindowFocus: true });
   const days = q.data?.days ?? 0;
   const total = q.data?.total ?? 365;
-  const pct = Math.min(100, (days / total) * 100);
+  // 2026-11-22: 동그라미는 오늘 날짜 위치 (1월 1일 → 12월 31일)
+  const now = new Date(Date.now() + 9 * 3600_000);
+  const y = now.getUTCFullYear();
+  const dayOfYear = Math.floor((Date.UTC(y, now.getUTCMonth(), now.getUTCDate()) - Date.UTC(y, 0, 1)) / 86400_000) + 1;
+  const yearDays = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
+  const pct = Math.min(100, (dayOfYear / yearDays) * 100);
   return (
     <div className="container pb-4">
       <div className="relative h-5 flex items-center">
@@ -123,8 +128,8 @@ function YearProgressBar() {
         />
       </div>
       <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
-        <span>나의 {q.data?.year ?? new Date().getFullYear()}년</span>
-        <span>올해 <b className="text-primary">{days}</b>일 기록했어요 · {total}일</span>
+        <span>나의 {y}년</span>
+        <span>올해 <b className="text-primary">{days}</b>일 기록했어요 · {yearDays}일</span>
       </div>
     </div>
   );
@@ -132,8 +137,28 @@ function YearProgressBar() {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // 2026-11-22: 앱을 다시 열면(10분 넘게 안 쓰다가) 언제나 '오늘'부터
+  useEffect(() => {
+    const KEY = "hannipLastSeen";
+    const last = Number(localStorage.getItem(KEY) || 0);
+    if (Date.now() - last > 10 * 60_000 && location !== "/today" && location !== "/") navigate("/today", { replace: true });
+    const mark = () => localStorage.setItem(KEY, String(Date.now()));
+    mark();
+    const onVis = () => {
+      if (document.visibilityState === "visible") {
+        const l = Number(localStorage.getItem(KEY) || 0);
+        if (Date.now() - l > 10 * 60_000) navigate("/today", { replace: true });
+      }
+      mark();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    const t = setInterval(mark, 60_000);
+    return () => { document.removeEventListener("visibilitychange", onVis); clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isAdmin = user?.role === "admin";
   const items = isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
@@ -194,19 +219,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <span className="font-serif text-base">프로필</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => logout()}>
-                    <span className="font-serif text-base">로그아웃</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* 2026-11-22: 메뉴 버튼 = 내 프로필 사진 동그라미 (크루에게 "오른쪽 위 내 사진 누르세요") */}
               <button
                 onClick={() => setMobileOpen(v => !v)}
-                className="md:hidden p-2"
-                aria-label="menu"
+                className="md:hidden relative h-11 w-11 rounded-full p-[2px] bg-primary shadow-[0_0_12px_rgba(182,242,74,0.45)] active:scale-95 transition"
+                aria-label="메뉴"
               >
-                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {mobileOpen ? (
+                  <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><X className="h-5 w-5" /></span>
+                ) : user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="메뉴" className="h-full w-full rounded-full object-cover bg-background" />
+                ) : (
+                  <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><Menu className="h-5 w-5" /></span>
+                )}
               </button>
             </div>
           </div>
@@ -240,13 +268,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <span className="font-serif text-xl">{user?.name || "프로필"}</span>
                   </button>
                 </Link>
-                <Button
-                  variant="ghost"
-                  onClick={() => { setMobileOpen(false); logout(); }}
-                  className="w-full justify-start font-serif text-base mt-1"
-                >
-                  로그아웃
-                </Button>
               </div>
             </nav>
           </div>

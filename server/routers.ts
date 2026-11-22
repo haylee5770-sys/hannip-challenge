@@ -21,12 +21,14 @@ import * as rounds from "./rounds";
 import * as wellness from "./wellness";
 import * as entryCode from "./entryCode";
 import * as roster from "./roster";
+import * as sp from "./seasonPlus";
 
 
 import { syncSeasonBaselineForUser, computeLeaderboard, getMyCounts, dayNumber, totalDays, generateSeasonReports } from "./seasons";
 import { evaluateSleep, computeSleepMinutes } from "./sleep";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { parse as parseCookie } from "cookie";
+import { sql as sqlTag } from "drizzle-orm";
 
 /** 모든 시즌 공통 입장코드 (2026-11-20 방장 지정). 대소문자·띄어쓰기 무시. Railway 변수 ENTRY_CODE로 바꿀 수 있음 */
 export const COMMON_ENTRY_CODE = (process.env.ENTRY_CODE || "SUPERHAPPY2027").trim();
@@ -94,6 +96,11 @@ const invitationsRouter = router({
 
 /* ----------------- Members ----------------- */
 const membersRouter = router({
+  /** 선물 받을 곳 (2026-11-22): 내 전화번호·주소 보기/고치기 */
+  myContact: protectedProcedure.query(async ({ ctx }) => roster.getMyContact(ctx.user.id)),
+  updateContact: protectedProcedure
+    .input(z.object({ phone: z.string().min(9).max(32), address: z.string().min(5).max(300) }))
+    .mutation(async ({ ctx, input }) => { await roster.updateMyContact(ctx.user.id, { phone: input.phone.trim(), address: input.address.trim() }); return { ok: true }; }),
   list: approvedProcedure.query(async () => {
     const users = await db.listApprovedUsers();
     return users.map(u => ({
@@ -755,6 +762,10 @@ const adminRouter = router({
       return { ok: true };
     }),
 
+  /** 방장 메모 (2026-11-22) */
+  notesFor: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => roster.listAdminNotes(input.userId)),
+  addNote: adminProcedure.input(z.object({ userId: z.number(), text: z.string().min(1).max(2000) })).mutation(async ({ input }) => { await roster.addAdminNote(input.userId, input.text.trim()); return { ok: true }; }),
+  deleteNote: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => { await roster.deleteAdminNote(input.id); return { ok: true }; }),
   /** 크루 명단 (2026-11-22) */
   rosterList: adminProcedure.query(async () => roster.listRoster()),
   rosterImport: adminProcedure.input(z.object({ text: z.string().min(1).max(200000) })).mutation(async ({ input }) => roster.importRoster(input.text)),
@@ -1569,10 +1580,64 @@ const roundsRouter = router({
   rename: adminProcedure
     .input(z.object({ seasonId: z.number(), name: z.string().min(1).max(128) }))
     .mutation(async ({ input }) => { await rounds.renameRound(input.seasonId, input.name); return { ok: true }; }),
+  /** 시즌 (2026-11-22) */
+  startSeason: adminProcedure
+    .input(z.object({ name: z.string().min(1).max(128), shortName: z.string().max(32), planEnd: dateString, detoxStart: dateString.optional().nullable(), detoxEnd: dateString.optional().nullable() }))
+    .mutation(async ({ ctx, input }) => sp.startSeason(ctx.user.id, input, () => rounds.endRound())),
+  seasonInfo: approvedProcedure.query(async () => sp.activeSeasonInfo()),
+  allSeasons: approvedProcedure.query(async () => sp.allSeasonInfos()),
+  myEntry: approvedProcedure.query(async ({ ctx }) => sp.myEntry(ctx.user.id)),
+  join: approvedProcedure.input(z.object({ track: z.enum(["detox", "routine"]) })).mutation(async ({ ctx, input }) => sp.join(ctx.user.id, input.track)),
+  entryCounts: adminProcedure.input(z.object({ seasonId: z.number() })).query(async ({ input }) => sp.entryCounts(input.seasonId)),
+  weighStatus: approvedProcedure.query(async ({ ctx }) => sp.weighStatus(ctx.user.id)),
+  setMvp: adminProcedure.input(z.object({ seasonId: z.number(), userId: z.number(), name: z.string().min(1).max(128) }))
+    .mutation(async ({ input }) => { await sp.setMvp(input.seasonId, input.userId, input.name); return { ok: true }; }),
+  /** 내 시즌별 결과 (나의 1년) */
+  mySeasonSummary: approvedProcedure.input(z.object({ seasonId: z.number() })).query(async ({ ctx, input }) => {
+    const all = await sp.allSeasonInfos();
+    const s = all.find(x => x.id === input.seasonId); if (!s) return null;
+    const until = s.status === "active" ? rounds.kstToday() : (s.planEnd ?? rounds.kstToday());
+    const counts = await rounds.itemCounts(ctx.user.id, s.startDate, until);
+    const w = await db.getDb().then(c => c ? c.execute(sqlTag`SELECT kg, DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM weights WHERE userId=${ctx.user.id} AND recordedDate BETWEEN ${s.startDate} AND ${until} ORDER BY recordedDate`) : null).catch(() => null);
+    const ws = Array.isArray(w) && Array.isArray((w as any)[0]) ? (w as any)[0] : [];
+    return { season: s, counts, weightStart: ws[0] ? Number(ws[0].kg) : null, weightEnd: ws.length > 1 ? Number(ws[ws.length - 1].kg) : null };
+  }),
   /** 1년 달력: 날짜별 기상·식단 여부 */
   dayFlags: approvedProcedure
     .input(z.object({ since: dateString, until: dateString }))
     .query(async ({ ctx, input }) => rounds.dayFlags(ctx.user.id, input.since, input.until)),
+});
+
+/* 의견 보내기 · 선물/이벤트 신청 (2026-11-22) */
+const crewRouter = router({
+  sendFeedback: approvedProcedure
+    .input(z.object({ kind: z.enum(["bug", "idea"]), text: z.string().min(2).max(3000), imageDataUrl: z.string().max(8_000_000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      let url: string | null = null;
+      if (input.imageDataUrl) url = (await uploadDataUrl(input.imageDataUrl, `feedback/${ctx.user.id}-${Date.now()}`)).url;
+      await sp.addFeedback(ctx.user.id, input.kind, input.text.trim(), url);
+      return { ok: true };
+    }),
+  feedbacks: adminProcedure.query(async () => sp.listFeedbacks()),
+  feedbackDone: adminProcedure.input(z.object({ id: z.number(), done: z.boolean() })).mutation(async ({ input }) => { await sp.setFeedbackDone(input.id, input.done); return { ok: true }; }),
+  myOptions: approvedProcedure.query(async ({ ctx }) => ({
+    gifts: await sp.myGifts(ctx.user.id),
+    events: await sp.listOpenEvents(true),
+    myEventIds: await sp.myEventIds(ctx.user.id),
+    contact: await roster.getMyContact(ctx.user.id),
+  })),
+  request: approvedProcedure
+    .input(z.object({ kind: z.enum(["gift", "event"]), refId: z.number(), label: z.string().min(1).max(200), realName: z.string().min(1).max(64), phone: z.string().min(9).max(32), address: z.string().min(5).max(300), saveAsDefault: z.boolean().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await sp.addRequest(ctx.user.id, input);
+      if (input.saveAsDefault) await roster.updateMyContact(ctx.user.id, { phone: input.phone, address: input.address });
+      return { ok: true };
+    }),
+  requests: adminProcedure.query(async () => sp.listRequests()),
+  requestSent: adminProcedure.input(z.object({ id: z.number(), sent: z.boolean() })).mutation(async ({ input }) => { await sp.setRequestSent(input.id, input.sent); return { ok: true }; }),
+  events: adminProcedure.query(async () => sp.listOpenEvents(false)),
+  addEvent: adminProcedure.input(z.object({ title: z.string().min(1).max(200) })).mutation(async ({ input }) => { await sp.addEvent(input.title.trim()); return { ok: true }; }),
+  setEventOpen: adminProcedure.input(z.object({ id: z.number(), open: z.boolean() })).mutation(async ({ input }) => { await sp.setEventOpen(input.id, input.open); return { ok: true }; }),
 });
 
 const itgeRouter = router({
@@ -1880,6 +1945,7 @@ export const appRouter = router({
   waters: watersRouter,
   happy: happyRouter,
   rounds: roundsRouter,
+  crew: crewRouter,
   itge: itgeRouter,
   wellness: wellnessRouter,
 });

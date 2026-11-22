@@ -3,6 +3,8 @@ import { useRoute, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2, ChevronLeft } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { askConfirm } from "@/lib/askConfirm";
 
 const COND: Record<string, string> = { best: "😆 최상", ok: "🙂 괜찮음", meh: "😐 그저 그럼", tired: "😩 힘이 없음" };
 const MOOD: Record<number, string> = { 4: "😊", 3: "🙂", 2: "😐", 1: "😔" };
@@ -42,6 +44,7 @@ export default function MemberDetail() {
         )}
         {p?.healthNote && <div className="mt-2 text-sm rounded-lg bg-background/50 p-2"><span className="text-muted-foreground">방장에게 남긴 메모: </span>{p.healthNote}</div>}
       </section>
+      <AdminNotes userId={id} />
 
       {ws.length > 0 && (
         <section className="rounded-2xl bg-card border border-border p-4">
@@ -174,5 +177,37 @@ function WeightChart({ data }: { data: Array<{ date: string; kg: number }> }) {
         </svg>
       </div>
     </div>
+  );
+}
+
+
+/** 방장 메모 (2026-11-22): 방장만 보이는 특이사항 기록. 날짜와 함께 쌓인다 */
+function AdminNotes({ userId }: { userId: number }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const utils = trpc.useUtils();
+  const list = trpc.admin.notesFor.useQuery({ userId }, { enabled: isAdmin });
+  const [text, setText] = useState("");
+  const add = trpc.admin.addNote.useMutation({ onSuccess: () => { setText(""); utils.admin.notesFor.invalidate({ userId }); } });
+  const del = trpc.admin.deleteNote.useMutation({ onSuccess: () => utils.admin.notesFor.invalidate({ userId }) });
+  if (!isAdmin) return null;
+  const fmt = (d: any) => { const t = new Date(new Date(d).getTime() + 9 * 3600_000); return `${t.getUTCMonth() + 1}/${t.getUTCDate()}`; };
+  return (
+    <section className="rounded-2xl border border-amber-400/50 bg-amber-400/5 p-4 space-y-3">
+      <div className="text-sm font-bold">📝 방장 메모 <span className="text-[11px] font-normal text-muted-foreground">방장만 보여요</span></div>
+      <div className="flex gap-2">
+        <textarea value={text} onChange={e => setText(e.target.value)} rows={2} placeholder="예: 임신 20주, 무리한 운동 금지 (🎤 말로 적어도 돼요)"
+          className="flex-1 rounded-xl border border-border bg-background p-2 text-sm resize-none" />
+        <button type="button" disabled={!text.trim() || add.isPending} onClick={() => add.mutate({ userId, text })}
+          className="shrink-0 rounded-xl glass-btn px-4 text-sm font-bold disabled:opacity-40">저장</button>
+      </div>
+      {(list.data ?? []).map((n: any) => (
+        <div key={n.id} className="flex items-start gap-2 text-sm">
+          <span className="text-xs text-muted-foreground shrink-0 pt-0.5 w-10">{fmt(n.createdAt)}</span>
+          <span className="flex-1 whitespace-pre-wrap allow-select">{n.text}</span>
+          <button type="button" className="text-xs text-muted-foreground" onClick={async () => { if (await askConfirm("이 메모를 지울까요?")) del.mutate({ id: n.id }); }}>✕</button>
+        </div>
+      ))}
+    </section>
   );
 }
