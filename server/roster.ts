@@ -54,7 +54,7 @@ export async function markRosterUsed(id: number, userId: number) {
 }
 
 export async function listRoster() {
-  const rows = await q(sql`SELECT r.id, r.nickname, r.realName, r.phone, r.address, r.usedByUserId, u.name AS userName
+  const rows = await q(sql`SELECT r.id, r.nickname, r.realName, r.phone, r.address, r.usedByUserId, u.name AS userName, u.email AS userEmail
     FROM roster r LEFT JOIN users u ON u.id = r.usedByUserId ORDER BY r.id`);
   return rows.map(r => ({ ...r, phone: fmtPhone(String(r.phone)) }));
 }

@@ -947,6 +947,7 @@ function RosterAdmin() {
               <div className="font-semibold">{r.nickname} <span className="text-xs text-muted-foreground font-normal">{r.realName} · {r.phone}</span></div>
               {r.address && <div className="text-xs text-muted-foreground leading-relaxed">{r.address}</div>}
               <div className={`text-[11px] mt-1 ${r.usedByUserId ? "text-primary font-semibold" : "text-muted-foreground"}`}>{r.usedByUserId ? `✓ 가입함 (${r.userName ?? ""})` : "아직 가입 전"}</div>
+              {r.userEmail && <div className="text-[11px] text-muted-foreground allow-select">구글: {r.userEmail}</div>}
             </div>
             <button type="button" className="text-xs text-muted-foreground underline shrink-0"
               onClick={async () => { if (await askConfirm(`${r.nickname} 님을 명단에서 뺄까요?`, "빼기")) del.mutate({ id: r.id }); }}>빼기</button>
