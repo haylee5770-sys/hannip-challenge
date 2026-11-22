@@ -24,12 +24,12 @@ export function stopIntroMusic() {
 
 /** 사진 속 크루 닉네임 — 왼쪽부터 얼굴 훑는 순서 (해이 지정 2026-11-22) */
 const CREW_NAMES = [
-  { name: "혜교", x: 27.3, y: 22.5 },
-  { name: "지연", x: 35.3, y: 24.2 },
-  { name: "해이", x: 52.7, y: 9.5 },
-  { name: "수지", x: 67.6, y: 3.4 },
-  { name: "청하", x: 80.8, y: 7.8 },
-  { name: "카리나", x: 60.8, y: 43.1 },
+  { name: "혜교", x: 27.0, y: 48 },
+  { name: "지연", x: 35.0, y: 48 },
+  { name: "해이", x: 52.2, y: 48 },
+  { name: "카리나", x: 59.9, y: 48 },
+  { name: "수지", x: 68.2, y: 48 },
+  { name: "청하", x: 80.8, y: 48 },
 ];
 
 type Phase = "bloom" | "line1" | "line2" | "crew" | "done";
@@ -38,14 +38,14 @@ const fromKakao = () => { try { return new URLSearchParams(location.search).get(
 /** 연회색 바탕 + 위쪽 크루 사진. 아래에 버튼 등이 들어간다 */
 export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; fadeIn?: boolean }) {
   return (
-    <div className="fixed inset-0 overflow-y-auto" style={{ background: "linear-gradient(180deg,#b4b4b4 0%,#cfcfcf 22%,#c9c9c9 55%,#a9a9a9 100%)" }}>
+    <div className="fixed inset-0 overflow-y-auto overflow-x-hidden" style={{ background: "linear-gradient(180deg,#b4b4b4 0%,#cfcfcf 22%,#c9c9c9 55%,#a9a9a9 100%)" }}>
       <div className="min-h-full flex flex-col items-center">
         {/* 사진 + 머리 위 이름(사진에 미리 써 있는 것처럼). 인트로에서는 확대된 채 왼쪽→오른쪽으로 천천히, 끝나면 작아지며 제자리 */}
-        <div className={`relative w-full max-w-[640px] mt-[7vh] ${fadeIn ? "intro-crew-in" : ""}`}>
+        <div className={`relative w-[130%] max-w-[832px] shrink-0 mt-[7vh] ${fadeIn ? "intro-crew-in" : ""}`}>
           <img src="/intro/crew.jpg" alt="슈퍼한입 챌린지 크루" className="w-full block"
             style={{ WebkitMaskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)", maskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)" }} />
-          {fadeIn && CREW_NAMES.map(c => (
-            <span key={c.name} className="intro-crew-name absolute -translate-x-1/2 -translate-y-full whitespace-nowrap" style={{ left: `${c.x}%`, top: `${c.y}%` }}>{c.name}</span>
+          {CREW_NAMES.map(c => (
+            <span key={c.name} className="intro-crew-name absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap" style={{ left: `${c.x}%`, top: `${c.y}%` }}>{c.name}</span>
           ))}
         </div>
         <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "12.6s" } : undefined}>
