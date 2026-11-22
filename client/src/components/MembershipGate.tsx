@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import ProfileSetup from "./ProfileSetup";
 import SignupFlow from "./SignupFlow";
 import SeasonStart from "./SeasonStart";
+import { openInExternalBrowser } from "@/lib/proofCard";
 
 /** 카카오톡·라인 등 인앱 브라우저 여부 판별 */
 function isInAppBrowser() {
@@ -60,13 +61,16 @@ function InAppBrowserBlock() {
           <div>
             <div className="editorial-eyebrow text-muted-foreground mb-2">안내</div>
             <p className="font-serif text-base leading-relaxed">
-              {isKakao ? "카카오톡" : "이 앱"} 내에서는 구글 로그인이 제한돼요.<br />
+              {isKakao ? "카카오톡" : "이 앱"} 안에서는 구글 로그인이 막혀 있어요.<br />
               {isIOS ? "Safari" : "Chrome"} 브라우저에서 열어야 로그인할 수 있어요.
             </p>
           </div>
 
-          <Button onClick={handleCopy} className="w-full rounded-none" variant={copied ? "outline" : "default"}>
-            {copied ? "✓ 링크 복사됨!" : "🔗 링크 복사하기"}
+          <Button onClick={openInExternalBrowser} className="w-full h-12 rounded-2xl font-bold">
+            {isIOS ? "사파리로 열기" : "크롬으로 열기"}
+          </Button>
+          <Button onClick={handleCopy} className="w-full rounded-2xl" variant="outline">
+            {copied ? "✓ 링크 복사됨!" : "🔗 안 열리면 링크 복사하기"}
           </Button>
 
           <div className="border-t hairline pt-4 space-y-3">
@@ -107,12 +111,8 @@ function toKoreanError(msg: string): string {
 }
 
 export default function MembershipGate({ children }: { children: React.ReactNode }) {
-  // 카카오톡 인앱 브라우저는 카카오 로그인 가능 → 차단하지 않음
-  // 다른 인앱 브라우저(인스타, 페이스북 등)만 차단
-  const ua = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
-  const isKakaoInApp = ua.includes("kakaotalk");
-  const isOtherInApp = !isKakaoInApp && isInAppBrowser();
-  if (isOtherInApp) return <InAppBrowserBlock />;
+  // 2026-11-22: 입장은 구글 하나만 → 카톡·인스타 등 앱 안 브라우저에서는 크롬(아이폰은 사파리)으로 옮겨 열게 한다
+  if (isInAppBrowser()) return <InAppBrowserBlock />;
 
   const { user, loading } = useAuth();
   const utils = trpc.useUtils();
@@ -187,23 +187,9 @@ export default function MembershipGate({ children }: { children: React.ReactNode
           <div className="border hairline p-6 space-y-3">
             <Button
               type="button"
-              onClick={handleKakaoLogin}
-              disabled={authLoading}
-              className="w-full rounded-none bg-[#FEE500] text-[#3C1E1E] hover:bg-[#F5DC00] border-0 font-bold"
-            >
-              {authLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.548 1.516 4.787 3.809 6.156l-.972 3.612 4.184-2.76A11.3 11.3 0 0 0 12 18c5.523 0 10-3.477 10-7.5S17.523 3 12 3z"/>
-                </svg>
-              )}
-              카카오로 입장하기
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
               onClick={handleGoogleLogin}
               disabled={authLoading}
-              className="w-full rounded-none border-foreground/30 hover:bg-secondary/40"
+              className="w-full h-12 rounded-2xl glass-btn font-bold"
             >
               {authLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
@@ -214,7 +200,7 @@ export default function MembershipGate({ children }: { children: React.ReactNode
             </Button>
             {authError && <p className="text-xs text-destructive text-center">{authError}</p>}
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              단톡방 크루만 들어올 수 있어요.
+              단톡방 크루만 들어올 수 있어요.<br />아이폰을 쓰시면 구글 계정이 필요해요 (없으면 먼저 만들어 주세요).
             </p>
           </div>
         </div>

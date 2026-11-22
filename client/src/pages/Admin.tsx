@@ -205,7 +205,7 @@ function MembersAdmin() {
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <div className="text-base font-semibold truncate">{u.name ?? "이름 없음"} {(u as any).realName ? <span className="text-xs text-muted-foreground font-normal">({(u as any).realName})</span> : null}</div>
-              <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+              <div className="text-xs text-muted-foreground truncate allow-select">구글: {u.email}</div>
               {(u as any).phone && <div className="text-xs text-muted-foreground">{(u as any).phone}</div>}
               {extras.data?.[u.id]?.contactEmail && <div className="text-xs text-muted-foreground">✉️ {extras.data[u.id].contactEmail}</div>}
               {extras.data?.[u.id]?.address && <div className="text-xs text-muted-foreground leading-relaxed">🏠 {extras.data[u.id].address}</div>}

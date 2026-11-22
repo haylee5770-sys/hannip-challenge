@@ -131,12 +131,13 @@ export default function SignupFlow() {
           <div className="space-y-5">
             <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4 text-sm leading-relaxed">
               🔒 적어 주신 <b>이름 · 전화번호 · 주소</b>는 <b>선물 발송</b>과 <b>구매 기록 확인</b>에만 쓰여요.<br />
+              로그인한 <b>구글 이메일</b>은 계정을 잊었을 때 찾아 드리려고 방장만 볼 수 있게 저장해요.<br />
               같은 정보로 기록이 모이니, 바뀌면 꼭 프로필에서 고쳐 주세요.
             </div>
             <div className="space-y-3">
               {([[a1, setA1, "해이방장의 가이드를 믿고 따르겠습니다. 몸은 반드시 변합니다."],
                  [a2, setA2, "가이드를 지키지 않으면 결과를 보장받을 수 없음을 이해합니다."],
-                 [a3, setA3, "위 개인정보(이름·전화번호·주소)를 선물 발송과 구매 기록 확인에 쓰는 데 동의합니다."]] as const).map(([v, set, t], i) => (
+                 [a3, setA3, "위 개인정보(이름·전화번호·주소·로그인 구글 이메일)를 선물 발송·구매 기록 확인·계정 찾기에 쓰는 데 동의합니다."]] as const).map(([v, set, t], i) => (
                 <label key={i} className="flex items-start gap-3 cursor-pointer">
                   <input type="checkbox" checked={v} onChange={e => set(e.target.checked)} className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]" />
                   <span className="text-sm leading-relaxed">{t}</span>
