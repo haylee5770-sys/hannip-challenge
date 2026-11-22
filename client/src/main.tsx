@@ -60,3 +60,9 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>
 );
+
+// 2026-11-22: 사진 길게 누르기(오른쪽 클릭) 메뉴 막기 — 자랑하기 카드(.allow-save)는 예외
+document.addEventListener("contextmenu", (e) => {
+  const t = e.target as HTMLElement | null;
+  if (t && t.tagName === "IMG" && !t.classList.contains("allow-save")) e.preventDefault();
+});

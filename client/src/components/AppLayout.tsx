@@ -48,7 +48,7 @@ function ProofPreview() {
   return (
     <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center p-5 gap-3 overflow-y-auto" onClick={() => setImg(null)}>
       <div className="w-full max-w-sm space-y-3 max-h-[65vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        {imgs.map((src, i) => <img key={i} src={src} alt={`인증 사진 ${i + 1}`} className="w-full rounded-2xl" />)}
+        {imgs.map((src, i) => <img key={i} src={src} alt={`인증 사진 ${i + 1}`} className="w-full rounded-2xl allow-save" />)}
       </div>
       {imgs.length > 1 && <p className="text-xs text-white/80">사진 {imgs.length}장이에요. 한 장씩 길게 눌러 저장해 주세요.</p>}
       <p className="text-sm text-white text-center leading-relaxed">사진을 <b>길게 눌러 저장</b>한 뒤 카톡방에 올려 주세요.<br />문구는 복사돼 있어요.</p>
@@ -108,6 +108,15 @@ function KakaoInAppNotice() {
       </div>
     </div>
   );
+}
+
+/** 이름 워터마크 (2026-11-22): 화면 전체에 보는 사람 닉네임을 아주 옅게 비스듬히. 캡처하면 이름이 같이 찍힘. 누르는 데는 방해 안 됨.
+ *  '자랑하기'로 만드는 인증 카드(캔버스 이미지)에는 들어가지 않는다 */
+function NameWatermark({ name }: { name: string }) {
+  const t = (name || "").replace(/[<>&"]/g, "").slice(0, 20);
+  if (!t) return null;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='220' height='140'><text x='10' y='80' transform='rotate(-24 110 70)' font-family='sans-serif' font-size='18' font-weight='700' fill='white'>${t}</text></svg>`;
+  return <div aria-hidden className="fixed inset-0 z-[85] pointer-events-none select-none" style={{ opacity: 0.06, backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`, backgroundRepeat: "repeat" }} />;
 }
 
 function YearProgressBar() {
@@ -284,6 +293,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="container py-8 md:py-12">{children}</main>
+      {user && <NameWatermark name={user.name ?? ""} />}
 
       <div className="h-10" />
     </div>
