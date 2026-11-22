@@ -414,11 +414,13 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 
 /* 2026-11-22 (해이): 확대된 채 위아래 없이 왼쪽→오른쪽으로 같은 속도로 천천히 → 끝에서 작아지며 제자리. 이름은 사진에 붙어 함께 움직임 */
 @keyframes introCrewSlide {
-  0% { opacity: 0; transform: translate(11.5%, calc(43vh - 100%)) scale(2); animation-timing-function: linear; }
+  0% { opacity: 0; transform: translate(11.5%, calc(43vh - 100%)) scale(2); filter: none; animation-timing-function: linear; }
   5% { opacity: 1; transform: translate(4%, calc(43vh - 100%)) scale(2); animation-timing-function: linear; }
-  76% { opacity: 1; transform: translate(-111.5%, calc(43vh - 100%)) scale(2); animation-timing-function: cubic-bezier(.45,0,.2,1); }
-  100% { opacity: 1; transform: none; } }
+  76% { opacity: 1; transform: translate(-111.5%, calc(43vh - 100%)) scale(2); filter: blur(0) brightness(1); animation-timing-function: ease-in; }
+  84% { opacity: 0; transform: translate(-116%, calc(43vh - 100%)) scale(2.05); filter: blur(10px) brightness(1.6); }
+  84.1% { opacity: 0; transform: none; filter: blur(10px) brightness(1.6); animation-timing-function: ease-out; }
+  100% { opacity: 1; transform: none; filter: blur(0) brightness(1); } }
 .intro-crew-name { font-family: 'Nanum Myeongjo', 'Gowun Batang', serif; font-weight: 700; font-size: 10px; letter-spacing: .16em; color: #fff;
   text-shadow: 0 0 6px rgba(0,0,0,.9), 0 0 14px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.95); }
 .intro-crew-in .intro-crew-name { animation: introCrewNameSize 13s linear both; }
-@keyframes introCrewNameSize { 0%, 76% { font-size: 7px; letter-spacing: .14em; } 100% { font-size: 10px; letter-spacing: .16em; } } }
+@keyframes introCrewNameSize { 0%, 84% { font-size: 7px; letter-spacing: .14em; } 84.1%, 100% { font-size: 10px; letter-spacing: .16em; } } }
