@@ -1867,8 +1867,8 @@ export const appRouter = router({
     /** 명단 확인 (2026-11-22): 이름+전화번호가 명단에 있으면 닉네임을 알려 준다 */
     rosterCheck: protectedProcedure
       .input(z.object({ realName: z.string().min(1).max(64), phone: z.string().min(9).max(32) }))
-      .mutation(async ({ input }) => {
-        const r = await roster.findRosterMatch(input.realName, input.phone);
+      .mutation(async ({ ctx, input }) => {
+        const r = await roster.findRosterMatch(input.realName, input.phone, ctx.user.id);
         return r ? { matched: true as const, nickname: String(r.nickname), address: (r.address as string | null) ?? null } : { matched: false as const, nickname: null, address: null };
       }),
 
@@ -1890,7 +1890,7 @@ export const appRouter = router({
         if (!input.agreed1 || !input.agreed2 || !input.privacy) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "동의 항목을 모두 확인해 주세요." });
         }
-        const match = await roster.findRosterMatch(input.realName, input.phone);
+        const match = await roster.findRosterMatch(input.realName, input.phone, ctx.user.id);
         if (!match) {
           if (!input.nickname?.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "닉네임을 적어 주세요." });
           if (!input.address?.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "주소를 적어 주세요." });

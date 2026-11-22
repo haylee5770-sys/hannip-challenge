@@ -42,11 +42,14 @@ export const normPhone = (s: string | null | undefined) => (s ?? "").replace(/\D
 export const normName = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, "");
 const fmtPhone = (d: string) => d.length === 11 ? `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}` : d;
 
-export async function findRosterMatch(name: string, phone: string) {
+export async function findRosterMatch(name: string, phone: string, userId?: number) {
   const p = normPhone(phone), n = normName(name);
   if (!p || !n) return null;
   const rows = await q(sql`SELECT id, nickname, realName, phone, address, usedByUserId FROM roster WHERE phone = ${p}`);
-  return rows.find(r => normName(r.realName) === n) ?? null;
+  const r = rows.find(r => normName(r.realName) === n) ?? null;
+  // 2026-11-22: 이미 다른 계정이 가입한 명단 자리는 다시 쓸 수 없다 (같은 계정이 다시 하는 건 괜찮음)
+  if (r && r.usedByUserId && Number(r.usedByUserId) !== userId) return null;
+  return r;
 }
 
 export async function markRosterUsed(id: number, userId: number) {
