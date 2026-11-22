@@ -23,7 +23,7 @@ export function stopIntroMusic() {
 }
 
 /** 사진 속 크루 닉네임 — 왼쪽부터 얼굴 훑는 순서 (해이 지정 2026-11-22) */
-const CREW_NAMES = ["혜교", "지연", "해이", "카리나", "수지", "청하"];
+const CREW_NAMES = ["혜교", "지연", "해이", "수지", "청하", "카리나"];
 
 type Phase = "bloom" | "line1" | "line2" | "crew" | "done";
 const fromKakao = () => { try { return new URLSearchParams(location.search).get("from") === "kakao"; } catch { return false; } };
@@ -35,7 +35,7 @@ export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; f
       <div className="min-h-full flex flex-col items-center">
         <img src="/intro/crew.jpg" alt="슈퍼한입 챌린지 크루" className={`w-full max-w-[640px] mt-[7vh] ${fadeIn ? "intro-crew-in" : ""}`}
           style={{ WebkitMaskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)", maskImage: "linear-gradient(180deg,transparent 0%,#000 12%,#000 86%,transparent 100%)" }} />
-        <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "7.4s" } : undefined}>
+        <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "15.8s" } : undefined}>
           2025. 1. 24 · 슈퍼바프 1기
           <div className="mt-1 text-[11px] font-medium tracking-[0.12em] text-zinc-600">(슈퍼한입 챌린지 6기)</div>
         </div>
@@ -63,10 +63,10 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     at(5100, () => setPhase("line2"));
     at(9700, () => setPhase("crew"));
     // 얼굴을 훑을 때 머리 위에 닉네임 (사진 이동 7.6초 중 각 얼굴에 머무는 때)
-    const PAN = 7600, CREW = 9700;
-    ([[0, 0.02, 0.16], [1, 0.18, 0.31], [2, 0.34, 0.47], [3, 0.50, 0.62], [4, 0.65, 0.75], [5, 0.77, 0.88]] as const)
+    const PAN = 16000, CREW = 9700;
+    ([[0, 0.02, 0.10], [1, 0.11, 0.24], [2, 0.25, 0.38], [3, 0.39, 0.52], [4, 0.53, 0.66], [5, 0.70, 0.84]] as const)
       .forEach(([i, a, b]) => { at(CREW + a * PAN + 250, () => setNameIdx(i)); at(CREW + b * PAN, () => setNameIdx(n => (n === i ? -1 : n))); });
-    at(17600, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
+    at(26000, () => { try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); });
     return () => { timers.current.forEach(clearTimeout); window.removeEventListener("pointerdown", tap); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -77,8 +77,8 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     <>
       {leaving && <CrewScreen fadeIn />}
       {leaving && nameIdx >= 0 && (
-        <div key={nameIdx} className="fixed inset-x-0 top-[calc(50vh-150px)] z-[150] text-center pointer-events-none intro-name">
-          <span className="inline-block rounded-full bg-black/55 backdrop-blur px-5 py-1.5 text-white text-xl font-black tracking-wider">{CREW_NAMES[nameIdx]}</span>
+        <div key={nameIdx} className="fixed inset-x-0 top-[calc(50vh-118px)] z-[150] text-center pointer-events-none">
+          <span className="intro-name2 inline-block text-[30px]">{CREW_NAMES[nameIdx]}</span>
         </div>
       )}
       <div className={`fixed inset-0 z-[200] overflow-hidden bg-[#121417] flex items-center justify-center select-none ${leaving ? "intro-overlay-out pointer-events-none" : ""}`}>

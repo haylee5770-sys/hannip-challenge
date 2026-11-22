@@ -387,7 +387,7 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 .intro-fadeout { animation: introFadeOut .9s ease both; }
 
 @keyframes introCrewIn { from { opacity: 0; transform: scale(1.04); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-.intro-crew-in { animation: introCrewPan 7.6s cubic-bezier(.45,0,.25,1) both; transform-origin: 0 0; }
+.intro-crew-in { animation: introCrewPan3 16s linear both; transform-origin: 0 0; }
 
 /* 2026-11-22: 크루 사진 — 처음엔 얼굴이 크게(확대) 보이다가 작아지면서 위로 자리 잡기 */
 @keyframes introCrewZoom { 0% { opacity: 0; transform: translateY(26vh) scale(1.62); filter: blur(4px); } 12% { opacity: 1; filter: none; transform: translateY(26vh) scale(1.62); } 50% { opacity: 1; transform: translateY(26vh) scale(1.62); } 100% { opacity: 1; transform: none; } }
@@ -402,3 +402,12 @@ input, textarea, [contenteditable="true"], .allow-select { -webkit-user-select: 
 .intro-icon-away { animation: introIconAway 1.6s ease-in both; }
 @keyframes introName { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .intro-name { animation: introName .5s ease-out both; }
+
+/* 2026-11-22: 순서 = 혜교→지연→해이→수지→청하(오른쪽으로) → 카리나(왼쪽 아래로 꺾어) → 전체 샷. 천천히 */
+@keyframes introCrewPan2 { 0% { opacity: 0; filter: blur(4px); transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); } 4% { opacity: 1; filter: none; transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); } 11% { opacity: 1; transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); } 16% { opacity: 1; transform: translate(-41.77%, calc(43vh - 78.22%)) scale(2.6); } 26% { opacity: 1; transform: translate(-41.77%, calc(43vh - 78.22%)) scale(2.6); } 31% { opacity: 1; transform: translate(-87.14%, calc(43vh - 39.66%)) scale(2.6); } 41% { opacity: 1; transform: translate(-87.14%, calc(43vh - 39.66%)) scale(2.6); } 46% { opacity: 1; transform: translate(-125.81%, calc(43vh - 24.24%)) scale(2.6); } 56% { opacity: 1; transform: translate(-125.81%, calc(43vh - 24.24%)) scale(2.6); } 61% { opacity: 1; transform: translate(-160.02%, calc(43vh - 35.25%)) scale(2.6); } 71% { opacity: 1; transform: translate(-160.02%, calc(43vh - 35.25%)) scale(2.6); } 77% { opacity: 1; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); } 86% { opacity: 1; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); } 100% { opacity: 1; transform: none; } }
+
+/* 2026-11-22: 같은 속도로 천천히 — 혜교→지연→해이→수지→청하 → 카리나(마지막) → 전체 샷 */
+@keyframes introCrewPan3 { 0% { opacity: 0; transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); animation-timing-function: linear; } 3% { opacity: 1; transform: translate(-20.95%, calc(43vh - 73.81%)) scale(2.6); animation-timing-function: linear; } 17% { opacity: 1; transform: translate(-41.77%, calc(43vh - 78.22%)) scale(2.6); animation-timing-function: linear; } 31% { opacity: 1; transform: translate(-87.14%, calc(43vh - 39.66%)) scale(2.6); animation-timing-function: linear; } 45% { opacity: 1; transform: translate(-125.81%, calc(43vh - 24.24%)) scale(2.6); animation-timing-function: linear; } 59% { opacity: 1; transform: translate(-160.02%, calc(43vh - 35.25%)) scale(2.6); animation-timing-function: linear; } 75% { opacity: 1; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); animation-timing-function: ease-in-out; } 83% { opacity: 1; transform: translate(-107.96%, calc(43vh - 127.80%)) scale(2.6); animation-timing-function: cubic-bezier(.45,0,.2,1); } 100% { opacity: 1; transform: none; } }
+@keyframes introName2 { 0% { opacity: 0; transform: translateY(10px); filter: blur(6px); letter-spacing: .5em; } 30%,70% { opacity: 1; transform: none; filter: none; letter-spacing: .22em; } 100% { opacity: 0; transform: translateY(-6px); filter: blur(6px); letter-spacing: .3em; } }
+.intro-name2 { animation: introName2 2.1s ease-in-out both; font-family: 'Nanum Myeongjo', 'Gowun Batang', serif; font-weight: 700;
+  color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.4); }
