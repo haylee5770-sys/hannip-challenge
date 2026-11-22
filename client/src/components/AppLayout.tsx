@@ -115,10 +115,15 @@ function KakaoInAppNotice() {
 function NameWatermark({ name }: { name: string }) {
   const t = (name || "").replace(/[<>&"]/g, "").slice(0, 20);
   if (!t) return null;
-  // 2026-11-22: 성긴 간격으로, 모든 이름이 똑같은 간격(한 칸에 이름 하나, 가운데)
-  const w = Math.max(200, t.length * 18 + 90), h = 120;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><text x='${w / 2}' y='${h / 2}' text-anchor='middle' dominant-baseline='middle' transform='rotate(-24 ${w / 2} ${h / 2})' font-family='sans-serif' font-size='16' font-weight='700' fill='white'>${t}</text></svg>`;
-  return <div aria-hidden className="fixed inset-0 z-[85] pointer-events-none select-none" style={{ opacity: 0.022, backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`, backgroundRepeat: "repeat" }} />;
+  // 2026-11-22: 글자는 똑바로, 판 전체를 비스듬히 기울여서 모든 이름이 같은 간격(엇갈린 벽돌 모양). 작게·아주 옅게
+  const w = Math.max(190, t.length * 14 + 120), h = 120;
+  const tx = (x: number, y: number) => `<text x='${x}' y='${y}' text-anchor='middle' dominant-baseline='middle' font-family='sans-serif' font-size='13' font-weight='700' fill='white'>${t}</text>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${tx(w * 0.25, h * 0.25)}${tx(w * 0.75, h * 0.75)}</svg>`;
+  return (
+    <div aria-hidden className="fixed inset-0 z-[85] pointer-events-none select-none overflow-hidden" style={{ opacity: 0.018 }}>
+      <div className="absolute -inset-1/2" style={{ transform: "rotate(-24deg)", backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`, backgroundRepeat: "repeat" }} />
+    </div>
+  );
 }
 
 function YearProgressBar() {
