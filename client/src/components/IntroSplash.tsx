@@ -47,7 +47,11 @@ export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; f
 
 export default function IntroSplash({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<Phase>(() => {
-    try { if (fromKakao() || sessionStorage.getItem("hannipIntro") === "1") return "done"; } catch { /* */ }
+    try {
+      // 확인용: 주소 끝에 ?intro=1 이 있으면 언제나 처음부터 보여 준다 (2026-11-22)
+      if (new URLSearchParams(location.search).get("intro") === "1") return "bloom";
+      if (fromKakao() || sessionStorage.getItem("hannipIntro") === "1") return "done";
+    } catch { /* */ }
     return "bloom";
   });
   const timers = useRef<number[]>([]);
