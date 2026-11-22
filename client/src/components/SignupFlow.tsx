@@ -119,7 +119,8 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
           <div className="space-y-5">
             <div className="text-center space-y-1">
               <div className="text-4xl">🎁</div>
-              <h1 className="text-xl font-bold">선물 받으실 곳이 여기 맞나요?</h1>
+              <h1 className="text-xl font-bold break-keep">앞으로 이벤트에 당첨되면<br />선물을 보내 드릴 주소예요</h1>
+              <p className="text-sm text-muted-foreground">지금 미리 확인해 둘게요. 이 주소가 맞나요?</p>
             </div>
             <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 space-y-1 text-sm">
               <div><b>{realName}</b> · {phone}</div>
@@ -132,10 +133,11 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
               <Button className="w-full h-12 rounded-2xl glass-btn font-bold" onClick={() => { if (!address.trim()) return setErr("주소를 적어 주세요."); setErr(null); setEditAddr(false); }}>이 주소로 저장</Button>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" className="h-12 rounded-2xl" onClick={() => setEditAddr(true)}>다른 곳에서 받을래요</Button>
+                <Button variant="outline" className="h-12 rounded-2xl" onClick={() => setEditAddr(true)}>주소를 바꿀래요</Button>
                 <Button className="h-12 rounded-2xl glass-btn font-bold" onClick={() => setStep("agree")}>네, 맞아요</Button>
               </div>
             )}
+            <p className="text-center text-[11px] text-muted-foreground/70">이 정보는 선물 발송에만 사용해요.</p>
           </div>
         )}
 
