@@ -170,9 +170,10 @@ export const AWARD_KINDS = [
 ];
 /** 최근 시상한 시즌 이름 + 내가 이미 신청한 상 */
 export async function awardOptions(userId: number) {
-  const s = (await q(sql`SELECT id, name FROM seasons WHERE status='ended' ORDER BY endDate DESC, id DESC LIMIT 1`))[0]
-    ?? (await q(sql`SELECT id, name FROM seasons WHERE status='active' ORDER BY id DESC LIMIT 1`))[0];
-  const seasonName = s?.name ?? "";
+  // 2026-11-23: 새 앱 이전 시험용 회차(10.5기 미니 챌린지 시험 등)는 빼고 찾는다. 없으면 이번 파이널 시즌
+  const s = (await q(sql`SELECT id, name FROM seasons WHERE status='ended' AND startDate >= '2026-11-20' ORDER BY endDate DESC, id DESC LIMIT 1`))[0]
+    ?? (await q(sql`SELECT id, name FROM seasons WHERE status='active' AND startDate >= '2026-11-20' ORDER BY id DESC LIMIT 1`))[0];
+  const seasonName = s?.name ?? "2026 파이널 시즌";
   const mine = await q(sql`SELECT refId, label FROM giftRequests WHERE userId=${userId} AND kind='gift'`);
   const done = new Set(mine.filter(r => String(r.label).includes(seasonName)).map(r => Number(r.refId)));
   return { seasonName, awards: AWARD_KINDS.map(a => ({ ...a, requested: done.has(a.code) })) };
