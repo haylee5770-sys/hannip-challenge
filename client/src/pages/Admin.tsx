@@ -84,50 +84,65 @@ function RoundControl() {
 
 export default function Admin() {
   const { user, loading } = useAuth();
+  // 2026-11-23 (해이): 멤버(가로 긴 버튼) → 시즌(+이전 시즌 보기) → 명단(가장 큰 버튼) → 의견·신청 → 작은 버튼(리포트·입장코드·초대·알림). 누르면 바로 아래에 펼쳐짐
+  const [open, setOpen] = useState<string | null>(null);
   if (loading) return <div className="py-20 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (!user || user.role !== "admin") return <Redirect to="/today" />;
+  const tog = (k: string) => setOpen(o => (o === k ? null : k));
+  const Big = ({ k, label, sub, size = "md" }: { k: string; label: string; sub?: string; size?: "md" | "lg" }) => (
+    <button type="button" onClick={() => tog(k)}
+      className={`w-full flex items-center justify-between rounded-3xl border px-5 text-left transition-colors ${size === "lg" ? "h-20" : "h-16"} ${open === k ? "border-primary bg-primary/15" : "border-border bg-card"}`}>
+      <span>
+        <span className={`block font-black ${size === "lg" ? "text-2xl" : "text-xl"} ${open === k ? "text-primary" : ""}`}>{label}</span>
+        {sub && <span className="block text-xs text-muted-foreground mt-0.5">{sub}</span>}
+      </span>
+      <span className={`text-lg text-muted-foreground transition-transform ${open === k ? "rotate-180" : ""}`}>⌄</span>
+    </button>
+  );
+  const Small = ({ k, label }: { k: string; label: string }) => (
+    <button type="button" onClick={() => tog(k)}
+      className={`h-12 rounded-2xl border text-sm font-semibold ${open === k ? "border-primary bg-primary/15 text-primary" : "border-border bg-card"}`}>{label}</button>
+  );
 
   return (
-    <div>
-      <section className="pb-4 mb-4 border-b hairline">
+    <div className="space-y-3 pb-12">
+      <section className="pb-2">
         <PageTitle eyebrow="ADMIN" title="관리" />
       </section>
 
-      <RoundControl />
       <NameRequests />
 
-      {/* 2026-11-22 (해이): 메뉴를 눌러지는 버튼으로 정리. 챙겨야 할 크루는 '멤버' 안으로 */}
-      <Tabs defaultValue="members" className="pt-6 pb-10">
-        <TabsList className="bg-transparent w-full h-auto p-0 mb-6 grid grid-cols-3 gap-2">
-          {[
-            { v: "members", label: "👥 멤버" },
-            { v: "roster", label: "📋 명단" },
-            { v: "crew", label: "💬 의견·신청" },
-            { v: "report", label: "📊 리포트" },
-            { v: "seasons", label: "🗓 시즌" },
-            { v: "entrycode", label: "🔑 입장코드" },
-            { v: "invites", label: "✉️ 초대" },
-            { v: "schedules", label: "⏰ 알림" },
-          ].map(t => (
-            <TabsTrigger
-              key={t.v}
-              value={t.v}
-              className="h-11 rounded-2xl border border-border bg-card text-sm font-semibold shadow-none data-[state=active]:border-primary data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none"
-            >
-              {t.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Big k="members" label="👥 멤버" sub="크루 목록 · 수락 · 요즘 챙겨야 할 크루" />
+      {open === "members" && <div className="space-y-6 pb-4"><CareList /><MembersAdmin /></div>}
 
-        <TabsContent value="report"><DailyReport /></TabsContent>
-        <TabsContent value="members"><div className="space-y-6"><CareList /><MembersAdmin /></div></TabsContent>
-        <TabsContent value="roster"><RosterAdmin /></TabsContent>
-        <TabsContent value="crew"><CrewAdmin /></TabsContent>
-        <TabsContent value="entrycode"><EntryCodeAdmin /></TabsContent>
-        <TabsContent value="invites"><InvitesAdmin /></TabsContent>
-        <TabsContent value="schedules"><SchedulesAdmin /></TabsContent>
-        <TabsContent value="seasons"><SeasonsAdmin /></TabsContent>
-      </Tabs>
+      <div className="pt-3">
+        <RoundControl />
+        <div className="mt-3">
+          <button type="button" onClick={() => tog("seasons")}
+            className={`w-full h-12 rounded-2xl border text-sm font-semibold ${open === "seasons" ? "border-primary bg-primary/15 text-primary" : "border-border bg-card"}`}>
+            🗓 이전 시즌 보기 {open === "seasons" ? "▲" : "▼"}
+          </button>
+          {open === "seasons" && <div className="pt-4"><SeasonsAdmin /></div>}
+        </div>
+      </div>
+
+      <div className="pt-3" />
+      <Big k="roster" label="📋 명단" sub="이름·전화번호를 붙여 넣으면 가입할 때 바로 입장" size="lg" />
+      {open === "roster" && <div className="pb-4"><RosterAdmin /></div>}
+
+      <Big k="crew" label="💬 의견·신청" sub="크루 의견 · 상 받기 신청 · 이벤트" />
+      {open === "crew" && <div className="pb-4"><CrewAdmin /></div>}
+
+      <div className="grid grid-cols-2 gap-2 pt-3">
+        <Small k="report" label="📊 리포트" />
+        <Small k="entrycode" label="🔑 입장코드" />
+        <Small k="invites" label="✉️ 초대" />
+        <Small k="schedules" label="⏰ 알림" />
+      </div>
+      {open === "report" && <DailyReport />}
+      {open === "entrycode" && <EntryCodeAdmin />}
+      {open === "invites" && <InvitesAdmin />}
+      {open === "schedules" && <SchedulesAdmin />}
     </div>
   );
 }
