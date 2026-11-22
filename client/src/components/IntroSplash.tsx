@@ -50,7 +50,7 @@ export function CrewScreen({ children, fadeIn }: { children?: React.ReactNode; f
         </div>
         <div className={`-mt-2 text-center text-[13px] font-semibold tracking-[0.18em] text-zinc-700 ${fadeIn ? "season-fade-in" : ""}`} style={fadeIn ? { animationDelay: "10.2s" } : undefined}>
           2025. 1. 24 · 슈퍼바프 1기
-          <div className="mt-1 text-[11px] font-medium tracking-[0.12em] text-zinc-600">(슈퍼한입 챌린지 6기)</div>
+          <div className="mt-1 text-[11px] font-medium tracking-[0.12em] text-zinc-600">— 슈퍼한입 챌린지 6기 —</div>
         </div>
         <div className="w-full max-w-sm px-6 mt-auto pb-[16vh] pt-6">{children}</div>
       </div>
