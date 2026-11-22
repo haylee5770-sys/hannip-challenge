@@ -1,3 +1,4 @@
+import CrewButtons from "@/components/CrewButtons";
 import PageTitle from "@/components/PageTitle";
 // 꾸미기 — 색 10가지 · 글씨체 10가지 · 배경 무늬 (2026-11-20)
 import { useState } from "react";
@@ -103,6 +104,7 @@ export default function Decor() {
           처음 모습으로 되돌리기
         </button>
       </div>
+      <CrewButtons />
     </div>
   );
 }

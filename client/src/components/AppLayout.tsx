@@ -82,13 +82,15 @@ function ConfirmHost() {
   );
 }
 
-/** 매달 1일: 맨 위 빨간 글씨 '오늘은 몸무게 체크하는 날' (이번 달 쟀으면 사라짐) (2026-11-21) */
+/** 시즌별 몸무게 (2026-11-22): 시즌 시작 때 한 번 + 끝나기 전 마지막 3일에 한 번. 기록하면 사라짐 */
 function WeighInBanner() {
-  const q = trpc.wellness.weighIn.useQuery(undefined, { staleTime: 10 * 60_000, retry: false });
-  if (!q.data?.isFirstDay || q.data.doneThisMonth) return null;
+  const q = trpc.rounds.weighStatus.useQuery(undefined, { staleTime: 10 * 60_000, retry: false });
+  if (!q.data?.need) return null;
   return (
     <Link href="/today#weight">
-      <div className="bg-rose-600 text-white text-center text-sm font-bold py-2 px-3 cursor-pointer">⚖️ 오늘은 몸무게 체크하는 날이에요! 아침 공복에 재고 사진과 함께 올려 주세요.</div>
+      <div className="bg-rose-600 text-white text-center text-sm font-bold py-2 px-3 cursor-pointer">
+        ⚖️ {q.data.need === "start" ? "새 시즌 시작! 몸무게를 기록해 주세요." : "시즌 마무리! 마지막 몸무게를 기록해 주세요."} 아침 공복에 재고 사진과 함께 올려 주세요.
+      </div>
     </Link>
   );
 }

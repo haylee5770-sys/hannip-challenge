@@ -1,6 +1,8 @@
 // 1년 — 3일 디톡스 달력 (2026-11-21 시안6): 유리 달 칸 + 클리어하면 블랙 유리 위에 왕관·달·MISSION CLEAR
 // 미션 클리어 기준: 회차 3일 동안 매일 기상(수면) 인증 + 매일 식단 인증 (운동은 선택)
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import PageTitle from "@/components/PageTitle";
@@ -14,7 +16,74 @@ const todayKst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 const md = (d: string) => { const [, m, dd] = d.split("-").map(Number); return `${m}/${dd}`; };
 const W = ["일", "월", "화", "수", "목", "금", "토"];
 
+/** 시즌 결과 카드 (2026-11-22) */
+function SeasonResult({ seasonId, onClose }: { seasonId: number; onClose: () => void }) {
+  const q = trpc.rounds.mySeasonSummary.useQuery({ seasonId });
+  const d = q.data;
+  return (
+    <div className="fixed inset-0 z-[110] bg-black/75 flex items-center justify-center p-6" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-3xl black-glass border border-primary p-6 space-y-4 season-fade-in" onClick={e => e.stopPropagation()}>
+        {!d ? <div className="text-center text-sm text-muted-foreground py-6">불러오는 중…</div> : (<>
+          <div className="text-center">
+            <div className="text-xs text-primary font-bold tracking-widest">SEASON RESULT</div>
+            <div className="text-xl font-black mt-1">{d.season.name}</div>
+            <div className="text-xs text-muted-foreground">{md(d.season.startDate)} ~ {d.season.planEnd ? md(d.season.planEnd) : ""}</div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {([["인증", d.counts.total], ["이게돼", d.counts.itge], ["운동", d.counts.exercise]] as const).map(([k, v]) => (
+              <div key={k} className="rounded-2xl bg-white/[0.05] py-3"><div className="text-2xl font-black text-primary">{v}</div><div className="text-[11px] text-muted-foreground">{k}</div></div>
+            ))}
+          </div>
+          <div className="text-center text-sm">체중 {d.weightStart ?? "-"} → {d.weightEnd ?? "-"}kg
+            {d.weightStart != null && d.weightEnd != null && <b className="text-primary"> ({(d.weightEnd - d.weightStart >= 0 ? "+" : "") + (d.weightEnd - d.weightStart).toFixed(1)})</b>}</div>
+          <button type="button" onClick={onClose} className="w-full rounded-2xl glass-btn py-3 font-bold">닫기</button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+/** 2026 파이널 시즌 — 8칸 밖 보너스 시즌 카드 (2026-11-22) */
+const FINAL_2026 = { start: "2026-11-24", end: "2026-12-23" };
+function Final2026({ past }: { past?: boolean }) {
+  const [, navigate] = useLocation();
+  const seasons = trpc.rounds.allSeasons.useQuery();
+  const [open, setOpen] = useState<number | null>(null);
+  const s = (seasons.data ?? []).find(x => x.startDate >= "2026-11-20" && x.startDate < "2027-01-01");
+  const today = todayKst();
+  const state = s ? (s.status === "active" ? "live" : "done") : today < FINAL_2026.start ? "planned" : "planned";
+  const click = () => {
+    if (state === "live") navigate("/dashboard");
+    else if (state === "done" && s) setOpen(s.id);
+    else toast("아직 시작 전인 시즌이에요. 11월 24일에 열려요!");
+  };
+  return (
+    <section className="space-y-2">
+      {past && <div className="text-xs text-muted-foreground font-semibold pt-4">지난 시즌 · 2026</div>}
+      <button type="button" onClick={click} className={cn("w-full text-left black-glass rounded-3xl border p-4", state === "live" ? "border-primary" : "border-primary/50")}>
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-semibold tracking-wide text-primary">BONUS SEASON</span>
+          <span className="text-[11px] text-muted-foreground">{state === "live" ? "진행 중 · 누르면 나의 변화" : state === "done" ? "끝 · 누르면 결과" : "11/24 시작"}</span>
+        </div>
+        <div className="text-2xl font-black mt-1">2026 파이널 시즌</div>
+        <div className="text-xs text-muted-foreground mt-0.5">{md(FINAL_2026.start)} ~ {md(FINAL_2026.end)} · 매일 루틴 참여</div>
+      </button>
+      {open && <SeasonResult seasonId={open} onClose={() => setOpen(null)} />}
+    </section>
+  );
+}
+
 export default function Year() {
+  const [, navigate] = useLocation();
+  const seasonsAll = trpc.rounds.allSeasons.useQuery();
+  const [openSeason, setOpenSeason] = useState<number | null>(null);
+  const isNewYear = todayKst() >= `${YEAR}-01-01`;
+  const tapMonth = (m: number) => {
+    const s = (seasonsAll.data ?? []).find(x => x.startDate.startsWith(`${YEAR}-${pad(m)}`));
+    if (s?.status === "active") return navigate("/dashboard");
+    if (s) return setOpenSeason(s.id);
+    toast(todayKst() < `${YEAR}-${pad(m)}-01` ? "아직 진행 전인 달이에요. 시즌이 시작되면 열려요!" : "이 달에는 시즌 기록이 없어요.");
+  };
   const flags = trpc.rounds.dayFlags.useQuery({ since: `${YEAR}-01-01`, until: `${YEAR}-12-31` });
   const rounds = useMemo(() => ROUNDS.map((m, i) => {
     const start = `${YEAR}-${m}`;
@@ -37,7 +106,12 @@ export default function Year() {
 
   return (
     <div className="space-y-4">
-      <PageTitle eyebrow={`MY YEAR · ${YEAR}`} title="나의 1년, 3일 디톡스" />
+      {!isNewYear && (<>
+        <PageTitle eyebrow="MY YEAR · 2026" title="나의 1년, 8번의 시즌" />
+        <Final2026 />
+        <div className="pt-6" />
+      </>)}
+      <PageTitle eyebrow={`MY YEAR · ${YEAR}`} title="나의 1년, 8번의 시즌" />
 
       {/* 진행 카드 — 블랙 유리 */}
       <section className="black-glass rounded-3xl border border-primary p-4">
@@ -46,14 +120,14 @@ export default function Year() {
           <span className="text-sm font-extrabold text-primary">{Math.round((clearCount / ROUNDS.length) * 100)}%</span>
         </div>
         <div className="flex items-baseline justify-between mt-1">
-          <span className="text-4xl font-black leading-none">{clearCount}<span className="text-base text-muted-foreground font-bold"> / {ROUNDS.length}회</span></span>
-          {next && <span className="text-[11px] text-muted-foreground">{next.status === "live" ? `${next.no}회 진행 중 ${next.done}/3` : `다음 회차 ${md(next.days[0])}`}</span>}
+          <span className="text-4xl font-black leading-none">{clearCount}<span className="text-base text-muted-foreground font-bold"> / {ROUNDS.length}시즌</span></span>
+          {next && <span className="text-[11px] text-muted-foreground">{next.status === "live" ? `시즌 ${next.no} 디톡스 진행 중 ${next.done}/3` : `다음 시즌 ${md(next.days[0])}`}</span>}
         </div>
         <div className="grid grid-cols-8 gap-1 mt-3">
           {rounds.map(r => (
             <div key={r.no} className={cn("h-10 rounded-xl border flex flex-col items-center justify-center", r.status === "clear" ? "glass-fill" : "border-white/10 bg-white/[0.04]")}>
               <span className={cn("text-base leading-none", r.status !== "clear" && "grayscale opacity-30")}>👑</span>
-              <span className="text-[9px] mt-0.5 opacity-80">{r.no}회</span>
+              <span className="text-[9px] mt-0.5 opacity-80">S{r.no}</span>
             </div>
           ))}
         </div>
@@ -69,7 +143,7 @@ export default function Year() {
           const live = liveByMonth.get(m);
           const startHere = rounds.find(r => Number(r.days[0].slice(5, 7)) === m);
           return (
-            <div key={m} className="month-glass relative rounded-2xl border border-primary/70 p-2 overflow-hidden">
+            <div key={m} onClick={() => tapMonth(m)} className="month-glass relative rounded-2xl border border-primary/70 p-2 overflow-hidden cursor-pointer active:scale-[0.98] transition">
               <div className={cn(clr && "opacity-20")}>
                 <div className="flex justify-between items-baseline mb-1">
                   <span className="text-sm font-extrabold">{m}월</span>
@@ -109,6 +183,8 @@ export default function Year() {
         <span><i className="inline-block w-2.5 h-2.5 rounded-sm border border-sky-300/80 mr-1 align-[-1px]" />주말</span>
         <span><i className="inline-block w-2.5 h-2.5 rounded-sm bg-rose-500/30 mr-1 align-[-1px]" />공휴일</span>
       </div>
+      {isNewYear && <Final2026 past />}
+      {openSeason && <SeasonResult seasonId={openSeason} onClose={() => setOpenSeason(null)} />}
     </div>
   );
 }

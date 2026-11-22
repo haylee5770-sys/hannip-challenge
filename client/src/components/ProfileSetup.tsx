@@ -100,7 +100,7 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
       <section className="space-y-3">
         <div>
           <div className="text-sm font-semibold">기본 정보 <span className="text-primary">(필수)</span></div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">키, 몸무게는 처음 가입 당시 기록이 필수입니다.<br />몸무게는 한 달에 한 번, <b className="text-foreground">매달 1일</b>에만 잽니다.{editing ? " 몸무게는 오늘 화면의 \u0027체중 기록 추가\u0027에서 바꿔요." : ""}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">키, 몸무게는 처음 가입 당시 기록이 필수입니다.<br />몸무게는 <b className="text-foreground">시즌이 시작할 때와 끝날 때</b> 한 번씩 잽니다.{editing ? " 몸무게는 오늘 화면의 \u0027체중 기록 추가\u0027에서 바꿔요." : ""}</p>
         </div>
         <div className="flex gap-2">
           <button type="button" className={chip(sex === "female")} onClick={() => setSex("female")}>여자</button>

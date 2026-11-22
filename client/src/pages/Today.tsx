@@ -499,7 +499,7 @@ function WeightSection({ date, userName, onBrag, weightCount }: { date: string; 
 
   return (
     <div className="space-y-3">
-      <SectionTitle extra={<p className="text-xs text-muted-foreground mt-1">한 달에 한 번, <b className="text-foreground">매달 1일</b> 아침 공복에 재요.</p>}>
+      <SectionTitle extra={<p className="text-xs text-muted-foreground mt-1"><b className="text-foreground">시즌 시작과 끝</b>에 한 번씩, 아침 공복에 재요.</p>}>
         {userName ? `${userName} 한 달 체중` : "한 달 체중"}
       </SectionTitle>
       {!open && <AddButton label="체중 기록 추가" onClick={() => setOpen(true)} count={weightCount} />}

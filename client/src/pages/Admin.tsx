@@ -102,6 +102,7 @@ export default function Admin() {
             { v: "report", label: "01 · REPORT" },
             { v: "members", label: "02 · MEMBERS" },
             { v: "roster", label: "03 · 명단" },
+            { v: "crew", label: "의견·신청" },
             { v: "seasons", label: "04 · SEASONS" },
             { v: "entrycode", label: "05 · 입장코드" },
             { v: "invites", label: "06 · INVITES" },
@@ -120,6 +121,7 @@ export default function Admin() {
         <TabsContent value="report"><DailyReport /></TabsContent>
         <TabsContent value="members"><MembersAdmin /></TabsContent>
         <TabsContent value="roster"><RosterAdmin /></TabsContent>
+        <TabsContent value="crew"><CrewAdmin /></TabsContent>
         <TabsContent value="entrycode"><EntryCodeAdmin /></TabsContent>
         <TabsContent value="invites"><InvitesAdmin /></TabsContent>
         <TabsContent value="schedules"><SchedulesAdmin /></TabsContent>
@@ -951,6 +953,64 @@ function RosterAdmin() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+/** 의견·신청 (2026-11-22): 크루가 보낸 의견, 선물·이벤트 신청 목록, 열린 이벤트 관리 */
+function CrewAdmin() {
+  const utils = trpc.useUtils();
+  const fb = trpc.crew.feedbacks.useQuery();
+  const rq = trpc.crew.requests.useQuery();
+  const ev = trpc.crew.events.useQuery();
+  const [title, setTitle] = useState("");
+  const done = trpc.crew.feedbackDone.useMutation({ onSuccess: () => utils.crew.feedbacks.invalidate() });
+  const sent = trpc.crew.requestSent.useMutation({ onSuccess: () => utils.crew.requests.invalidate() });
+  const add = trpc.crew.addEvent.useMutation({ onSuccess: () => { setTitle(""); utils.crew.events.invalidate(); } });
+  const openEv = trpc.crew.setEventOpen.useMutation({ onSuccess: () => utils.crew.events.invalidate() });
+  const day = (d: any) => { const t = new Date(new Date(d).getTime() + 9 * 3600_000); return `${t.getUTCMonth() + 1}/${t.getUTCDate()}`; };
+  const copyAll = () => {
+    const rows = (rq.data ?? []).filter((r: any) => !r.sent).map((r: any) => [r.label, r.nickname ?? "", r.realName, r.phone, r.address].join(String.fromCharCode(9)));
+    navigator.clipboard?.writeText([["신청", "닉네임", "이름", "전화번호", "주소"].join(String.fromCharCode(9)), ...rows].join(String.fromCharCode(10))); toast.success("아직 안 보낸 신청을 엑셀 형식으로 복사했어요");
+  };
+  return (
+    <div className="space-y-8">
+      <section className="space-y-2">
+        <div className="flex items-center justify-between"><h3 className="font-bold">🎁 선물·이벤트 신청 {(rq.data ?? []).filter((r: any) => !r.sent).length}건</h3>
+          <Button size="sm" variant="outline" className="rounded-xl" onClick={copyAll}><Copy className="h-3.5 w-3.5 mr-1" />엑셀로 복사</Button></div>
+        {(rq.data ?? []).map((r: any) => (
+          <div key={r.id} className={`rounded-2xl border p-3 text-sm ${r.sent ? "border-border opacity-60" : "border-primary/50"}`}>
+            <div className="font-semibold">{r.label}</div>
+            <div>{r.nickname} ({r.realName}) · {r.phone}</div>
+            <div className="text-xs text-muted-foreground allow-select">{r.address}</div>
+            <div className="flex justify-between items-center mt-1"><span className="text-[11px] text-muted-foreground">{day(r.createdAt)} 신청</span>
+              <label className="text-xs flex items-center gap-1"><input type="checkbox" checked={!!r.sent} onChange={e => sent.mutate({ id: r.id, sent: e.target.checked })} />보냄</label></div>
+          </div>
+        ))}
+      </section>
+      <section className="space-y-2">
+        <h3 className="font-bold">🎉 열린 이벤트 (크루가 '이벤트 신청'에서 고를 수 있어요)</h3>
+        <div className="flex gap-2"><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="예: 11월 후기 이벤트 당첨자 선물" className="rounded-xl" />
+          <Button className="rounded-xl" disabled={!title.trim()} onClick={() => add.mutate({ title })}>열기</Button></div>
+        {(ev.data ?? []).map((e: any) => (
+          <div key={e.id} className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-sm">
+            <span className={e.open ? "" : "text-muted-foreground line-through"}>{e.title}</span>
+            <button type="button" className="text-xs underline" onClick={() => openEv.mutate({ id: e.id, open: !e.open })}>{e.open ? "닫기" : "다시 열기"}</button>
+          </div>
+        ))}
+      </section>
+      <section className="space-y-2">
+        <h3 className="font-bold">💬 크루 의견 {(fb.data ?? []).filter((f: any) => !f.done).length}건</h3>
+        {(fb.data ?? []).map((f: any) => (
+          <div key={f.id} className={`rounded-2xl border p-3 text-sm space-y-1 ${f.done ? "opacity-60 border-border" : "border-primary/50"}`}>
+            <div className="flex justify-between"><b>{f.kind === "bug" ? "🐞 오류" : "💡 의견"} · {f.name ?? "멤버"}</b><span className="text-[11px] text-muted-foreground">{day(f.createdAt)}</span></div>
+            <div className="whitespace-pre-wrap allow-select">{f.text}</div>
+            {f.imageUrl && <a href={f.imageUrl} target="_blank" rel="noreferrer"><img src={f.imageUrl} alt="첨부" className="mt-1 max-h-60 rounded-xl" /></a>}
+            <label className="text-xs flex items-center gap-1 justify-end"><input type="checkbox" checked={!!f.done} onChange={e => done.mutate({ id: f.id, done: e.target.checked })} />확인함</label>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }
