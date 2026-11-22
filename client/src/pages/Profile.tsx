@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { askConfirm } from "@/lib/askConfirm";
+import AddressField from "@/components/AddressField";
 
 export default function Profile() {
   const { user, refresh, logout } = useAuth();
@@ -106,7 +107,7 @@ export default function Profile() {
         <div className="space-y-1"><Label className="text-xs text-muted-foreground">전화번호</Label>
           <Input value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" className="rounded-xl" /></div>
         <div className="space-y-1"><Label className="text-xs text-muted-foreground">주소</Label>
-          <Textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="rounded-xl" /></div>
+          <AddressField value={address} onChange={setAddress} /></div>
         <Button className="rounded-xl glass-btn" disabled={saveContact.isPending} onClick={() => saveContact.mutate({ phone, address })}>저장</Button>
       </section>
 

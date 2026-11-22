@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import AddressField from "./AddressField";
 
 const glass = "w-full rounded-3xl border border-white/20 bg-white/[0.06] backdrop-blur-xl px-5 py-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] active:scale-[0.98] transition";
 const field = "w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-base outline-none focus:border-primary";
@@ -123,7 +124,7 @@ export function AwardSheet({ onClose, inline }: { onClose: () => void; inline?: 
         </div>
       </>) : (<>
         <div className="space-y-1"><div className="text-xs text-muted-foreground">전화번호</div><input className={field} value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" /></div>
-        <div className="space-y-1"><div className="text-xs text-muted-foreground">받으실 주소</div><textarea className={field + " resize-none"} rows={3} value={address} onChange={e => setAddress(e.target.value)} placeholder="친정집 등 받으실 곳 (동·호수까지)" /></div>
+        <div className="space-y-1"><div className="text-xs text-muted-foreground">받으실 주소</div><AddressField value={address} onChange={setAddress} /></div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={saveDefault} onChange={e => setSaveDefault(e.target.checked)} /> 앞으로도 이 주소로 받을게요</label>
         <p className="text-xs text-primary">이 번호와 주소로 선물이 가요. 한 번 더 확인해 주세요.</p>
         <button type="button" disabled={phone.replace(/\D/g, "").length < 10 || address.trim().length < 5 || req.isPending} className="w-full h-12 rounded-2xl glass-btn font-bold disabled:opacity-40"
