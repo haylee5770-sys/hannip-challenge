@@ -184,6 +184,7 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
                   <span className="block mt-1.5">- 앱의 기획 · 구성 · 콘텐츠를 <b>모방하거나 무단으로 사용하지 않겠습니다.</b></span>
                   <span className="block">- 크루들의 기록 등 앱 안의 내용을 <b>캡처하거나 복사해 다른 곳에 유포하지 않겠습니다.</b></span>
                   <span className="block mt-1.5">위 두 가지를 어길 경우 <b>저작권 · 초상권 · 개인정보 침해로 법적 책임을 질 수 있음</b>을 이해합니다.</span>
+                  <span className="block mt-1.5 text-[11px] text-muted-foreground">앱의 모든 내용은 '자랑하기'를 통해 카톡방에 정식으로 공유할 수 있으나, 앱 화면 자체를 직접 캡처하면 내 닉네임이 워터마크로 찍혀요.</span>
                 </span>
               </label>
             </div>
