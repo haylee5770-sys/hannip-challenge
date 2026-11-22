@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, ChevronRight, Users, Trophy, History, ShoppingBag, Gift, Palette, KeyRound } from "lucide-react";
+import { Menu, X, ChevronRight, Users, Trophy, Medal, ShoppingBag, Gift, Palette, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { label: "MY CHANGE", path: "/dashboard", korean: "나의 변화", group: "act" },
   { label: "BEFORE·AFTER", path: "/before-after", korean: "비포 애프터", group: "act" },
   { label: "AWARDS", path: "/awards", korean: "시상식", group: "act" },
-  { label: "HISTORY", path: "/history", korean: "역대 챌린지", group: "act" },
+  { label: "HISTORY", path: "/history", korean: "명예의 전당", group: "act" },
   { label: "MEMBERS", path: "/members", korean: "멤버", group: "act" },
   { label: "SHOP", path: "/shop", korean: "구매하기", group: "buy" },
   { label: "APPLY", path: "/apply", korean: "신청하기", group: "buy" },
@@ -310,7 +310,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
               <div className="editorial-eyebrow text-primary mt-7 mb-2 px-1">CREW</div>
               <div className="grid grid-cols-3 gap-2">
-                {([["/members", "멤버", Users], ["/awards", "시상식", Trophy], ["/history", "역대 챌린지", History]] as const).map(([path, label, Icon]) => (
+                {([["/members", "멤버", Users], ["/awards", "시상식", Trophy], ["/history", "명예의 전당", Medal]] as const).map(([path, label, Icon]) => (
                   <Link key={path} href={path}>
                     <button onClick={() => setMobileOpen(false)} className="w-full rounded-2xl bg-card border border-primary/25 py-3.5 flex flex-col items-center gap-1.5">
                       <Icon className="h-5 w-5 text-primary" />

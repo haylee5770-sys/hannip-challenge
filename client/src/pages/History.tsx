@@ -1,66 +1,54 @@
-// 역대 챌린지 (2026-11-20) — 끝난 회차들의 수상자 앨범. 방장은 이름·수상자를 고칠 수 있음.
-import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { Loader2, Pencil } from "lucide-react";
-import { toast } from "sonner";
+// 명예의 전당 (2026-11-22, 예전 '역대 챌린지' 자리) — 10kg 이상 감량자(여러 기수) · 5kg 이상 감량자(한 기수)
+// 지난 수상자는 시상식 아래 '역대 수상자'에 있다.
+import { TEN_KG, FIVE_KG } from "@/lib/hallOfFame";
 
-type A = { id: number; userId: number; name: string; count: number; rankNo: number };
+const kg = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)}kg`;
 
 export default function History() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const utils = trpc.useUtils();
-  const q = trpc.rounds.history.useQuery();
-  const upd = trpc.rounds.updateAward.useMutation({ onSuccess: () => { utils.rounds.history.invalidate(); toast.success("고쳤어요"); } });
-  const ren = trpc.rounds.rename.useMutation({ onSuccess: () => { utils.rounds.history.invalidate(); toast.success("고쳤어요"); } });
-
-  // 2026-11-20 이전에 끝난 시험용 회차(예: 10.5기 미니 챌린지 시험)는 보이지 않게
-  const list = (q.data ?? []).filter(s => (s.endDate ?? "") >= "2026-11-20");
-  const Row = ({ a, unit }: { a: A; unit: string }) => (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="w-6">{["🥇", "🥈", "🥉"][a.rankNo - 1] ?? a.rankNo}</span>
-      <span className="flex-1">{a.name}</span>
-      <span className="text-primary tabular-nums">{a.count}{unit}</span>
-      {isAdmin && <button type="button" onClick={() => { const n = prompt("수상자 이름", a.name); if (n && n.trim()) upd.mutate({ id: a.id, name: n.trim() }); }} className="text-muted-foreground"><Pencil className="h-3.5 w-3.5" /></button>}
-    </div>
-  );
-
   return (
-    <div className="space-y-4">
-      <section className="text-center pb-2">
+    <div className="space-y-6">
+      <section className="text-center pb-1">
         <div className="editorial-eyebrow text-primary mb-1">HALL OF FAME</div>
-        <h1 className="text-3xl md:text-4xl font-semibold">역대 챌린지</h1>
+        <h1 className="text-3xl md:text-4xl font-semibold">명예의 전당</h1>
+        <p className="text-xs text-muted-foreground mt-1">슈퍼한입 챌린지와 함께 몸이 바뀐 크루들</p>
       </section>
-      {/* 2026-11-22: 이번 파이널 시즌 카드 (날짜로 진행 전·진행 중·종료가 저절로 바뀜) */}
-      {(() => {
-        const t = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
-        const st = t < "2026-11-24" ? "진행 전" : t <= "2026-12-23" ? "진행 중" : "종료";
-        return (
-          <section className="rounded-3xl black-glass p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-primary">2026 마지막 챌린지</span>
-              <span className={`text-[11px] rounded-full px-2.5 py-0.5 border ${st === "진행 중" ? "border-primary text-primary" : "border-white/25 text-white/70"}`}>{st}</span>
+
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between px-1">
+          <h2 className="text-lg font-black">🏅 10kg 이상 감량</h2>
+          <span className="text-[11px] text-muted-foreground">여러 기수에 걸쳐</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {TEN_KG.map(t => (
+            <div key={t.name} className="rounded-2xl border border-primary/40 bg-primary/10 px-3 py-3">
+              <div className="flex items-baseline justify-between gap-1">
+                <span className="font-bold text-base">{t.name}</span>
+                <span className="text-primary font-black tabular-nums">{kg(t.kg)}</span>
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">{t.seasons}</div>
             </div>
-            <h2 className="text-xl font-black text-white mt-1">2026 파이널 시즌</h2>
-            <div className="text-xs text-white/60 mt-0.5">11/24 ~ 12/23 · 끝나면 여기에 수상자가 올라가요</div>
-          </section>
-        );
-      })()}
-      {q.isLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        : list.length === 0 ? <p className="text-center text-sm text-muted-foreground py-10">지난 수상자는 시상식 아래 '역대 시상식'에서 볼 수 있어요.</p>
-        : list.map(s => (
-          <section key={s.id} className="rounded-2xl bg-card border border-border p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <h2 className="text-lg font-semibold flex-1">{s.name}</h2>
-              {isAdmin && <button type="button" onClick={() => { const n = prompt("회차 이름", s.name); if (n && n.trim()) ren.mutate({ seasonId: s.id, name: n.trim() }); }} className="text-muted-foreground"><Pencil className="h-4 w-4" /></button>}
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between px-1">
+          <h2 className="text-lg font-black">✨ 5kg 이상 감량</h2>
+          <span className="text-[11px] text-muted-foreground">한 기수 챌린지에서</span>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.05] divide-y divide-white/10">
+          {FIVE_KG.map((f, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+              <span className="w-12 shrink-0 text-primary font-bold">{f.no}</span>
+              <span className="flex-1 font-semibold">{f.name}</span>
+              {f.from != null && f.to != null && <span className="text-[11px] text-muted-foreground tabular-nums">{f.from} → {f.to}</span>}
+              <span className="w-14 text-right font-black tabular-nums">{kg(f.kg)}</span>
             </div>
-            <div className="text-xs text-muted-foreground mb-3">{s.startDate} ~ {s.endDate}</div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div><div className="text-xs text-primary font-semibold mb-1">이게돼 챔피언</div>{(s.byItge as A[]).map(a => <Row key={a.id} a={a} unit="개" />)}</div>
-              <div><div className="text-xs text-primary font-semibold mb-1">꾸준함 챔피언</div>{(s.byTotal as A[]).map(a => <Row key={a.id} a={a} unit="회" />)}</div>
-            </div>
-          </section>
-        ))}
+          ))}
+        </div>
+      </section>
+
+      <p className="text-center text-[11px] text-muted-foreground pb-4">지난 시즌 수상자는 시상식 아래 '역대 수상자'에서 볼 수 있어요.</p>
     </div>
   );
 }
