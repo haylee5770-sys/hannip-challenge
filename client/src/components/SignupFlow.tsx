@@ -148,7 +148,8 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
               <h1 className="text-xl font-bold">가입 정보를 적어 주세요</h1>
               <p className="text-sm text-muted-foreground">단톡방에서 쓰는 닉네임과 선물 받으실 곳이에요.</p>
             </div>
-            <div className="space-y-1"><div className={label}>닉네임</div><input className={field} value={nickname} onChange={e => setNickname(e.target.value)} maxLength={20} placeholder="닉네임만 적어 주세요 (예: 배수지)" /></div>
+            <div className="space-y-1"><div className={label}>닉네임</div><input className={field} value={nickname} onChange={e => setNickname(e.target.value)} maxLength={20} placeholder="예) 배수지" />
+              <p className="text-[11px] text-muted-foreground">단톡방 이름에서 몸무게·목표·운동 횟수는 빼고, 닉네임만 적어 주세요.</p></div>
             <div className="space-y-1"><div className={label}>이메일</div><input className={field} value={email} onChange={e => setEmail(e.target.value)} inputMode="email" placeholder="name@example.com" /></div>
             <div className="space-y-1"><div className={label}>주소 (선물 받으실 곳)</div><AddressField value={address} onChange={setAddress} /></div>
             {err && <p className="text-sm text-destructive text-center">{err}</p>}
