@@ -83,14 +83,11 @@ export default function IntroSplash({ children }: { children: React.ReactNode })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (phase === "done") return <>{children}</>;
-  // ⚠️ 임시 (2026-11-22 해이 요청): 시험용 건너뛰기 버튼 — 크루들에게 링크 돌리기 전에 해이가 "삭제해 줘"하면 지운다
-  const skip = () => { timers.current.forEach(clearTimeout); try { sessionStorage.setItem("hannipIntro", "1"); } catch { /* */ } setPhase("done"); };
   // 같은 화면(보라·초록 + 아이콘)을 그대로 둔 채 천천히 걷어 내면, 아래에서 크루 사진이 드러난다 (툭 끊기지 않게)
   const leaving = phase === "crew";
   return (
     <>
       {leaving && <CrewScreen fadeIn />}
-      <button type="button" onClick={skip} className="fixed bottom-5 right-5 z-[210] rounded-full bg-black/40 px-4 py-2 text-xs text-white/80">건너뛰기</button>
       <div className={`fixed inset-0 z-[200] overflow-hidden bg-[#121417] flex items-center justify-center select-none ${leaving ? "intro-overlay-out pointer-events-none" : ""}`}>
         <div className="intro-bloom intro-bloom-on" />
         <div className="relative px-8 text-center flex flex-col items-center">
