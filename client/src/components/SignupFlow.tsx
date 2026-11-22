@@ -162,20 +162,30 @@ export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
 
         {step === "agree" && (
           <div className="space-y-5">
+            {/* 2026-11-22 해이 확정 문구 */}
             <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4 text-sm leading-relaxed">
               🔒 적어 주신 <b>이름 · 전화번호 · 주소</b>는 <b>선물 발송</b>과 <b>구매 기록 확인</b>에만 쓰여요.<br />
-              로그인한 <b>구글 이메일</b>은 계정을 잊었을 때 찾아 드리려고 방장만 볼 수 있게 저장해요.<br />
-              같은 정보로 기록이 모이니, 바뀌면 꼭 프로필에서 고쳐 주세요.
+              로그인한 <b>구글 이메일</b>은 계정을 잊었을 때 찾아 드리려고 <b>방장만 볼 수 있게</b> 저장해요. (비밀번호는 알 수 없어요.)<br />
+              <b>모든 기록은 오직 이 구글 계정으로 모여요. 꼭 기억해 주세요!</b>
             </div>
-            <div className="space-y-3">
-              {([[a1, setA1, "해이방장의 가이드를 믿고 따르겠습니다. 몸은 반드시 변합니다."],
-                 [a2, setA2, "가이드를 지키지 않으면 결과를 보장받을 수 없음을 이해합니다."],
-                 [a3, setA3, "위 개인정보(이름·전화번호·주소·로그인 구글 이메일)를 선물 발송·구매 기록 확인·계정 찾기에 쓰는 데 동의합니다."]] as const).map(([v, set, t], i) => (
-                <label key={i} className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" checked={v} onChange={e => set(e.target.checked)} className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]" />
-                  <span className="text-sm leading-relaxed">{t}</span>
-                </label>
-              ))}
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={a1} onChange={e => setA1(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" />
+                <span className="text-sm leading-relaxed">해이방장의 가이드를 믿고 따르겠습니다. 몸은 반드시 변합니다.</span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={a3} onChange={e => setA3(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" />
+                <span className="text-sm leading-relaxed">위 개인정보(이름 · 전화번호 · 주소 · 로그인 구글 이메일)를 선물 발송 · 구매 기록 확인 · 계정 찾기에 쓰는 데 동의합니다.</span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={a2} onChange={e => setA2(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" />
+                <span className="text-sm leading-relaxed">
+                  이 앱은 <b>슈퍼한입 챌린지 크루만을 위한 시크릿 공간</b>이에요. 아래 두 가지를 지키겠습니다.
+                  <span className="block mt-1.5">- 앱의 기획 · 구성 · 콘텐츠를 <b>모방하거나 무단으로 사용하지 않겠습니다.</b></span>
+                  <span className="block">- 크루들의 기록 등 앱 안의 내용을 <b>캡처하거나 복사해 다른 곳에 유포하지 않겠습니다.</b></span>
+                  <span className="block mt-1.5">위 두 가지를 어길 경우 <b>저작권 · 초상권 · 개인정보 침해로 법적 책임을 질 수 있음</b>을 이해합니다.</span>
+                </span>
+              </label>
             </div>
             {err && <p className="text-sm text-destructive text-center">{err}</p>}
             <Button disabled={submit.isPending} className="w-full h-12 rounded-2xl glass-btn text-base font-bold" onClick={goSubmit}>
