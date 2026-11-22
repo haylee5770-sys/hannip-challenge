@@ -15,7 +15,6 @@ import { trpc } from "@/lib/trpc";
 import { useEffect } from "react";
 import { isKakaoInApp, openInExternalBrowser } from "@/lib/proofCard";
 import type { ConfirmReq } from "@/lib/askConfirm";
-import InstallButton from "@/components/InstallButton";
 
 // 2026-11-22 방장 지정 순서 · 묶음: act 활동 / buy 구매·신청(연두) / me 꾸미기·프로필(베이지) / 관리(방장만, 하늘색)
 const NAV_ITEMS = [
@@ -333,8 +332,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
 
-              {/* 2026-11-22: 바탕화면 아이콘을 지웠을 때 다시 설치 (앱으로 열었을 땐 안 보임) */}
-              <div className="mt-2.5"><InstallButton /></div>
               {isAdmin && (
                 <Link href="/admin">
                   <button onClick={() => setMobileOpen(false)} className="mt-2.5 w-full h-11 rounded-full flex items-center justify-center gap-1.5 text-sm font-semibold"

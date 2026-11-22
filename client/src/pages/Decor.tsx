@@ -1,5 +1,6 @@
 import PageTitle from "@/components/PageTitle";
 // 꾸미기 — 색 10가지 · 글씨체 10가지 · 배경 무늬 (2026-11-20)
+import InstallButton from "@/components/InstallButton";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { COLORS, BACKGROUNDS, FONTS, PATTERNS, DEFAULT_DECOR, loadDecor, saveDecor, type Decor as DecorT } from "@/lib/decor";
@@ -103,6 +104,11 @@ export default function Decor() {
           처음 모습으로 되돌리기
         </button>
       </div>
+      {/* 2026-11-22: 바탕화면 아이콘을 지웠을 때 여기서 다시 설치 (앱 아이콘으로 열었을 땐 안 보임) */}
+      <section className="pt-4 border-t border-border space-y-2">
+        <div className="text-sm font-semibold">📲 바탕화면 아이콘이 없어졌나요?</div>
+        <InstallButton />
+      </section>
     </div>
   );
 }
