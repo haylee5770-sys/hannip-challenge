@@ -60,13 +60,12 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   g.fillStyle = accent; g.fillText(item, textX + nw, 200);
   if (hasCount) {
     const cx = W - 170, cy = 168, r = 80;
-    g.save(); g.shadowColor = accent; g.shadowBlur = 30; g.strokeStyle = accent; g.lineWidth = 8;
-    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke(); g.restore();
-    g.save(); g.globalAlpha = 0.12; g.fillStyle = accent; g.beginPath(); g.arc(cx, cy, r - 4, 0, Math.PI * 2); g.fill(); g.restore();
-    g.textAlign = "center"; g.fillStyle = accent;
+    // 2026-11-22 (해이): 네온·번짐 없이 깔끔한 꽉 찬 동그라미
+    g.save(); g.fillStyle = accent; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.restore();
+    g.textAlign = "center"; g.fillStyle = "#1b1d20";
     const cs = String(card.count);
     g.font = `900 ${cs.length >= 3 ? 60 : 84}px ${bodyFont}`; g.fillText(cs, cx, cy + 20);
-    g.font = `700 22px ${bodyFont}`; g.fillStyle = "#cfd2d6"; g.fillText("인증", cx, cy + 56);
+    g.font = `800 22px ${bodyFont}`; g.fillText("인증", cx, cy + 56);
   }
   // 시계 + 날짜·시간 (아래 피드백 글씨와 같은 크기·두께)
   g.textAlign = "left";

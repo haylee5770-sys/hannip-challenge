@@ -16,6 +16,8 @@ export default function Shop() {
   const [pick, setPick] = useState<(typeof PRODUCTS)[number] | null>(null);
   const tag = `${user?.name ?? ""} 크루`;
   const open = async (p: (typeof PRODUCTS)[number]) => {
+    // 2026-11-22 (해이): 선물은 45개만 → 15개는 안내창 없이 바로 네이버로
+    if (p.qty !== 45) { window.open(p.url, "_blank", "noopener"); return; }
     try { await navigator.clipboard.writeText(tag); } catch { /* 복사가 막혀도 안내창은 띄운다 */ }
     setPick(p);
   };
@@ -60,7 +62,7 @@ export default function Shop() {
             <div className="text-4xl">📝</div>
             <h3 className="text-xl font-bold break-keep">배송 메시지에 닉네임을<br />꼭 적어 주세요</h3>
             <p className="text-sm text-muted-foreground break-keep leading-relaxed">
-              {pick.qty === 45 ? <>그래야 크루 선물(스무디 2개)이 같이 나가요.</> : <>그래야 크루 주문인지 확인할 수 있어요.</>}
+              그래야 크루 선물(스무디 2개)이 같이 나가요.
             </p>
             <div className="rounded-2xl bg-primary/10 border border-primary/40 p-3 text-sm break-keep">
               닉네임 <b className="text-primary">'{tag}'</b>가 복사됐어요.<br />배송 메시지 칸에 붙여 넣기만 하세요.
