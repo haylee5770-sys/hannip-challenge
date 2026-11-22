@@ -1941,6 +1941,8 @@ export const appRouter = router({
           await db.updateUserProfile(ctx.user.id, { name: String(match.nickname) });
           await db.updateUserStatus(ctx.user.id, "approved");
           await roster.markRosterUsed(Number(match.id), ctx.user.id);
+          // 2026-11-22: 가입할 때 주소를 바꿨으면 명단 칸 주소도 같이 바꾼다
+          if (input.address?.trim() && input.address.trim() !== (match.address ?? "")) await roster.syncRosterAddress(ctx.user.id, input.address.trim());
           const season = await db.getActiveSeason();
           if (season) await db.grantSeasonToken(ctx.user.id, season.id);
           return { ok: true, matched: true, nickname: String(match.nickname) };

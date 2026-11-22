@@ -103,6 +103,12 @@ export async function getMyContact(userId: number) {
 }
 export async function updateMyContact(userId: number, d: { phone: string; address: string }) {
   await q(sql`UPDATE users SET phone = ${d.phone}, address = ${d.address} WHERE id = ${userId}`);
+  await syncRosterAddress(userId, d.address); // 2026-11-22: 프로필에서 바꿔도 명단 칸 주소 같이
+}
+/** 명단 칸 주소를 그 크루의 새 주소로 맞춘다 */
+export async function syncRosterAddress(userId: number, address: string) {
+  if (!address?.trim()) return;
+  await q(sql`UPDATE roster SET address = ${address.trim()} WHERE usedByUserId = ${userId}`);
 }
 
 /* 방장 메모 (2026-11-22): 멤버마다 날짜별로 쌓이는 특이사항. 방장만 본다 */
