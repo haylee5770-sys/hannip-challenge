@@ -5,11 +5,11 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
-type Step = "hello" | "pick" | "address" | "manual" | "agree";
+type Step = "hello" | "pick" | "address" | "manual" | "agree" | "donePreview" | "waitPreview";
 const field = "w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-base outline-none focus:border-primary";
 const label = "text-xs font-semibold text-muted-foreground";
 
-export default function SignupFlow() {
+export default function SignupFlow({ preview }: { preview?: boolean } = {}) {
   const utils = trpc.useUtils();
   const [step, setStep] = useState<Step>("hello");
   const [realName, setRealName] = useState("");
@@ -40,17 +40,39 @@ export default function SignupFlow() {
     e.preventDefault(); setErr(null);
     if (!realName.trim()) return setErr("이름을 적어 주세요.");
     if (phoneDigits.length < 10) return setErr("전화번호를 끝까지 적어 주세요.");
+    // 미리보기(방장): 전화번호 끝자리가 홀수면 '명단에 있음', 짝수면 '명단에 없음' 흐름
+    if (preview) { const odd = Number(phoneDigits.slice(-1)) % 2 === 1; if (odd) { setMatched(true); setNickname("로제"); setAddress("서울특별시 ○○구 ○○로 12, 101동 1001호"); setEditAddr(false); setStep("pick"); } else { setMatched(false); setStep("manual"); } return; }
     check.mutate({ realName, phone });
   };
   const goSubmit = () => {
     setErr(null);
     if (!a1 || !a2 || !a3) return setErr("동의 항목을 모두 체크해 주세요.");
+    if (preview) { setStep(matched ? "donePreview" as Step : "waitPreview" as Step); return; }
     submit.mutate({ realName, phone, nickname: matched ? undefined : nickname, email: email || undefined, address, agreed1: a1, agreed2: a2, privacy: a3 });
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-10">
       <div className="max-w-sm w-full space-y-6 season-fade-in" key={step}>
+        {preview && <div className="rounded-xl bg-amber-400/15 border border-amber-400/50 px-3 py-2 text-xs text-center">👀 방장 미리보기 · 저장되지 않아요<br />전화번호 끝자리 <b>홀수</b> = 명단에 있는 사람 · <b>짝수</b> = 명단에 없는 사람</div>}
+        {step === "donePreview" && (
+          <div className="text-center space-y-4">
+            <div className="text-5xl">📷</div>
+            <p className="text-sm text-muted-foreground">(실제로는 여기서 프로필 사진·몸 정보 입력 화면이 나오고)</p>
+            <div className="text-6xl">🎉</div>
+            <h1 className="text-3xl font-black leading-snug">가입이 완료됐어요!<br /><span className="text-primary">축하합니다</span></h1>
+            <p className="text-sm text-muted-foreground">이제부터 시작할 수 있어요.<br />나를 칭찬하는 순간, 우리 모두가 1등이 됩니다.</p>
+            <Button className="w-full h-12 rounded-2xl glass-btn font-bold" onClick={() => setStep("hello")}>처음부터 다시 보기</Button>
+          </div>
+        )}
+        {step === "waitPreview" && (
+          <div className="text-center space-y-4">
+            <div className="text-5xl">⏳</div>
+            <h1 className="text-2xl font-bold">가입 신청이 접수됐어요</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">1차 신청자 명단에 없어 자동으로 가입되지 않았어요.<br />운영자 승인 후 입장할 수 있어요. 조금만 기다려 주세요!</p>
+            <Button className="w-full h-12 rounded-2xl glass-btn font-bold" onClick={() => setStep("hello")}>처음부터 다시 보기</Button>
+          </div>
+        )}
         {step === "hello" && (
           <form onSubmit={goCheck} className="space-y-6">
             <div className="text-center space-y-2">

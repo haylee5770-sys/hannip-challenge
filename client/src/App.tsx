@@ -28,6 +28,7 @@ import Reveal from "@/pages/Reveal";
 import SeasonReport from "@/pages/SeasonReport";
 import Archive from "@/pages/Archive";
 import { useEffect } from "react";
+import SignupFlow from "./components/SignupFlow";
 
 function Router() {
   return (
@@ -35,6 +36,11 @@ function Router() {
       {/* Invite route handles token capture before the user is signed in */}
       <Route path="/invite/:token">
         {(params) => <Invite token={params.token} />}
+      </Route>
+
+      {/* 2026-11-22: 방장용 가입 화면 미리보기 (저장 안 됨) */}
+      <Route path="/preview/signup">
+        <MembershipGate><SignupFlow preview /></MembershipGate>
       </Route>
 
       <Route>
