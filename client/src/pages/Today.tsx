@@ -661,7 +661,22 @@ function MealForm({
   const [hint, setHint] = useState("");
   type AiItem = { name: string; grams: number; carbsG: number; proteinG: number; fatG: number; vegetableG: number };
   const [aiItems, setAiItems] = useState<{ base: AiItem; grams: string }[]>([]);
-  const applyItems = (rows: { base: AiItem; grams: string }[]) => {
+  /** 메모 칸에서 "수육 150g" 숫자를 고쳐도 탄단지가 다시 계산되게 (2026-11-23 해이 요청) */
+  const onMemoChange = (text: string) => {
+    setDescription(text);
+    if (!aiItems.length) return;
+    const segs = text.split(/[,，\n]/).map(s => s.trim()).filter(Boolean);
+    const norm = (s: string) => s.replace(/\s+/g, "");
+    let changed = false;
+    const next = aiItems.map((r, i) => {
+      const seg = segs.find(s => norm(s).startsWith(norm(r.base.name))) ?? (segs.length === aiItems.length ? segs[i] : undefined);
+      const m = seg?.match(/(\d+)\s*g\s*$/i);
+      if (m && m[1] !== r.grams) { changed = true; return { ...r, grams: m[1] }; }
+      return r;
+    });
+    if (changed) { setAiItems(next); applyItems(next, true); }
+  };
+  const applyItems = (rows: { base: AiItem; grams: string }[], keepMemo = false) => {
     const t = { c: 0, p: 0, f: 0, v: 0 };
     const parts: string[] = [];
     for (const r of rows) {
@@ -671,7 +686,7 @@ function MealForm({
       parts.push(`${r.base.name} ${g}g`);
     }
     setCarbsG(String(Math.round(t.c))); setProteinG(String(Math.round(t.p))); setFatG(String(Math.round(t.f))); setVegetableG(String(Math.round(t.v)));
-    setDescription(parts.join(", "));
+    if (!keepMemo) setDescription(parts.join(", "));
   };
   const analyze = trpc.meals.analyzePhoto.useMutation({
     onSuccess: (r) => {
@@ -871,7 +886,7 @@ function MealForm({
             <Label className="editorial-eyebrow text-muted-foreground mb-2 block">메모 (선택)</Label>
             <Textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => onMemoChange(e.target.value)}
               placeholder="예) 현미밥, 닭가슴살 샐러드, 사과 한 알"
               className="rounded-none border-foreground/30 font-serif"
               rows={2}
