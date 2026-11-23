@@ -159,6 +159,20 @@ export async function startSeason(adminId: number, input: { name: string; shortN
 }
 
 /**
+ * 끝난 시즌 지우기 (2026-11-24 해이: 10.5기 미니 챌린지 시험, 테스트 시즌 등)
+ * 기록(식단·물·운동…)은 날짜로 남아 있어서 지우지 않는다. 시즌 줄과 그 시즌의 시상·참여 선택만 지움
+ */
+export async function deleteEndedSeason(id: number) {
+  const s = (await q(sql`SELECT status FROM seasons WHERE id=${id}`))[0];
+  if (!s) return { ok: false, message: "시즌을 찾을 수 없어요." };
+  if (s.status === "active") return { ok: false, message: "진행 중인 시즌은 지울 수 없어요. 먼저 종료해 주세요." };
+  await q(sql`DELETE FROM roundAwards WHERE seasonId=${id}`).catch(() => {});
+  await q(sql`DELETE FROM seasonEntries WHERE seasonId=${id}`).catch(() => {});
+  await q(sql`DELETE FROM seasons WHERE id=${id}`);
+  return { ok: true, message: "" };
+}
+
+/**
  * 지금 진행 중인 시즌 이름 바꾸기 (2026-11-24 해이: 시험으로 눌러 본 시즌을 '테스트 시즌 (삭제될 예정)'으로 남기기)
  */
 export async function renameActiveSeason(name: string, shortName: string) {

@@ -1665,6 +1665,11 @@ const roundsRouter = router({
     const [s, active] = await Promise.all([sp.getScheduledSeason(), sp.activeSeasonInfo()]);
     return { locked: !!s && !active, startAt: s?.startAt ?? null, name: s?.name ?? null };
   }),
+  deleteEndedSeason: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const r = await sp.deleteEndedSeason(input.id);
+    if (!r.ok) throw new TRPCError({ code: "BAD_REQUEST", message: r.message });
+    return { ok: true };
+  }),
   renameActiveSeason: adminProcedure.input(z.object({ name: z.string().min(1).max(128), shortName: z.string().max(32) }))
     .mutation(async ({ input }) => sp.renameActiveSeason(input.name, input.shortName)),
   seasonInfo: approvedProcedure.query(async () => sp.activeSeasonInfo()),

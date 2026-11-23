@@ -64,7 +64,7 @@ function RoundControl() {
   return (
     <section className="mt-6 rounded-2xl bg-card border border-primary/50 p-5 space-y-3">
       <div className="text-sm">
-        {cur.data ? <>지금 진행 중: <b className="text-primary">{cur.data.name}</b> <span className="text-muted-foreground">({cur.data.startDate} ~ {cur.data.planEnd ?? ""})</span>
+        {cur.data ? <>지금 진행 중: <b className="text-primary">{cur.data.name}</b> <span className="text-muted-foreground whitespace-nowrap">({cur.data.startDate} ~ {cur.data.planEnd ?? ""})</span>
           {counts.data && <div className="text-xs text-muted-foreground mt-1">참여: 슈퍼루틴 {counts.data.routine}명 · 3일 디톡스 {counts.data.detox}명</div>}
           {/* 2026-11-24 해이: 시험으로 눌러 본 시즌은 '테스트 시즌 (삭제될 예정)'으로 남겨서 다 같이 보게 → 나중에 삭제 */}
           {!cur.data.name.startsWith("테스트 시즌") && (
@@ -695,6 +695,10 @@ function SeasonsAdmin() {
     onError: (e) => toast.error(e.message),
   });
 
+  const delSeason = trpc.rounds.deleteEndedSeason.useMutation({
+    onSuccess: () => { utils.seasons.list.invalidate(); utils.rounds.invalidate(); toast.success("시즌을 지웠어요."); },
+    onError: e => toast.error(e.message),
+  });
   const [createDirectLoading, setCreateDirectLoading] = useState(false);
   const [dbHealthMsg, setDbHealthMsg] = useState<string | null>(null);
 
@@ -792,7 +796,7 @@ function SeasonsAdmin() {
             ) : (
               <div className="space-y-2">
                 <div className="font-serif text-xl">
-                  {current.data.seasonNumber ? `${current.data.seasonNumber}기 · ` : ""}{current.data.name}
+                  {current.data.name}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {current.data.startDate} → {current.data.endDate} · {current.data.totalDays ?? 13}일
@@ -919,11 +923,10 @@ function SeasonsAdmin() {
                 ) : (
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-serif text-base">
-                        {s.seasonNumber ? `${s.seasonNumber}기 · ` : ""}{s.name}
-                      </div>
+                      {/* 2026-11-24 해이: 'N기 ·' 없이 이름만. 날짜는 중간에서 끊기지 않게 */}
+                      <div className="font-serif text-base">{s.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {s.startDate} → {s.endDate} {s.totalDays ? `· ${s.totalDays}일` : ""}
+                        <span className="whitespace-nowrap">{s.startDate}</span> → <span className="whitespace-nowrap">{s.endDate}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -933,6 +936,13 @@ function SeasonsAdmin() {
                       <Button size="sm" variant="ghost" className="rounded-none text-xs" onClick={() => startEdit(s as any)}>
                         수정
                       </Button>
+                      {s.status !== "active" && (
+                        <Button size="sm" variant="ghost" className="rounded-none text-xs text-destructive"
+                          onClick={async () => { if (await askConfirm(`'${s.name}' 시즌을 지울까요?
+시즌 목록·시상 결과에서 사라져요. 식단·물·운동 같은 기록은 그대로 남아요.`, "지우기")) delSeason.mutate({ id: s.id }); }}>
+                          지우기
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
