@@ -6,15 +6,21 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const PRODUCTS = [
-  { qty: 15, sale: "10% 할인", extra: null as string | null, point: "1,000원", url: "https://smartstore.naver.com/superhane/products/10116621156" },
-  { qty: 45, sale: "10% 할인", extra: "+ 3,000원 추가 할인", point: "2,000원", url: "https://smartstore.naver.com/superhane/products/10378603578" },
+  { qty: 15, list: 100000, salePrice: 90000, sale: "10% 할인", extra: null as string | null, point: "1,000원", url: "https://smartstore.naver.com/superhane/products/10116621156" },
+  { qty: 45, list: 290000, salePrice: 258000, sale: "10% 할인", extra: "+ 3,000원 추가 할인", point: "2,000원", url: "https://smartstore.naver.com/superhane/products/10378603578" },
 ];
+// 2026-11-23 (해이): 공구 할인 기간. 이 시간 안에만 공구가가 보이고, 끝나면 안내 문구는 저절로 사라진다. 다음 공구 때 여기만 바꾸면 됨
+const SALES = [{ start: "2026-11-23T09:50:00+09:00", end: "2026-11-23T23:59:59+09:00", label: "11월 23일(월) 오전 9시 50분 ~ 밤 11시 59분" }];
+const won = (n: number) => n.toLocaleString("ko-KR") + "원";
 
 export default function Shop() {
   const { user } = useAuth();
   // 2026-11-22 구매 안내창(해이 확정): 누르면 '닉네임 크루'를 복사하고, 배송 메시지에 붙여 넣으라고 안내한 뒤 네이버로
   const [pick, setPick] = useState<(typeof PRODUCTS)[number] | null>(null);
   const tag = `${user?.name ?? ""} 크루`;
+  const now = Date.now();
+  const live = SALES.find(x => now >= Date.parse(x.start) && now <= Date.parse(x.end));
+  const soon = !live ? SALES.find(x => now < Date.parse(x.start) && Date.parse(x.start) - now < 24 * 3600_000) : undefined;
   const open = async (p: (typeof PRODUCTS)[number]) => {
     // 2026-11-22 (해이): 선물은 45개만 → 15개는 안내창 없이 바로 네이버로
     if (p.qty !== 45) { window.open(p.url, "_blank", "noopener"); return; }
@@ -40,6 +46,21 @@ export default function Shop() {
         </ul>
       </section>
 
+      {/* 2026-11-23: 할인 기간 안내 — 기간이 지나면 저절로 사라짐 */}
+      {live ? (
+        <section className="rounded-2xl bg-[#03c75a]/15 border border-[#03c75a] p-4 text-center">
+          <div className="text-base font-black">🔥 지금 공구 할인 중!</div>
+          <div className="text-sm mt-1">{live.label}</div>
+        </section>
+      ) : soon ? (
+        <section className="rounded-2xl border border-primary/60 bg-primary/10 p-4 text-center">
+          <div className="text-base font-black">⏰ 곧 공구 할인이 열려요</div>
+          <div className="text-sm mt-1">{soon.label}</div>
+        </section>
+      ) : (
+        <p className="text-center text-xs text-muted-foreground">지금은 <b className="text-foreground">정가</b>예요. 공구 할인은 단톡방 공지 후 열려요.</p>
+      )}
+
       {/* 상품 — 같은 모양 두 칸 */}
       <section className="grid grid-cols-2 gap-3">
         {PRODUCTS.map(p => (
@@ -47,8 +68,19 @@ export default function Shop() {
             className="rounded-2xl border border-border bg-card p-4 flex flex-col items-center text-center hover:border-primary transition-colors">
             <div className="text-sm text-muted-foreground">스무디</div>
             <div className="text-4xl font-black tabular-nums leading-none mt-1">{p.qty}<span className="text-lg font-bold ml-0.5">개</span></div>
-            <div className="mt-3 rounded-full bg-primary/15 text-primary text-sm font-bold px-3 py-1">{p.sale}</div>
-            <div className="mt-1 h-5 text-xs font-semibold text-primary">{p.extra ?? ""}</div>
+            {live ? (
+              <>
+                <div className="mt-3 text-xs text-muted-foreground line-through tabular-nums">정가 {won(p.list)}</div>
+                <div className="text-xl font-black text-primary tabular-nums">{won(p.salePrice)}</div>
+                <div className="mt-1 rounded-full bg-primary/15 text-primary text-xs font-bold px-3 py-1">{p.sale}{p.extra ? " · 3,000원 추가" : ""}</div>
+              </>
+            ) : (
+              <>
+                <div className="mt-3 text-xs text-muted-foreground">정가</div>
+                <div className="text-xl font-black tabular-nums">{won(p.list)}</div>
+                <div className="mt-1 text-[11px] text-muted-foreground">공구 때 {won(p.salePrice)}</div>
+              </>
+            )}
             <div className="mt-3 w-full rounded-xl bg-[#03c75a] text-white text-sm font-bold py-2.5 whitespace-nowrap">네이버에서 구매하기</div>
             <div className="mt-2 text-[11px] text-muted-foreground leading-snug">리뷰 시 포토 후기<br /><b className="text-primary">기본 {p.point} 적립</b></div>
           </button>
