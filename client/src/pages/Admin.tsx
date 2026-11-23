@@ -1105,18 +1105,19 @@ function FeedbackReplyBox({ f }: { f: any }) {
       <button type="button" className="mt-1 text-xs underline text-muted-foreground" onClick={() => setEditing(true)}>답장 고치기</button>
     </div>
   );
-  // 2026-11-23 해이: 누르면 바로 보내지는 답장 (해결했을 때 등)
+  // 2026-11-23 해이: 누르면 답장 칸에 그 글이 써져요 → 고쳐도 되고 그대로 '답장 보내기'
   const QUICK = [
     ["✅ 해결했어요", "해결했습니다! 의견 감사합니다 💚 덕분에 앱이 더 좋아졌어요."],
     ["🔧 고치는 중", "확인했어요! 지금 고치고 있어요. 조금만 기다려 주세요 💚"],
     ["💡 좋은 의견", "좋은 의견 감사해요! 검토해서 반영해 볼게요 💚"],
+    ["🙏 테스트 부탁", "고쳐 두었어요! 한번 테스트해 보시고, 문제가 있으면 다시 의견 남겨 주세요 💚"],
   ] as const;
   return (
     <div className="mt-2 space-y-1.5">
       <div className="flex flex-wrap gap-1.5">
         {QUICK.map(([l, msg]) => (
           <button key={l} type="button" disabled={save.isPending}
-            onClick={() => { setText(msg); save.mutate({ id: f.id, reply: msg }); }}
+            onClick={() => setText(msg)}
             className="rounded-full border border-primary/50 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-40">{l}</button>
         ))}
       </div>

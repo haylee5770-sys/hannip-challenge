@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Sparkles, X, Camera, ScanLine } from "lucide-react";
+import { Loader2, Plus, Trash2, Sparkles, X, Camera, ScanLine, Images } from "lucide-react";
 import { todayLocal } from "@shared/utils";
 import {
   Select,
@@ -516,8 +516,9 @@ function WeightSection({ date, userName, onBrag, weightCount }: { date: string; 
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={analyze.isPending}
               className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors overflow-hidden", !photo && !analyze.isPending && "nudge")}>
-              {analyze.isPending ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <Camera className="h-6 w-6 text-primary" />}
+              {analyze.isPending ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : <AlbumIcon />}
             </button>
+            {!analyze.isPending && <ShootBox onFile={onFile} />}
             <span className="text-[11px] text-muted-foreground">{analyze.isPending ? "AI가 읽는 중…" : photo ? "누르면 다른 사진으로 바꿔요" : "체중계 사진 (필수)"}</span>
           </div>
           {notes.length > 0 && <div className="space-y-1">{notes.map((n, i) => <p key={i} className="text-[11px] text-amber-200">ⓘ {n}</p>)}</div>}
@@ -718,7 +719,7 @@ function MealForm({
     onError: (e) => toast.error(e.message),
   });
 
-  const handleFiles = async (files: FileList | null) => {
+  const handleFiles = async (files: FileList | File[] | null) => {
     if (!files) return;
     const maxAllowed = isSmoothie ? 8 : 4;
     const arr = Array.from(files).slice(0, maxAllowed - photos.length);
@@ -748,9 +749,10 @@ function MealForm({
   const cameraBox = (
     <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", (needPhoto || photos.length === 0) && "nudge")}>
       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-      <Camera className="h-6 w-6 text-primary" />
+      <AlbumIcon />
     </label>
   );
+  const cameraBoxes = (<>{cameraBox}<ShootBox onFile={f => handleFiles([f])} /></>);
 
   return (
     <div className="rounded-xl border border-border p-4">
@@ -839,7 +841,7 @@ function MealForm({
             />
             <div className="flex flex-wrap items-center gap-3">
               {photoThumbs}
-              {photos.length < 4 && cameraBox}
+              {photos.length < 4 && cameraBoxes}
               <Button
                 type="button"
                 variant="outline"
@@ -926,7 +928,7 @@ function MealForm({
           <Label className="editorial-eyebrow text-muted-foreground mb-2 block">PHOTOS · 사진 1장 = 인증 1회</Label>
           <div className="flex flex-wrap gap-3">
             {photoThumbs}
-            {photos.length < 8 && cameraBox}
+            {photos.length < 8 && cameraBoxes}
           </div>
         </div>
       )}
@@ -1311,9 +1313,10 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
         ) : (
           <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", !photo && "nudge")}>
             <input ref={exFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleExPhoto(e.target.files[0])} />
-            <Camera className="h-6 w-6 text-primary" />
+            <AlbumIcon />
           </label>
         )}
+        {!photo && <ShootBox onFile={handleExPhoto} />}
         <div className="flex-1 min-w-0">
           <div className="text-[11px] text-muted-foreground">운동 사진 또는 워치 기록 캡처 (필수)</div>
           <button type="button" disabled={!photo || analyze.isPending} onClick={() => photo && analyze.mutate({ photoBase64: photo })}
@@ -1621,9 +1624,10 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
         ) : (
           <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", !wakePhoto && "nudge")}>
             <input ref={wakeRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const fl = e.target.files?.[0]; if (!fl) return; void shrinkFile(fl).then(setWakePhoto); }} />
-            <Camera className="h-6 w-6 text-primary" />
+            <AlbumIcon />
           </label>
         )}
+        {!wakePhoto && <ShootBox onFile={fl => void shrinkFile(fl).then(setWakePhoto)} />}
         <span className="text-xs text-muted-foreground leading-relaxed">☀️ 기상 인증 · 아침을 깨우는<br /><b className="text-foreground">따뜻한 물 한 잔</b> 사진 (필수)</span>
       </div>
       {/* 결과 */}
@@ -1732,6 +1736,21 @@ function CountBox({ n }: { n?: number | null }) {
   );
 }
 /** 오늘 메달(1회·2회…, 날마다 새로 시작) — 누적은 모서리 탭으로 옮김 (2026-11-21) */
+/** 📷 바로 찍기 (2026-11-23): 카메라를 바로 연다. 요즘 안드로이드 사진 선택 화면에는 카메라가 없어서 따로 둠. 옆 칸은 '앨범' */
+function ShootBox({ onFile }: { onFile: (f: File) => void }) {
+  return (
+    <label className="w-16 h-16 rounded-lg border border-primary/70 bg-primary/10 hover:bg-primary/20 flex flex-col items-center justify-center cursor-pointer shrink-0 text-primary transition-colors">
+      <input type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; e.currentTarget.value = ""; if (f) onFile(f); }} />
+      <Camera className="h-5 w-5" />
+      <span className="text-[10px] font-bold mt-0.5 leading-none">바로 찍기</span>
+    </label>
+  );
+}
+function AlbumIcon() {
+  return (<span className="flex flex-col items-center text-primary"><Images className="h-5 w-5" /><span className="text-[10px] font-bold mt-0.5 leading-none">앨범</span></span>);
+}
+
 function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: string; sub?: string }>; onOpen: (id: number) => void; total?: number }) {
   if (!items.length && total == null) return null;
   return (
@@ -2440,7 +2459,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
     },
   });
 
-  const handleFiles = async (files: FileList | null) => {
+  const handleFiles = async (files: FileList | File[] | null) => {
     if (!files) return;
     const arr = Array.from(files).slice(0, 8 - photos.length);
     const results: string[] = [];
@@ -2497,9 +2516,10 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
         {photos.length < 8 && (
           <label className={cn("w-16 h-16 rounded-lg border border-primary/70 hover:bg-primary/10 flex items-center justify-center cursor-pointer shrink-0 transition-colors", photos.length === 0 && "nudge")}>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-            <Camera className="h-6 w-6 text-primary" />
+            <AlbumIcon />
           </label>
         )}
+        {photos.length < 8 && <ShootBox onFile={f => handleFiles([f])} />}
         <span className="text-[11px] text-muted-foreground">사진 1장 = 1회 · 최대 8장</span>
       </div>
       <div className={ACTIONS_ROW}>
