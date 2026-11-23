@@ -28,34 +28,31 @@ export default function Shop() {
     setPick(p);
   };
   return (
-    <div className="space-y-5">
-      <PageTitle eyebrow="SHOP" title="스무디 구매하기" sub="버튼을 누르면 네이버 스마트스토어로 바로 가요." />
-
-      {/* 이벤트 — 가장 크게 */}
-      <section className="rounded-2xl border-2 border-primary bg-primary/10 p-5 text-center">
-        <div className="inline-block rounded-full bg-primary text-primary-foreground text-sm font-bold px-4 py-1 mb-3">EVENT · 2달에 1명</div>
-        <h2 className="text-2xl md:text-3xl font-bold leading-snug break-keep">
-          후기 남기면<br />네이버페이 <span className="text-primary">2만 원권</span> 🎁
-        </h2>
-        <ul className="mt-4 space-y-1.5 text-sm text-left max-w-xs mx-auto break-keep">
-          <li>✔ <b>정성과 진심을 담아 후기를 적어 주신 분께</b></li>
-          <li>✔ <b>슈퍼한입 챌린지를 널리 알리고 싶으신 분께</b></li>
-          <li>✔ <b>2달에 한 번</b>(1·3·5·7·9·11월) <b>1명</b>을 뽑아 네이버페이 2만 원권을 드려요</li>
-          <li>✔ 15개·45개 <b>어떤 상품이든</b> 괜찮아요</li>
-          <li>✔ 우리 방 멤버만 사는 상품이라 <b>당첨 확률 높아요</b></li>
+    <div className="space-y-3">
+      {/* 2026-11-23 (해이): 제목 빼고 이벤트를 작게 → 아래 네이버 구매 버튼이 첫 화면에 보이게 */}
+      <section className="rounded-2xl border border-primary bg-primary/10 px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-black leading-snug break-keep">후기 남기면 네이버페이 <span className="text-primary">2만 원권</span> 🎁</h2>
+          <span className="shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5">2달에 1명</span>
+        </div>
+        <ul className="mt-1.5 space-y-0.5 text-[11px] leading-snug text-muted-foreground break-keep">
+          <li>✔ <b className="text-foreground">정성과 진심을 담아 후기를 적어 주신 분께</b></li>
+          <li>✔ <b className="text-foreground">슈퍼한입 챌린지를 널리 알리고 싶으신 분께</b></li>
+          <li>✔ <b className="text-foreground">2달에 한 번</b>(1·3·5·7·9·11월) <b className="text-foreground">1명</b>을 뽑아 네이버페이 2만 원권을 드려요</li>
+          <li>✔ 15개·45개 <b className="text-foreground">어떤 상품이든</b> 괜찮아요 · 우리 방 멤버만 사는 상품이라 <b className="text-foreground">당첨 확률 높아요</b></li>
         </ul>
       </section>
 
       {/* 2026-11-23: 할인 기간 안내 — 기간이 지나면 저절로 사라짐 */}
       {live ? (
-        <section className="rounded-2xl bg-[#03c75a]/15 border border-[#03c75a] p-4 text-center">
-          <div className="text-base font-black">🔥 오늘 하루 할인 링크가 열렸어요!</div>
-          <div className="text-sm mt-1">{live.label}</div>
+        <section className="rounded-2xl bg-[#03c75a]/15 border border-[#03c75a] px-4 py-2.5 text-center">
+          <div className="text-sm font-black">🔥 오늘 하루 할인 링크가 열렸어요!</div>
+          <div className="text-xs mt-0.5">{live.label}</div>
         </section>
       ) : soon ? (
-        <section className="rounded-2xl border border-primary/60 bg-primary/10 p-4 text-center">
-          <div className="text-base font-black">⏰ 오늘 하루 할인 링크가 열려요</div>
-          <div className="text-sm mt-1">{soon.label}</div>
+        <section className="rounded-2xl border border-primary/60 bg-primary/10 px-4 py-2.5 text-center">
+          <div className="text-sm font-black">⏰ 오늘 하루 할인 링크가 열려요</div>
+          <div className="text-xs mt-0.5">{soon.label}</div>
         </section>
       ) : (
         <p className="text-center text-xs text-muted-foreground">지금은 <b className="text-foreground">정가</b>예요. 공구 할인은 단톡방 공지 후 열려요.</p>
@@ -65,7 +62,8 @@ export default function Shop() {
       <section className="grid grid-cols-2 gap-3">
         {PRODUCTS.map(p => (
           <button type="button" key={p.url} onClick={() => open(p)}
-            className="rounded-2xl border border-border bg-card p-4 flex flex-col items-center text-center hover:border-primary transition-colors">
+            className="rounded-2xl border border-border bg-card p-3 flex flex-col items-center text-center hover:border-primary transition-colors">
+            <div className="w-full rounded-xl bg-[#03c75a] text-white text-sm font-bold py-2.5 mb-3 whitespace-nowrap">네이버에서 구매하기</div>
             <div className="text-sm text-muted-foreground">스무디</div>
             <div className="text-4xl font-black tabular-nums leading-none mt-1">{p.qty}<span className="text-lg font-bold ml-0.5">개</span></div>
             {live ? (
@@ -81,7 +79,6 @@ export default function Shop() {
                 <div className="mt-1 text-[11px] text-muted-foreground">공구 때 {won(p.salePrice)}</div>
               </>
             )}
-            <div className="mt-3 w-full rounded-xl bg-[#03c75a] text-white text-sm font-bold py-2.5 whitespace-nowrap">네이버에서 구매하기</div>
             <div className="mt-2 text-[11px] text-muted-foreground leading-snug">리뷰 시 포토 후기<br /><b className="text-primary">기본 {p.point} 적립</b></div>
           </button>
         ))}
