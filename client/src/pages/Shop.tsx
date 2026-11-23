@@ -86,6 +86,39 @@ export default function Shop() {
           </button>
         ))}
       </section>
+      {/* 2026-11-23 (해이): 공구 때 15개 vs 45개 혜택 비교 — 45개는 10% + 3,000원 + 크루 선물 2개 */}
+      <section className="rounded-3xl border-2 border-primary bg-primary/10 p-5 space-y-4">
+        <div className="text-center">
+          <div className="text-xs font-bold text-primary tracking-widest">공구 혜택 비교</div>
+          <h3 className="text-xl font-black mt-1 break-keep">45개가 훨씬 이득이에요 🎁</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="rounded-2xl bg-card border border-border p-3 space-y-1.5">
+            <div className="font-black text-base">15개</div>
+            <div>✔ 10% 할인 <b>−10,000원</b></div>
+            <div className="text-muted-foreground">✕ 추가 할인 없음</div>
+            <div className="text-muted-foreground">✕ 크루 선물 없음</div>
+            <div className="pt-2 border-t border-border">
+              <div className="text-[11px] text-muted-foreground">총 혜택</div>
+              <div className="text-lg font-black tabular-nums">10,000원</div>
+              <div className="text-[11px] text-muted-foreground">개당 6,000원</div>
+            </div>
+          </div>
+          <div className="rounded-2xl bg-card border-2 border-primary p-3 space-y-1.5">
+            <div className="font-black text-base text-primary">45개 <span className="text-[11px] rounded-full bg-primary/20 px-2 py-0.5 align-middle">추천</span></div>
+            <div>✔ 10% 할인 <b>−29,000원</b></div>
+            <div>✔ 추가 할인 <b>−3,000원</b></div>
+            <div>✔ 크루 선물 <b>스무디 2개</b><br /><span className="text-[11px] text-muted-foreground">(약 12,900원 상당)</span></div>
+            <div className="pt-2 border-t border-primary/40">
+              <div className="text-[11px] text-muted-foreground">총 혜택</div>
+              <div className="text-lg font-black text-primary tabular-nums">약 44,900원</div>
+              <div className="text-[11px] text-muted-foreground">47개 받는 셈 · 개당 약 5,490원</div>
+            </div>
+          </div>
+        </div>
+        <p className="text-[11px] text-muted-foreground text-center leading-relaxed break-keep">크루 선물 2개는 <b className="text-foreground">배송 메시지에 '닉네임 크루'</b>를 적어 주셔야 함께 나가요.<br />선물 금액은 45개 정가 기준 개당 약 6,440원으로 계산했어요.</p>
+      </section>
+
       <p className="text-center text-[11px] text-muted-foreground">2달 동안 남긴 후기를 모두 모아 홀수달에 1명을 뽑아요.</p>
 
       {pick && (
