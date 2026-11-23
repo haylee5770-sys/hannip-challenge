@@ -22,6 +22,7 @@ import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { quoteOf } from "@/lib/quotes";
 import { Link } from "wouter";
 import { shareProof, type ProofCard } from "@/lib/proofCard";
+import CropCamera, { canUseInAppCamera } from "@/components/CropCamera";
 import { shareBeforeAfterCard, shareToast } from "@/lib/shareCards";
 import { loadDecor } from "@/lib/decor";
 import { Streamdown } from "streamdown";
@@ -1738,13 +1739,20 @@ function CountBox({ n }: { n?: number | null }) {
 /** 오늘 메달(1회·2회…, 날마다 새로 시작) — 누적은 모서리 탭으로 옮김 (2026-11-21) */
 /** 📷 바로 찍기 (2026-11-23): 카메라를 바로 연다. 요즘 안드로이드 사진 선택 화면에는 카메라가 없어서 따로 둠. 옆 칸은 '앨범' */
 function ShootBox({ onFile }: { onFile: (f: File) => void }) {
+  // 2026-11-23: 앱 안 카메라(카드 사진 칸 비율 틀만 보이고 바깥은 검게) → 못 열면 휴대폰 기본 카메라
+  const [cam, setCam] = useState(false);
+  const nativeRef = useRef<HTMLInputElement>(null);
   return (
-    <label className="w-16 h-16 rounded-lg border border-primary/70 bg-primary/10 hover:bg-primary/20 flex flex-col items-center justify-center cursor-pointer shrink-0 text-primary transition-colors">
-      <input type="file" accept="image/*" capture="environment" className="hidden"
+    <>
+      <button type="button" onClick={() => (canUseInAppCamera() ? setCam(true) : nativeRef.current?.click())}
+        className="w-16 h-16 rounded-lg border border-primary/70 bg-primary/10 hover:bg-primary/20 flex flex-col items-center justify-center cursor-pointer shrink-0 text-primary transition-colors">
+        <Camera className="h-5 w-5" />
+        <span className="text-[10px] font-bold mt-0.5 leading-none">바로 찍기</span>
+      </button>
+      <input ref={nativeRef} type="file" accept="image/*" capture="environment" className="hidden"
         onChange={e => { const f = e.target.files?.[0]; e.currentTarget.value = ""; if (f) onFile(f); }} />
-      <Camera className="h-5 w-5" />
-      <span className="text-[10px] font-bold mt-0.5 leading-none">바로 찍기</span>
-    </label>
+      {cam && <CropCamera onShot={onFile} onClose={() => setCam(false)} onFallback={() => nativeRef.current?.click()} />}
+    </>
   );
 }
 function AlbumIcon() {
