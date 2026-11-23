@@ -241,7 +241,8 @@ function MembersAdmin() {
               <span className="text-[10px] tracking-wider text-muted-foreground">{u.role === "admin" ? "방장" : "멤버"}</span>
             </div>
           </div>
-          <div className="flex justify-end gap-2 mt-3">
+          {/* 2026-11-23: 버튼이 4개면 한 줄에 안 들어가 '거절'이 카드 밖으로 나갔음 → 넘치면 다음 줄로 */}
+          <div className="flex flex-wrap justify-end gap-2 mt-3">
             {u.status === "pending" && (
               <>
                 <Button size="sm" variant="outline" className="rounded-xl" onClick={async () => { if (await askConfirm(`${u.name ?? "이 분"}의 신청을 거절할까요?`, "거절")) setStatus.mutate({ userId: u.id, status: "rejected" }); }}>
