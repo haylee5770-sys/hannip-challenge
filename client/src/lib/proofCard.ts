@@ -248,8 +248,11 @@ export function searchTag(card: ProofCard): string {
 
 export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
   // 2026-11-23 해이 지정: 맨 위 검색용 한 줄(지연식단_누적2) + 그 아래 내용(음식·탄단지·멘트). #해시태그는 뺌.
+  // 기상은 '취침 · 기상 · 수면 시간'까지만. 평가 문장("수면이 부족하면…")은 카드 안에만 (지적처럼 느껴지지 않게)
   const detail = card.itemLabel
-    ? (card.itemLabel !== "이게돼" ? card.feedback ?? "" : "")
+    ? (card.itemLabel === "이게돼" ? ""
+      : card.itemLabel === "기상" ? (card.feedback ?? "").split(" · ").slice(0, 3).join(" · ")
+      : card.feedback ?? "")
     : (card.lines[0] ?? "");
   const text = [searchTag(card), detail.trim()].filter(Boolean).join("\n");
   const blobs = card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
