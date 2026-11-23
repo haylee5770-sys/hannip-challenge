@@ -1669,6 +1669,18 @@ const crewRouter = router({
       await sp.addFeedback(ctx.user.id, input.kind, input.text.trim(), url);
       return { ok: true };
     }),
+  /** 내가 보낸 의견 목록 · 고치기 (2026-11-23) */
+  myFeedbacks: approvedProcedure.query(async ({ ctx }) => sp.myFeedbacks(ctx.user.id)),
+  editFeedback: approvedProcedure
+    .input(z.object({ id: z.number(), kind: z.enum(["bug", "idea"]), text: z.string().min(2).max(3000),
+      imageDataUrl: z.string().max(8_000_000).optional(), removeImage: z.boolean().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      let image: { url: string | null } | undefined;
+      if (input.imageDataUrl) image = { url: (await uploadDataUrl(input.imageDataUrl, `feedback/${ctx.user.id}-${Date.now()}`)).url };
+      else if (input.removeImage) image = { url: null };
+      await sp.editFeedback(ctx.user.id, input.id, input.kind, input.text.trim(), image);
+      return { ok: true };
+    }),
   awardOptions: approvedProcedure.query(async ({ ctx }) => ({ ...(await sp.awardOptions(ctx.user.id)), contact: await roster.getMyContact(ctx.user.id) })),
   eventBoard: approvedProcedure.query(async ({ ctx }) => sp.eventBoard(ctx.user.id)),
   eventApplicants: approvedProcedure.input(z.object({ eventId: z.number() })).query(async ({ input }) => sp.eventApplicants(input.eventId)),

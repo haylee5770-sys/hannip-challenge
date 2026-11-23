@@ -49,7 +49,9 @@ export function FeedbackSheet({ onClose, inline }: { onClose: () => void; inline
   const [img, setImg] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const send = trpc.crew.sendFeedback.useMutation({ onSuccess: () => setSent(true), onError: e => toast.error(e.message) });
+  const utils = trpc.useUtils();
+  const send = trpc.crew.sendFeedback.useMutation({ onSuccess: () => { setSent(true); utils.crew.myFeedbacks.invalidate(); }, onError: e => toast.error(e.message) });
+  const again = () => { setText(""); setImg(null); setSent(false); };
   const share = async () => {
     const msg = `[${kind === "bug" ? "🐞 오류 발견" : "💡 의견"}] ${text}`;
     try { if (navigator.share) await navigator.share({ text: msg }); else { await navigator.clipboard.writeText(msg); toast.success("글을 복사했어요. 카톡방에 붙여 넣어 주세요."); } } catch { /* 취소 */ }
@@ -61,8 +63,10 @@ export function FeedbackSheet({ onClose, inline }: { onClose: () => void; inline
         <p className="font-bold">보내 주셔서 고마워요!</p>
         <p className="text-sm text-muted-foreground">크루님 덕분에 앱이 더 좋아져요.</p>
         <button type="button" className={glass + " text-center font-bold"} onClick={share}>카톡방에도 공유하기</button>
+        <button type="button" className={glass + " text-center font-bold"} onClick={again}>✏️ 의견 하나 더 보내기</button>
         <button type="button" className="text-sm text-muted-foreground underline" onClick={onClose}>닫기</button>
       </div>
+      <MyFeedbacks />
     </Sheet>
   );
   return (
@@ -82,7 +86,69 @@ export function FeedbackSheet({ onClose, inline }: { onClose: () => void; inline
       )}
       <button type="button" disabled={text.trim().length < 2 || send.isPending} onClick={() => send.mutate({ kind, text, imageDataUrl: img ?? undefined })}
         className="w-full h-12 rounded-2xl glass-btn font-bold disabled:opacity-40">{send.isPending ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : "보내기"}</button>
+      <MyFeedbacks />
     </Sheet>
+  );
+}
+
+/** 내가 보낸 의견 (2026-11-23): 아래에 차곡차곡 쌓이고, 누르면 고칠 수 있다 */
+function MyFeedbacks() {
+  const list = trpc.crew.myFeedbacks.useQuery();
+  const [openId, setOpenId] = useState<number | null>(null);
+  const rows = (list.data ?? []) as any[];
+  if (!rows.length) return null;
+  return (
+    <div className="pt-4 space-y-2">
+      <div className="text-sm font-bold">📮 내가 보낸 의견 <span className="text-muted-foreground font-normal">{rows.length}개 · 눌러서 고칠 수 있어요</span></div>
+      {rows.map(r => openId === r.id
+        ? <FeedbackEdit key={r.id} row={r} onDone={() => setOpenId(null)} />
+        : (
+          <button key={r.id} type="button" onClick={() => setOpenId(r.id)}
+            className="w-full text-left rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 space-y-1 active:scale-[0.99] transition">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{r.kind === "bug" ? "🐞 오류 발견" : "💡 의견"} · {new Date(r.createdAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+              <span className={r.done ? "text-primary font-semibold" : ""}>{r.done ? "✓ 방장 확인" : "✏️ 고치기"}</span>
+            </div>
+            <div className="text-sm whitespace-pre-wrap break-words">{r.text}</div>
+            {r.imageUrl && <img src={r.imageUrl} alt="첨부" className="mt-1 max-h-32 rounded-xl" />}
+          </button>
+        ))}
+    </div>
+  );
+}
+
+function FeedbackEdit({ row, onDone }: { row: any; onDone: () => void }) {
+  const [kind, setKind] = useState<"bug" | "idea">(row.kind === "idea" ? "idea" : "bug");
+  const [text, setText] = useState<string>(row.text ?? "");
+  const [img, setImg] = useState<string | null>(row.imageUrl ?? null);
+  const [newImg, setNewImg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const utils = trpc.useUtils();
+  const save = trpc.crew.editFeedback.useMutation({
+    onSuccess: () => { utils.crew.myFeedbacks.invalidate(); toast.success("의견을 고쳤어요."); onDone(); },
+    onError: e => toast.error(e.message),
+  });
+  return (
+    <div className="rounded-2xl border border-primary/60 bg-white/[0.04] p-3 space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        {([["bug", "🐞 오류 발견"], ["idea", "💡 의견 내기"]] as const).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-2xl border py-2 text-sm font-bold ${kind === k ? "glass-fill" : "border-border text-muted-foreground"}`}>{l}</button>
+        ))}
+      </div>
+      <textarea className={field + " resize-none"} rows={5} value={text} onChange={e => setText(e.target.value)} />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (f) { const d = await shrink(f); setImg(d); setNewImg(d); } }} />
+      {img ? (
+        <div className="relative"><img src={img} alt="첨부" className="w-full rounded-2xl" /><button type="button" onClick={() => { setImg(null); setNewImg(null); }} className="absolute top-2 right-2 rounded-full bg-black/70 p-1"><X className="h-4 w-4" /></button></div>
+      ) : (
+        <button type="button" onClick={() => fileRef.current?.click()} className="w-full rounded-2xl border border-dashed border-border py-3 text-sm text-muted-foreground">📷 캡처 사진 붙이기 (선택)</button>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={onDone} className="h-11 rounded-2xl border border-border text-sm font-bold text-muted-foreground">취소</button>
+        <button type="button" disabled={text.trim().length < 2 || save.isPending}
+          onClick={() => save.mutate({ id: row.id, kind, text, imageDataUrl: newImg ?? undefined, removeImage: !img && !!row.imageUrl })}
+          className="h-11 rounded-2xl glass-btn text-sm font-bold disabled:opacity-40">{save.isPending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "고친 내용 저장"}</button>
+      </div>
+    </div>
   );
 }
 

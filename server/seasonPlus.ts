@@ -136,6 +136,15 @@ export async function listFeedbacks() {
   return q(sql`SELECT f.id, f.kind, f.text, f.imageUrl, f.done, f.createdAt, u.name FROM feedbacks f LEFT JOIN users u ON u.id=f.userId ORDER BY f.id DESC LIMIT 300`);
 }
 export async function setFeedbackDone(id: number, done: boolean) { await q(sql`UPDATE feedbacks SET done=${done} WHERE id=${id}`); }
+/** 내가 보낸 의견 목록 (2026-11-23: 보낸 뒤에도 다시 보고 고칠 수 있게) */
+export async function myFeedbacks(userId: number) {
+  return q(sql`SELECT id, kind, text, imageUrl, done, createdAt FROM feedbacks WHERE userId=${userId} ORDER BY id DESC LIMIT 100`);
+}
+/** 내 의견 고치기 — 본인 것만. 고치면 방장이 다시 보도록 '확인' 표시를 푼다 */
+export async function editFeedback(userId: number, id: number, kind: "bug" | "idea", text: string, image: { url: string | null } | undefined) {
+  if (image) await q(sql`UPDATE feedbacks SET kind=${kind}, text=${text}, imageUrl=${image.url}, done=false WHERE id=${id} AND userId=${userId}`);
+  else await q(sql`UPDATE feedbacks SET kind=${kind}, text=${text}, done=false WHERE id=${id} AND userId=${userId}`);
+}
 
 /* ---------- 선물·이벤트 신청 ---------- */
 const AWARD_LABEL: Record<string, string> = { itge: "이게돼 챔피언", total: "꾸준함 챔피언", mvp: "MVP" };

@@ -184,7 +184,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const items = isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
 
   return (
-    <div className="min-h-screen bg-background paper-grain">
+    // 2026-11-23: 아이폰 바탕화면 앱은 화면이 시계·배터리 줄 밑까지 올라가서(black-translucent) 프로필 버튼이 안 눌렸다
+    // → 그 높이(safe-area-inset-top)만큼 내려 준다. 인터넷 창에서는 0이라 그대로.
+    <div className="min-h-screen bg-background paper-grain" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       {/* Top masthead */}
       <WeighInBanner />
       <header className="border-b hairline">
