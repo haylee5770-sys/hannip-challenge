@@ -77,6 +77,68 @@ export async function allSeasonInfos(): Promise<SeasonInfo[]> {
   return (await q(sql`SELECT * FROM seasons ORDER BY startDate ASC, id ASC`)).map(toInfo);
 }
 
+/* ---------- 시즌 시작 시간 예약 (2026-11-23 해이: 새벽 4시처럼 잠든 시간에 시작) ---------- */
+export type SeasonPlan = { name: string; shortName: string; planEnd: string; detoxStart?: string | null; detoxEnd?: string | null };
+type Scheduled = SeasonPlan & { startAt: string; adminId: number };
+const SCHED_KEY = "season.scheduled";
+// 그날 0시~시작 시각 사이에 올린 기록은 전날로 옮겨 새 시즌 번호에 안 들어가게 한다 (지우지 않음)
+const DATED_TABLES = ["meals", "waters", "exercises", "sleeps", "weights", "itgeNotes", "happyNotes", "dailyConditions"];
+
+export async function getScheduledSeason(): Promise<Scheduled | null> {
+  const { getState } = await import("./purchases");
+  const v = await getState(SCHED_KEY).catch(() => null);
+  if (!v) return null;
+  try { return JSON.parse(v) as Scheduled; } catch { return null; }
+}
+export async function scheduleSeason(adminId: number, plan: SeasonPlan, startAtIso: string) {
+  const t = new Date(startAtIso);
+  if (!Number.isFinite(t.getTime())) throw new Error("시작 시각이 올바르지 않아요.");
+  if (t.getTime() < Date.now() + 60_000) throw new Error("지금보다 1분 이상 뒤로 예약해 주세요.");
+  const { setState } = await import("./purchases");
+  await setState(SCHED_KEY, JSON.stringify({ ...plan, startAt: t.toISOString(), adminId } satisfies Scheduled));
+  return { ok: true };
+}
+export async function cancelScheduledSeason() {
+  const { setState } = await import("./purchases");
+  await setState(SCHED_KEY, "");
+  return { ok: true };
+}
+
+let schedBusy = false;
+/** 예약 시각이 지났으면 시즌을 시작한다. 서버가 다시 켜져도 예약은 DB에 남아 있어서 이어서 동작 */
+export async function runDueScheduledSeason(endCurrent: () => Promise<any>) {
+  if (schedBusy) return;
+  const s = await getScheduledSeason();
+  if (!s || Date.now() < new Date(s.startAt).getTime()) return;
+  schedBusy = true;
+  const { setState } = await import("./purchases");
+  try {
+    await setState(SCHED_KEY, ""); // 두 번 시작되지 않게 먼저 지운다
+    const r = await startSeason(s.adminId, s, endCurrent);
+    const startDate = kstToday();
+    const epoch = Math.floor(new Date(s.startAt).getTime() / 1000);
+    const moved: string[] = [];
+    for (const t of DATED_TABLES) {
+      try {
+        const res: any = await (await db.getDb())!.execute(sql`UPDATE IGNORE ${sql.raw(t)} SET recordedDate = DATE_SUB(recordedDate, INTERVAL 1 DAY)
+          WHERE recordedDate = ${startDate} AND UNIX_TIMESTAMP(createdAt) < ${epoch}`);
+        const n = Number(res?.[0]?.affectedRows ?? 0);
+        if (n) moved.push(`${t} ${n}`);
+      } catch (e: any) { console.warn("[season schedule] move skip", t, (e?.message ?? "").slice(0, 100)); }
+    }
+    const msg = `${new Date().toISOString()} 예약 시작 완료 · 시즌 ${r.seasonNumber} '${s.name}' · 시작 전 기록 전날로: ${moved.join(", ") || "없음"}`;
+    await setState("season.lastScheduledRun", msg);
+    console.log("[season schedule]", msg);
+  } catch (e: any) {
+    await setState("season.lastScheduledRun", `${new Date().toISOString()} 예약 시작 실패: ${e?.message ?? e}`).catch(() => {});
+    console.error("[season schedule] failed", e);
+  } finally { schedBusy = false; }
+}
+export function startSeasonScheduleTimer(endCurrent: () => Promise<any>) {
+  void runDueScheduledSeason(endCurrent);
+  setInterval(() => void runDueScheduledSeason(endCurrent), 30_000);
+}
+
 /** 방장이 시즌 시작 (진행 중 회차가 있으면 먼저 종료·결산) */
 export async function startSeason(adminId: number, input: { name: string; shortName: string; planEnd: string; detoxStart?: string | null; detoxEnd?: string | null }, endCurrent: () => Promise<any>) {
   const cur = await activeSeasonInfo();

@@ -53,6 +53,13 @@ function RoundControl() {
   const end = trpc.rounds.end.useMutation({ onSuccess: (r) => { r.ok ? toast.success("시즌 종료! 시상식에 결과가 올라갔어요.") : toast.error((r as any).message ?? "진행 중인 시즌이 없어요"); after(); }, onError: e => toast.error(e.message) });
   const busy = start.isPending || end.isPending;
   const inp = "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm";
+  // 시간 예약 (기본값: 내일 새벽 4시)
+  const sched = trpc.rounds.scheduledSeason.useQuery(undefined, { refetchInterval: 60_000 });
+  const tomorrow4 = (() => { const d = new Date(); d.setDate(d.getDate() + (d.getHours() < 4 ? 0 : 1)); d.setHours(4, 0, 0, 0); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T04:00`; })();
+  const [startAt, setStartAt] = useState(tomorrow4);
+  const fmtKst = (iso: string) => new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", weekday: "short", hour: "numeric", minute: "2-digit" });
+  const schedule = trpc.rounds.scheduleSeason.useMutation({ onSuccess: () => { toast.success("예약했어요. 그 시각에 자동으로 시작돼요."); utils.rounds.scheduledSeason.invalidate(); }, onError: e => toast.error(e.message) });
+  const cancelSched = trpc.rounds.cancelScheduledSeason.useMutation({ onSuccess: () => { toast.success("예약을 취소했어요."); utils.rounds.scheduledSeason.invalidate(); } });
   return (
     <section className="mt-6 rounded-2xl bg-card border border-primary/50 p-5 space-y-3">
       <div className="text-sm">
@@ -73,7 +80,37 @@ function RoundControl() {
         <button type="button" disabled={busy || !name.trim() || !planEnd || (detox && (!dS || !dE))}
           onClick={async () => { if (await askConfirm(`'${name}'을 오늘 시작할까요?
 모두의 인증 번호가 1번부터 다시 시작돼요.`, "시작")) start.mutate({ name: name.trim(), shortName: shortName.trim(), planEnd, detoxStart: detox ? dS : null, detoxEnd: detox ? dE : null }); }}
-          className="w-full rounded-xl bg-primary text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 시즌 시작</button>
+          className="w-full rounded-xl bg-primary text-primary-foreground font-bold py-4 text-base disabled:opacity-50">▶ 지금 바로 시즌 시작</button>
+
+        {/* 2026-11-23 해이: 시간 예약 (새벽 4시처럼 잠든 사이에 시작) */}
+        <div className="rounded-xl border border-amber-400/50 bg-amber-400/5 p-3 space-y-2">
+          <div className="text-sm font-semibold">⏰ 시간 예약해서 시작</div>
+          {sched.data?.scheduled ? (
+            <>
+              <p className="text-sm">
+                <b className="text-amber-200">{fmtKst(sched.data.scheduled.startAt)}</b>에 <b>'{sched.data.scheduled.name}'</b> 시작 예약돼 있어요.
+              </p>
+              <p className="text-[11px] text-muted-foreground">그 시각이 되면 자동으로 시작해요. 그날 0시부터 시작 전까지 올린 기록은 전날 기록으로 옮겨져서 새 시즌 번호에 안 들어가요(지우지 않아요).</p>
+              <button type="button" disabled={cancelSched.isPending} onClick={async () => { if (await askConfirm("예약을 취소할까요?", "예약 취소")) cancelSched.mutate(); }}
+                className="w-full rounded-xl border border-border py-3 text-sm font-semibold">예약 취소</button>
+            </>
+          ) : (
+            <>
+              <label className="block text-xs text-muted-foreground">시작 날짜와 시각
+                <input type="datetime-local" className={inp} value={startAt} onChange={e => setStartAt(e.target.value)} />
+              </label>
+              <button type="button" disabled={schedule.isPending || !startAt || !name.trim() || !planEnd || (detox && (!dS || !dE))}
+                onClick={async () => {
+                  const iso = new Date(startAt).toISOString();
+                  if (await askConfirm(`'${name}'을 ${fmtKst(iso)}에 자동으로 시작할까요?\n그날 0시부터 그 시각 전까지 올린 기록은 전날 기록으로 옮겨져요.`, "예약")) {
+                    schedule.mutate({ name: name.trim(), shortName: shortName.trim(), planEnd, detoxStart: detox ? dS : null, detoxEnd: detox ? dE : null, startAt: iso });
+                  }
+                }}
+                className="w-full rounded-xl bg-amber-400 text-black font-bold py-3 text-base disabled:opacity-50">⏰ 이 시각에 시작 예약</button>
+            </>
+          )}
+          {sched.data?.lastRun && <p className="text-[11px] text-muted-foreground">마지막 예약 실행: {sched.data.lastRun}</p>}
+        </div>
         <p className="text-[11px] text-muted-foreground">예: 슈퍼루틴 2027 시즌 1 · 27-1 · 끝 2027-02-19 · 디톡스 2027-01-12 ~ 01-14</p>
       </div>
       <button type="button" disabled={busy || !cur.data} onClick={async () => { if (await askConfirm("시즌을 종료하고 시상식에 결과를 올릴까요?", "종료")) end.mutate(); }}

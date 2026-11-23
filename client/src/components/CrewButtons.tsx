@@ -328,9 +328,11 @@ export default function CrewButtons() {
           <div className="text-[11px] text-muted-foreground mt-0.5">누르면 바로 신청</div>
         </button>
       </div>
-      <button type="button" className={glass} onClick={() => setOpen("fb")}>
-        <div className="text-base font-bold">💬 의견 보내기 {(unseen.data ?? 0) > 0 && <span className="ml-1 rounded-full bg-rose-500 px-2 py-0.5 text-[11px] text-white align-middle">새 답장 {unseen.data}</span>}</div>
-        <div className="text-xs text-muted-foreground mt-0.5">오류를 발견했거나, 이러면 좋겠다 싶을 때</div>
+      {/* 2026-11-23 해이: 위 두 버튼만큼 높게 */}
+      <button type="button" className={glass + " text-center py-6"} onClick={() => setOpen("fb")}>
+        <div className="text-3xl">💬</div>
+        <div className="text-base font-black mt-1">의견 보내기 {(unseen.data ?? 0) > 0 && <span className="ml-1 rounded-full bg-rose-500 px-2 py-0.5 text-[11px] text-white align-middle">새 답장 {unseen.data}</span>}</div>
+        <div className="text-[11px] text-muted-foreground mt-0.5">오류를 발견했거나, 이러면 좋겠다 싶을 때</div>
       </button>
       {open === "fb" && <FeedbackSheet onClose={() => setOpen(null)} />}
       {open === "award" && <AwardSheet onClose={() => setOpen(null)} />}

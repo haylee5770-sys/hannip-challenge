@@ -1647,6 +1647,19 @@ const roundsRouter = router({
   startSeason: adminProcedure
     .input(z.object({ name: z.string().min(1).max(128), shortName: z.string().max(32), planEnd: dateString, detoxStart: dateString.optional().nullable(), detoxEnd: dateString.optional().nullable() }))
     .mutation(async ({ ctx, input }) => sp.startSeason(ctx.user.id, input, () => rounds.endRound())),
+  /** 시즌 시작 시간 예약 (2026-11-23) */
+  scheduledSeason: adminProcedure.query(async () => {
+    const { getState } = await import("./purchases");
+    return { scheduled: await sp.getScheduledSeason(), lastRun: await getState("season.lastScheduledRun").catch(() => null) };
+  }),
+  scheduleSeason: adminProcedure
+    .input(z.object({ name: z.string().min(1).max(128), shortName: z.string().max(32), planEnd: dateString, detoxStart: dateString.optional().nullable(), detoxEnd: dateString.optional().nullable(), startAt: z.string().min(10).max(40) }))
+    .mutation(async ({ ctx, input }) => {
+      const { startAt, ...plan } = input;
+      try { return await sp.scheduleSeason(ctx.user.id, plan, startAt); }
+      catch (e: any) { throw new TRPCError({ code: "BAD_REQUEST", message: e?.message ?? "예약하지 못했어요." }); }
+    }),
+  cancelScheduledSeason: adminProcedure.mutation(async () => sp.cancelScheduledSeason()),
   seasonInfo: approvedProcedure.query(async () => sp.activeSeasonInfo()),
   // 2026-11-22: 새 앱 이전 시험용 회차(10.5기 미니 챌린지 시험 등)는 크루 화면에 안 보이게
   allSeasons: approvedProcedure.query(async () => (await sp.allSeasonInfos()).filter(s => String(s.startDate) >= "2026-11-20")),

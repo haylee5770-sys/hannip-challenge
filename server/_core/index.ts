@@ -12,11 +12,11 @@ import { dailyReminderHandler } from "../scheduledHandlers";
 import { sdk } from "./sdk";
 import * as db from "../db";
 import { startSupabaseKeepAlive } from "../storage";
-import { ensureRoundSchema, refreshOldItgeSummaries } from "../rounds";
+import { ensureRoundSchema, refreshOldItgeSummaries, endRound } from "../rounds";
 import { ensureWellnessSchema } from "../wellness";
 import { ensureEntryCodeSchema } from "../entryCode";
 import { ensureRosterSchema } from "../roster";
-import { ensureSeasonPlusSchema } from "../seasonPlus";
+import { ensureSeasonPlusSchema, startSeasonScheduleTimer } from "../seasonPlus";
 import { ensurePurchaseSchema } from "../purchases";
 import { startNaverSchedule } from "../naverCommerce";
 
@@ -42,7 +42,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  db.ensureSchema().then(() => ensureRoundSchema()).then(() => ensureWellnessSchema()).then(() => ensureEntryCodeSchema()).then(() => ensureRosterSchema()).then(() => ensureSeasonPlusSchema()).then(() => ensurePurchaseSchema()).then(() => startNaverSchedule()).then(() => refreshOldItgeSummaries()).catch(e => console.error("[ensureSchema] failed:", e));
+  db.ensureSchema().then(() => ensureRoundSchema()).then(() => ensureWellnessSchema()).then(() => ensureEntryCodeSchema()).then(() => ensureRosterSchema()).then(() => ensureSeasonPlusSchema()).then(() => ensurePurchaseSchema()).then(() => startNaverSchedule()).then(() => startSeasonScheduleTimer(() => endRound())).then(() => refreshOldItgeSummaries()).catch(e => console.error("[ensureSchema] failed:", e));
   startSupabaseKeepAlive();
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
