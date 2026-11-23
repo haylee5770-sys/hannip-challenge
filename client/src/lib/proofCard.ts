@@ -235,10 +235,23 @@ export async function makeItgeImages(card: ProofCard): Promise<Blob[]> {
 }
 
 /** 이미지 만들어 공유창 열기. 안 되는 환경이면 이미지 저장 + 문구 복사. 결과를 문자열로 돌려준다. */
+/** 성 빼고 이름만: "임지연" → "지연". 두 글자 이름이나 한글이 아닌 이름은 그대로, 띄어쓰기 뒤는 뺀다 */
+export function givenName(name: string | undefined | null): string {
+  const n = String(name ?? "").trim().split(/\s+/)[0] ?? "";
+  return /^[가-힣]{3,4}$/.test(n) ? n.slice(1) : n;
+}
+
+/** 카톡방 돋보기 검색용 한 줄 (2026-11-23 해이 지정): 지연식단_누적2 · 지연운동_누적3 */
+export function searchTag(card: ProofCard): string {
+  return `${givenName(card.userName)}${card.itemLabel ?? card.title.replace(/\s*인증$/, "")}${card.count != null ? `_누적${card.count}` : ""}`;
+}
+
 export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
-  const text = card.itemLabel
-    ? `${card.emoji} ${card.userName ?? ""} · ${card.itemLabel}${card.count != null ? ` 누적 ${card.count}` : ""}${card.itemLabel !== "이게돼" && card.feedback ? `\n${card.feedback}` : ""}\n#super_hannip_challenge`
-    : `${card.emoji} ${card.title} 완료!${card.lines[0] ? `\n${card.lines[0]}` : ""}\n#super_hannip_challenge`;
+  // 2026-11-23 해이 지정: 맨 위 검색용 한 줄(지연식단_누적2) + 그 아래 내용(음식·탄단지·멘트). #해시태그는 뺌.
+  const detail = card.itemLabel
+    ? (card.itemLabel !== "이게돼" ? card.feedback ?? "" : "")
+    : (card.lines[0] ?? "");
+  const text = [searchTag(card), detail.trim()].filter(Boolean).join("\n");
   const blobs = card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
     : [card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card)];
   return shareImages(blobs, text, `hannip_${card.date}`);
@@ -249,10 +262,16 @@ export async function shareImages(blobs: Blob[], text: string, baseName: string)
   const files = blobs.map((b, i) => new File([b], `${baseName}${blobs.length > 1 ? `_${i + 1}` : ""}.png`, { type: "image/png" }));
   const nav = navigator as any;
   if (!isKakaoInApp() && nav.canShare && nav.canShare({ files })) {
+    // 2026-11-23: 글도 같이 넘긴다(카톡방 검색용). 아이폰 카톡은 사진 + 글 한 줄로 올라가고,
+    // 갤럭시 카톡은 글을 버리므로 글을 미리 복사해 둔다 → 사진 올린 뒤 입력칸 길게 눌러 '붙여넣기'.
+    const android = /Android/i.test(navigator.userAgent);
+    if (android && text) { try { await navigator.clipboard.writeText(text); } catch {} }
     try {
-      // 2026-11-23: 사진만 보낸다. 글까지 넘기면 아이폰 카톡은 사진 아래에 같은 내용 글을 한 번 더 보내고(중복),
-      // 갤럭시는 글을 버려서 서로 달랐다. 카드 안에 이름·항목·누적·멘트가 다 있으니 글은 필요 없다.
-      await nav.share({ files });
+      await nav.share({ files, text });
+      if (android && text) {
+        const { toast } = await import("sonner");
+        toast.success(`'${text.split("\n")[0]}' 글을 복사해 뒀어요. 카톡 입력칸을 길게 눌러 붙여넣기 해 주세요.`, { duration: 6000 });
+      }
       return "shared";
     } catch (e: any) {
       // 저장하느라 시간이 걸려 '누른 직후'가 아니면 브라우저가 막는다 → 버튼 한 번 더 누르게
