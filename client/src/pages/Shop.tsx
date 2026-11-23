@@ -49,12 +49,12 @@ export default function Shop() {
       {/* 2026-11-23: 할인 기간 안내 — 기간이 지나면 저절로 사라짐 */}
       {live ? (
         <section className="rounded-2xl bg-[#03c75a]/15 border border-[#03c75a] p-4 text-center">
-          <div className="text-base font-black">🔥 지금 공구 할인 중!</div>
+          <div className="text-base font-black">🔥 오늘 하루 할인 링크가 열렸어요!</div>
           <div className="text-sm mt-1">{live.label}</div>
         </section>
       ) : soon ? (
         <section className="rounded-2xl border border-primary/60 bg-primary/10 p-4 text-center">
-          <div className="text-base font-black">⏰ 곧 공구 할인이 열려요</div>
+          <div className="text-base font-black">⏰ 오늘 하루 할인 링크가 열려요</div>
           <div className="text-sm mt-1">{soon.label}</div>
         </section>
       ) : (
@@ -95,7 +95,7 @@ export default function Shop() {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="rounded-2xl bg-card border border-border p-3 space-y-1.5">
             <div className="font-black text-base">15개</div>
-            <div>✔ 10% 할인 <b>−10,000원</b></div>
+            <div>✔ 10% 할인<br /><b>−10,000원</b></div>
             <div className="text-muted-foreground">✕ 추가 할인 없음</div>
             <div className="text-muted-foreground">✕ 크루 선물 없음</div>
             <div className="pt-2 border-t border-border">
@@ -106,9 +106,9 @@ export default function Shop() {
           </div>
           <div className="rounded-2xl bg-card border-2 border-primary p-3 space-y-1.5">
             <div className="font-black text-base text-primary">45개 <span className="text-[11px] rounded-full bg-primary/20 px-2 py-0.5 align-middle">추천</span></div>
-            <div>✔ 10% 할인 <b>−29,000원</b></div>
-            <div>✔ 추가 할인 <b>−3,000원</b></div>
-            <div>✔ 크루 선물 <b>스무디 2개</b><br /><span className="text-[11px] text-muted-foreground">(약 12,900원 상당)</span></div>
+            <div>✔ 10% 할인<br /><b>−29,000원</b></div>
+            <div>✔ 추가 할인<br /><b>−3,000원</b></div>
+            <div>✔ 크루 선물<br /><b>스무디 2개</b><br /><span className="text-[11px] text-muted-foreground">(약 12,900원 상당)</span></div>
             <div className="pt-2 border-t border-primary/40">
               <div className="text-[11px] text-muted-foreground">총 혜택</div>
               <div className="text-lg font-black text-primary tabular-nums">약 44,900원</div>
