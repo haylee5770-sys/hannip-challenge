@@ -1660,6 +1660,11 @@ const roundsRouter = router({
       catch (e: any) { throw new TRPCError({ code: "BAD_REQUEST", message: e?.message ?? "예약하지 못했어요." }); }
     }),
   cancelScheduledSeason: adminProcedure.mutation(async () => sp.cancelScheduledSeason()),
+  /** 새 시즌 대기 잠금 (2026-11-24 해이): 예약이 걸려 있고 진행 중인 시즌이 없으면 크루 화면을 잠근다. 예약 시각에 시즌이 시작되면 자동으로 풀림 */
+  waitLock: approvedProcedure.query(async () => {
+    const [s, active] = await Promise.all([sp.getScheduledSeason(), sp.activeSeasonInfo()]);
+    return { locked: !!s && !active, startAt: s?.startAt ?? null, name: s?.name ?? null };
+  }),
   renameActiveSeason: adminProcedure.input(z.object({ name: z.string().min(1).max(128), shortName: z.string().max(32) }))
     .mutation(async ({ input }) => sp.renameActiveSeason(input.name, input.shortName)),
   seasonInfo: approvedProcedure.query(async () => sp.activeSeasonInfo()),

@@ -84,10 +84,38 @@ function ConfirmHost() {
   );
 }
 
+/**
+ * 새 시즌 대기 잠금 (2026-11-24 해이): 예약 시즌이 시작되기 전(진행 중 시즌 없음 + 예약 있음)에는
+ * 크루 화면을 통째로 가리고 무엇을 눌러도 이 안내만 보인다. 예약 시각에 시즌이 시작되면 자동으로 풀림. 방장은 통과
+ */
+function WaitLock({ isAdmin }: { isAdmin: boolean }) {
+  const q = trpc.rounds.waitLock.useQuery(undefined, { refetchInterval: 60_000, refetchOnWindowFocus: true });
+  if (!q.data?.locked) return null;
+  const when = q.data.startAt ? new Date(q.data.startAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+  if (isAdmin) return (
+    <div className="bg-amber-400 text-black text-center text-xs font-bold py-1.5 px-3">🔒 지금 크루 화면은 '새 시즌 대기 중'으로 잠겨 있어요 · {when} 자동으로 풀려요 (방장만 보임)</div>
+  );
+  return (
+    <div className="fixed inset-0 z-[200] bg-background/95 backdrop-blur flex items-center justify-center p-8 text-center"
+      style={{ paddingTop: "env(safe-area-inset-top)" }} onClickCapture={e => e.stopPropagation()}>
+      <div className="max-w-xs space-y-4">
+        <div className="text-6xl">🌙</div>
+        <h2 className="text-2xl font-black leading-snug">지금은<br /><span className="text-primary">새 시즌 대기 중</span>입니다</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {q.data.name ? <><b className="text-foreground">{q.data.name}</b>이</> : "새 시즌이"} <b className="text-foreground">{when}</b>에 시작돼요.<br />
+          그때부터 모든 인증이 <b className="text-primary">1번</b>부터 시작해요!
+        </p>
+        <button type="button" onClick={() => q.refetch()} className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold">다시 확인하기</button>
+      </div>
+    </div>
+  );
+}
+
 /** 시즌별 몸무게 (2026-11-22): 시즌 시작 때 한 번 + 끝나기 전 마지막 3일에 한 번. 기록하면 사라짐 */
 function WeighInBanner() {
   const q = trpc.rounds.weighStatus.useQuery(undefined, { staleTime: 10 * 60_000, retry: false });
-  if (!q.data?.need) return null;
+  const lock = trpc.rounds.waitLock.useQuery(undefined, { staleTime: 60_000 });
+  if (!q.data?.need || lock.data?.locked) return null; // 새 시즌 대기 중에는 빨간 띠를 안 보여 줌
   return (
     <Link href="/today#weight">
       <div className="bg-rose-600 text-white text-center text-sm font-bold py-2 px-3 cursor-pointer">
@@ -200,6 +228,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // → 그 높이(safe-area-inset-top)만큼 내려 준다. 인터넷 창에서는 0이라 그대로.
     <div className="min-h-screen bg-background paper-grain" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       {/* Top masthead */}
+      <WaitLock isAdmin={user?.role === "admin"} />
       <WeighInBanner />
       <header className="border-b hairline">
         <div className="container">
