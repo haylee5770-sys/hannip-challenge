@@ -380,7 +380,7 @@ const mealsRouter = router({
 
   /** 식단 사진 AI 분석: 무엇을 먹었는지 + 탄·단·지·채소 대략값 (2026-11-20) */
   analyzePhoto: approvedProcedure
-    .input(z.object({ photoBase64: z.array(z.string().min(20)).min(1).max(4) }))
+    .input(z.object({ photoBase64: z.array(z.string().min(20)).min(1).max(4), hint: z.string().max(300).optional() }))
     .mutation(async ({ ctx, input }) => {
       const urls: string[] = [];
       for (let i = 0; i < input.photoBase64.length; i++) {
@@ -391,7 +391,7 @@ const mealsRouter = router({
         urls.push(url);
       }
       if (!urls.length) throw new TRPCError({ code: "BAD_REQUEST", message: "사진 형식이 올바르지 않아요." });
-      return analyzeMealImage(urls);
+      return analyzeMealImage(urls, input.hint);
     }),
 
   delete: approvedProcedure

@@ -657,12 +657,29 @@ function MealForm({
   // 스무디·퓨레 버튼으로 고른 개수 (id → 개수)
   const [picked, setPicked] = useState<Record<string, number>>({});
   const pickedList = PRODUCTS.flatMap(p => Array.from({ length: picked[p.id] ?? 0 }, () => p));
+  // 2026-11-23: AI 힌트 한 줄 + 음식별 g (g을 고치면 그 음식 탄단지가 비율대로 다시 계산)
+  const [hint, setHint] = useState("");
+  type AiItem = { name: string; grams: number; carbsG: number; proteinG: number; fatG: number; vegetableG: number };
+  const [aiItems, setAiItems] = useState<{ base: AiItem; grams: string }[]>([]);
+  const applyItems = (rows: { base: AiItem; grams: string }[]) => {
+    const t = { c: 0, p: 0, f: 0, v: 0 };
+    const parts: string[] = [];
+    for (const r of rows) {
+      const g = Math.max(0, parseInt(r.grams) || 0);
+      const k = r.base.grams > 0 ? g / r.base.grams : 0;
+      t.c += r.base.carbsG * k; t.p += r.base.proteinG * k; t.f += r.base.fatG * k; t.v += r.base.vegetableG * k;
+      parts.push(`${r.base.name} ${g}g`);
+    }
+    setCarbsG(String(Math.round(t.c))); setProteinG(String(Math.round(t.p))); setFatG(String(Math.round(t.f))); setVegetableG(String(Math.round(t.v)));
+    setDescription(parts.join(", "));
+  };
   const analyze = trpc.meals.analyzePhoto.useMutation({
     onSuccess: (r) => {
       if (r.foods) setDescription(r.foods);
       setCarbsG(String(r.carbsG)); setProteinG(String(r.proteinG)); setFatG(String(r.fatG)); setVegetableG(String(r.vegetableG));
+      setAiItems((r.items ?? []).map(it => ({ base: it, grams: String(it.grams) })));
       setAnalyzed(true);
-      toast.success("AI가 사진을 분석했어요. 숫자는 고칠 수 있어요.");
+      toast.success("AI가 사진을 분석했어요. 음식별 g이나 숫자는 고칠 수 있어요.");
     },
     onError: (e) => toast.error(e.message || "분석에 실패했어요. 숫자를 직접 넣어 주세요."),
   });
@@ -797,6 +814,13 @@ function MealForm({
           {/* 사진 → 바로 옆 '사진으로 자동 채우기' (2026-11-21: 메모 위로 올림) */}
           <div className="mb-3">
             <Label className="editorial-eyebrow text-muted-foreground mb-2 block">PHOTOS (최대 4장)</Label>
+            <input
+              value={hint}
+              onChange={(e) => setHint(e.target.value)}
+              maxLength={300}
+              placeholder="AI에게 힌트 (선택) 예) 수육 앞다리, 새우젓, 밥 반 공기"
+              className="w-full mb-3 rounded-lg border border-border bg-transparent px-3 py-2.5 text-base outline-none focus:border-primary"
+            />
             <div className="flex flex-wrap items-center gap-3">
               {photoThumbs}
               {photos.length < 4 && cameraBox}
@@ -804,14 +828,44 @@ function MealForm({
                 type="button"
                 variant="outline"
                 disabled={photos.length === 0 || analyze.isPending}
-                onClick={() => analyze.mutate({ photoBase64: photos.slice(0, 4) })}
+                onClick={() => analyze.mutate({ photoBase64: photos.slice(0, 4), hint: hint.trim() || undefined })}
                 className={cn("rounded-xl border-primary text-primary h-11", photos.length > 0 && !analyzed && !analyze.isPending && "nudge")}
               >
                 {analyze.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />AI가 보는 중…</> : <><Sparkles className="h-4 w-4 mr-2" />사진으로 자동 채우기</>}
               </Button>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">사진을 올리고 바로 옆 버튼을 누르세요.<br /><b className="text-primary">AI 인식은 오류가 있을 수 있어요.</b> 숫자는 직접 고쳐도 되고, <b className="text-foreground">직접 기입이 가장 정확해요.</b></p>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">사진을 올리고 바로 옆 버튼을 누르세요. <b className="text-foreground">접시 옆에 숟가락·젓가락이 같이 나오게 찍고, 힌트를 한 줄 적으면 더 정확해요.</b><br /><b className="text-primary">AI 인식은 어림값이에요.</b> 아래에서 음식별 g이나 숫자를 고칠 수 있어요.</p>
           </div>
+
+          {/* AI가 나눈 음식별 양 — g을 고치면 탄단지가 다시 계산돼요 (2026-11-23) */}
+          {aiItems.length > 0 && (
+            <div className="mb-4 rounded-lg border border-primary/40 p-3 space-y-2">
+              <div className="text-xs text-muted-foreground">AI가 본 음식 · <b className="text-foreground">g을 고치면 탄단지가 다시 계산돼요</b></div>
+              {aiItems.map((r, i) => {
+                const g = parseInt(r.grams) || 0; const k = r.base.grams > 0 ? g / r.base.grams : 0;
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="flex-1 min-w-0 text-sm break-keep">{r.base.name}
+                      <span className="block text-[11px] text-muted-foreground">탄 {Math.round(r.base.carbsG * k)} · 단 {Math.round(r.base.proteinG * k)} · 지 {Math.round(r.base.fatG * k)}</span>
+                    </span>
+                    <input
+                      inputMode="numeric"
+                      value={r.grams}
+                      onChange={(e) => {
+                        const next = aiItems.map((x, j) => j === i ? { ...x, grams: e.target.value.replace(/[^0-9]/g, "") } : x);
+                        setAiItems(next); applyItems(next);
+                      }}
+                      className="w-20 rounded-lg border border-border bg-transparent px-2 py-1.5 text-right text-base outline-none focus:border-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">g</span>
+                    <button type="button" aria-label="빼기" onClick={() => { const next = aiItems.filter((_, j) => j !== i); setAiItems(next); applyItems(next); }}>
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="mb-5">
             <Label className="editorial-eyebrow text-muted-foreground mb-2 block">메모 (선택)</Label>
