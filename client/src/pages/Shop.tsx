@@ -63,7 +63,7 @@ export default function Shop() {
       <section className="grid grid-cols-2 gap-3">
         {PRODUCTS.map(p => (
           <button type="button" key={p.url} onClick={() => open(p)}
-            className="rounded-2xl border border-border bg-card p-3 flex flex-col items-center text-center hover:border-primary transition-colors">
+            className="h-full rounded-2xl border border-border bg-card p-3 flex flex-col items-center text-center hover:border-primary transition-colors">
             <div className="text-sm text-muted-foreground">스무디</div>
             <div className="text-4xl font-black tabular-nums leading-none mt-1">{p.qty}<span className="text-lg font-bold ml-0.5">개</span></div>
             {live ? (
@@ -79,7 +79,8 @@ export default function Shop() {
                 <div className="mt-1 text-[11px] text-muted-foreground">공구 때 {won(p.salePrice)}</div>
               </>
             )}
-            <div className="mt-3 w-full rounded-xl bg-[#03c75a] text-white text-sm font-bold py-2.5 whitespace-nowrap">네이버에서 구매하기</div>
+            <div className="flex-1 min-h-3" />{/* 2026-11-23: 두 칸의 구매 버튼 높이를 맞춤 (짧은 쪽에 여백) */}
+            <div className="w-full rounded-xl bg-[#03c75a] text-white text-sm font-bold py-2.5 whitespace-nowrap">네이버에서 구매하기</div>
             <div className="mt-2 text-[11px] text-muted-foreground leading-snug">리뷰 시 포토 후기<br /><b className="text-primary">기본 {p.point} 적립</b></div>
           </button>
         ))}
