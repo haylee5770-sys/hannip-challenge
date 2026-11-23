@@ -813,6 +813,7 @@ const adminRouter = router({
   purchasesFor: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => purchases.forUser(input.userId)),
   purchaseSummary: adminProcedure.query(async () => purchases.summaryByUser()),
   purchaseRanking: adminProcedure.input(z.object({ since: z.string().nullable().optional() })).query(async ({ input }) => purchases.ranking(input.since ?? null)),
+  purchaseCrewRanking: adminProcedure.input(z.object({ since: z.string().nullable().optional() })).query(async ({ input }) => purchases.crewRanking(input.since ?? null)),
   // 2026-11-23: 네이버 건수(naver)와 연결 상태가 같은 이름이라 숫자가 덮였음 → 상태는 naverStatus
   purchaseStats: adminProcedure.query(async () => ({ ...(await purchases.stats()), naverStatus: await naver.naverStatus() })),
   purchaseImport: adminProcedure.input(z.object({ text: z.string().min(1).max(5_000_000) })).mutation(async ({ input }) => purchases.importExcel(input.text)),

@@ -158,7 +158,26 @@ export async function ranking(since?: string | null) {
   return Array.from(g.values()).map(x => {
     const uid = userOfPhone.get(x.phone) ?? null;
     return { phoneTail: x.phone.slice(-4), buyerName: x.buyerName, userId: uid, nickname: uid ? names.get(uid) ?? null : null, ...summarize(x.rows) };
-  }).sort((a, b) => b.amount - a.amount || b.count - a.count || b.boxes - a.boxes).slice(0, 100);
+  }).sort((a, b) => b.count - a.count || b.boxes - a.boxes || b.amount - a.amount).slice(0, 2000);
+}
+
+/** 우리 방 순위 (2026-11-23): 앱에 가입(수락)한 크루 전원. 안 산 크루도 0번으로 맨 아래에 */
+export async function crewRanking(since?: string | null) {
+  const byUser = await phonesByUser();
+  const users = await q(sql`SELECT id, name FROM users WHERE status = 'approved'`);
+  const rows = since
+    ? await q(sql`SELECT buyerPhone, recvPhone, orderDate, qty, amount, kind FROM purchases WHERE kind = '구매' AND orderDate >= ${since}`)
+    : await q(sql`SELECT buyerPhone, recvPhone, orderDate, qty, amount, kind FROM purchases WHERE kind = '구매'`);
+  const byPhone = new Map<string, any[]>();
+  for (const r of rows) for (const p of Array.from(new Set<string>([r.buyerPhone, r.recvPhone].filter(Boolean)))) {
+    if (!byPhone.has(p)) byPhone.set(p, []); byPhone.get(p)!.push(r);
+  }
+  return users.map(u => {
+    const uid = Number(u.id);
+    const phones = byUser.get(uid) ?? [];
+    const mine = new Set<any>(); phones.forEach(p => (byPhone.get(p) ?? []).forEach(r => mine.add(r)));
+    return { userId: uid, nickname: (u.name as string) ?? null, buyerName: null as string | null, phoneTail: phones[0]?.slice(-4) ?? "", hasPhone: phones.length > 0, ...summarize(Array.from(mine)) };
+  }).sort((a, b) => b.count - a.count || b.boxes - a.boxes || (a.nickname ?? "").localeCompare(b.nickname ?? ""));
 }
 
 export async function stats() {

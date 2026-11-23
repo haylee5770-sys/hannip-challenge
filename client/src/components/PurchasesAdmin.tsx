@@ -1,7 +1,7 @@
 // 관리자 🛒 구매 기록 (2026-11-23)
 // - 예전 주문: 정리한 파일(1122_구매기록_앱업로드용.txt 같은 탭 구분 글)을 올린다. 같은 파일을 또 올려도 겹치지 않는다
 // - 앞으로 주문: 네이버 열쇠를 넣으면 하루 1번 자동. '지금 가져오기'로 바로 가져올 수도 있다
-// - 크루 '내 구매 기록'은 처음엔 비공개. 방장이 확인하고 여기서 공개로 바꾼다
+// - 구매 기록은 방장만 본다 (2026-11-23 해이 결정: 크루에게 횟수·금액을 보여 주면 '돈 아깝다'로 이어질 수 있어서)
 // - 누가 누군지는 전화번호(주문자 또는 받는 분)로만 맞춘다. 이름은 안 본다
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -18,14 +18,17 @@ function addMonths(d: Date, m: number) { const x = new Date(d); x.setMonth(x.get
 export default function PurchasesAdmin() {
   const utils = trpc.useUtils();
   const stats = trpc.admin.purchaseStats.useQuery();
-  const crewOpen = trpc.admin.purchaseCrewOpen.useQuery();
   const [period, setPeriod] = useState<"all" | "3m" | "year">("all");
   const since = period === "all" ? null : period === "3m" ? addMonths(new Date(), -3) : `${new Date().getFullYear()}-01-01`;
-  const ranking = trpc.admin.purchaseRanking.useQuery({ since });
+  // 2026-11-23: [전체] 모든 구매자 / [우리 방] 앱에 가입한 크루만(안 산 크루도 0번으로)
+  const [tab, setTab] = useState<"all" | "crew">("all");
+  const rankAll = trpc.admin.purchaseRanking.useQuery({ since }, { enabled: tab === "all" });
+  const rankCrew = trpc.admin.purchaseCrewRanking.useQuery({ since }, { enabled: tab === "crew" });
+  const ranking = tab === "all" ? rankAll : rankCrew;
   const [openUser, setOpenUser] = useState<number | null>(null);
   const detail = trpc.admin.purchasesFor.useQuery({ userId: openUser ?? 0 }, { enabled: openUser != null });
 
-  const refresh = () => { utils.admin.purchaseStats.invalidate(); utils.admin.purchaseRanking.invalidate(); utils.admin.purchasesFor.invalidate(); utils.crew.myPurchases.invalidate(); };
+  const refresh = () => { utils.admin.purchaseStats.invalidate(); utils.admin.purchaseRanking.invalidate(); utils.admin.purchaseCrewRanking.invalidate(); utils.admin.purchasesFor.invalidate(); };
   const imp = trpc.admin.purchaseImport.useMutation({
     onSuccess: r => { toast.success(`새로 ${r.added}건 넣었어요 · 이미 있던 ${r.same}건 · 건너뜀 ${r.skipped}건`, { duration: 8000 }); refresh(); },
     onError: e => toast.error(e.message),
@@ -33,9 +36,6 @@ export default function PurchasesAdmin() {
   const sync = trpc.admin.naverSync.useMutation({
     onSuccess: r => { r.ok ? toast.success(r.message) : toast.error(r.message); refresh(); },
     onError: e => toast.error(e.message),
-  });
-  const setOpen = trpc.admin.setPurchaseCrewOpen.useMutation({
-    onSuccess: () => { utils.admin.purchaseCrewOpen.invalidate(); utils.crew.myPurchases.invalidate(); },
   });
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -50,8 +50,9 @@ export default function PurchasesAdmin() {
 
   const s = stats.data;
   const nv = s?.naverStatus;
-  const rows = ranking.data ?? [];
+  const rows = (ranking.data ?? []) as Array<{ userId: number | null; nickname: string | null; buyerName: string | null; phoneTail: string; count: number; boxes: number; amount: number; last: string | null; hasPhone?: boolean }>;
   const joined = rows.filter(r => r.userId).length;
+  const bought = rows.filter(r => r.count > 0).length;
 
   return (
     <div className="space-y-4">
@@ -63,26 +64,6 @@ export default function PurchasesAdmin() {
           <div><div className="text-2xl font-black">{s?.naver ?? "–"}</div><div className="text-[11px] text-muted-foreground">네이버 자동</div></div>
         </div>
         <p className="text-xs text-muted-foreground text-center">마지막 주문일 {s?.last ? String(s.last) : "–"}</p>
-      </div>
-
-      {/* 크루 공개 */}
-      <div className={box}>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="font-bold">크루 '내 구매 기록'</div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {crewOpen.data ? "공개 중 · 크루가 구매하기 화면에서 자기 기록을 봐요" : "비공개 · 지금은 방장만 구매하기 화면에서 미리 봐요"}
-            </div>
-          </div>
-          <button type="button" disabled={setOpen.isPending || crewOpen.isLoading}
-            onClick={async () => {
-              const next = !crewOpen.data;
-              if (await askConfirm(next ? "크루 모두에게 '내 구매 기록'을 공개할까요?\n(각자 자기 전화번호로 맞춘 기록만 보여요)" : "다시 비공개로 바꿀까요?", next ? "공개" : "비공개")) setOpen.mutate({ open: next });
-            }}
-            className={`${btn} shrink-0 ${crewOpen.data ? "border-primary bg-primary/15 text-primary" : ""}`}>
-            {crewOpen.data ? "공개 중" : "비공개"}
-          </button>
-        </div>
       </div>
 
       {/* 예전 주문 넣기 */}
@@ -122,6 +103,12 @@ export default function PurchasesAdmin() {
 
       {/* 누가 얼마나 샀나 */}
       <div className={box}>
+        <div className="grid grid-cols-2 gap-2">
+          {([["all", "전체 구매자"], ["crew", "우리 방"]] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => { setTab(k); setOpenUser(null); }}
+              className={`h-11 rounded-xl border text-sm font-bold ${tab === k ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"}`}>{l}</button>
+          ))}
+        </div>
         <div className="flex items-center justify-between">
           <div className="font-bold">🏆 구매 순위</div>
           <div className="flex gap-1">
@@ -131,7 +118,11 @@ export default function PurchasesAdmin() {
             ))}
           </div>
         </div>
-        <p className="text-[11px] text-muted-foreground">전화번호 기준으로 묶었어요 · 앱 가입자 {joined}명 / {rows.length}명 · 가입자는 눌러서 자세히</p>
+        <p className="text-[11px] text-muted-foreground">
+          {tab === "all"
+            ? <>전화번호 기준 {rows.length}명 · 그중 앱 가입 {joined}명 · '앱 가입'은 눌러서 자세히</>
+            : <>앱에 가입한 크루 {rows.length}명 · 산 적 있는 크루 {bought}명 · 눌러서 자세히</>}
+        </p>
         {ranking.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">아직 구매 기록이 없어요. 위에서 파일을 먼저 넣어 주세요.</p>
         ) : (
@@ -143,10 +134,11 @@ export default function PurchasesAdmin() {
                   <span className="w-7 text-center text-sm font-black text-primary">{i + 1}</span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold truncate">
-                      {r.nickname ?? r.buyerName ?? "이름 없음"} <span className="text-muted-foreground font-normal">· ****{r.phoneTail}</span>
-                      {r.userId ? <span className="ml-1.5 rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">앱 가입</span> : null}
+                      {r.nickname ?? r.buyerName ?? "이름 없음"} {r.phoneTail && <span className="text-muted-foreground font-normal">· ****{r.phoneTail}</span>}
+                      {tab === "all" && r.userId ? <span className="ml-1.5 rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">앱 가입</span> : null}
+                      {tab === "crew" && r.hasPhone === false ? <span className="ml-1.5 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-200">번호 없음</span> : null}
                     </span>
-                    <span className="block text-[11px] text-muted-foreground">{r.count}번 · 수량 {r.boxes} {fmtWon(r.amount) && `· ${fmtWon(r.amount)}`} · 마지막 {r.last ?? "–"}</span>
+                    <span className="block text-[11px] text-muted-foreground">{r.count > 0 ? <>{r.count}번 · 수량 {r.boxes}{fmtWon(r.amount) && ` · ${fmtWon(r.amount)}`} · 마지막 {r.last ?? "–"}</> : "아직 구매 없음"}</span>
                   </span>
                   {r.userId ? <span className="text-muted-foreground text-sm">{openUser === r.userId ? "▲" : "▼"}</span> : null}
                 </button>
