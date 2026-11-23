@@ -465,7 +465,7 @@ async function generateMealAiComment(mealId: number) {
 - 탄수화물: ${meal.carbsG}g
 - 단백질: ${meal.proteinG}g
 - 지방: ${meal.fatG}g
-- 야채: ${meal.vegetableG}g
+- 야채: ${meal.vegetableG > 0 ? "먹음" : "안 먹음"}
 - 수분: ${meal.waterMl}ml
 
 위 정보를 바탕으로 영양 균형, 칼로리 추정, 개선 제안을 따뜻하고 격려하는 톤으로 코멘트해 주세요.

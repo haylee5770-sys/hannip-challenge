@@ -649,7 +649,8 @@ function MealForm({
   const [carbsG, setCarbsG] = useState("");
   const [proteinG, setProteinG] = useState("");
   const [fatG, setFatG] = useState("");
-  const [vegetableG, setVegetableG] = useState("");
+  // 2026-11-23: 야채는 g이 아니라 먹었나/안 먹었나 (저장은 vegetableG 1 / 0, 0보다 크면 먹음)
+  const [veg, setVeg] = useState(false);
   const [waterMl, setWaterMl] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [analyzed, setAnalyzed] = useState(false);
@@ -685,13 +686,13 @@ function MealForm({
       t.c += r.base.carbsG * k; t.p += r.base.proteinG * k; t.f += r.base.fatG * k; t.v += r.base.vegetableG * k;
       parts.push(`${r.base.name} ${g}g`);
     }
-    setCarbsG(String(Math.round(t.c))); setProteinG(String(Math.round(t.p))); setFatG(String(Math.round(t.f))); setVegetableG(String(Math.round(t.v)));
+    setCarbsG(String(Math.round(t.c))); setProteinG(String(Math.round(t.p))); setFatG(String(Math.round(t.f))); setVeg(t.v > 0);
     if (!keepMemo) setDescription(parts.join(", "));
   };
   const analyze = trpc.meals.analyzePhoto.useMutation({
     onSuccess: (r) => {
       if (r.foods) setDescription(r.foods);
-      setCarbsG(String(r.carbsG)); setProteinG(String(r.proteinG)); setFatG(String(r.fatG)); setVegetableG(String(r.vegetableG));
+      setCarbsG(String(r.carbsG)); setProteinG(String(r.proteinG)); setFatG(String(r.fatG)); setVeg(r.vegetableG > 0);
       setAiItems((r.items ?? []).map(it => ({ base: it, grams: String(it.grams) })));
       setAnalyzed(true);
       toast.success("AI가 사진을 분석했어요. 음식별 g이나 숫자는 고칠 수 있어요.");
@@ -703,9 +704,9 @@ function MealForm({
     carbsG: parseInt(carbsG) || 0,
     proteinG: parseInt(proteinG) || 0,
     fatG: parseInt(fatG) || 0,
-    vegetableG: parseInt(vegetableG) || 0,
+    vegetableG: veg ? 1 : 0,
     waterMl: parseInt(waterMl) || 0,
-  }), [carbsG, proteinG, fatG, vegetableG, waterMl]);
+  }), [carbsG, proteinG, fatG, veg, waterMl]);
 
   const feedback = trpc.meals.feedback.useQuery(
     { ...numbers, mealsToday },
@@ -735,7 +736,7 @@ function MealForm({
   };
 
   // 다음에 누를 버튼 반짝임 (사진 → 자동 채우기 → 자랑하기)
-  const ready = isSmoothie ? photos.length > 0 && pickedList.length > 0 : photos.length > 0 && (analyzed || numbers.carbsG + numbers.proteinG + numbers.fatG + numbers.vegetableG > 0);
+  const ready = isSmoothie ? photos.length > 0 && pickedList.length > 0 : photos.length > 0 && (analyzed || numbers.carbsG + numbers.proteinG + numbers.fatG > 0);
   const photoThumbs = photos.map((p, idx) => (
     <div key={idx} className="relative w-16 h-16 rounded-lg border hairline overflow-hidden">
       <img src={p} alt="" className="w-full h-full object-cover" />
@@ -893,12 +894,20 @@ function MealForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <div className="grid grid-cols-3 gap-3 mb-3">
             <NutrientInput label="탄수화물" suffix="g" value={carbsG} onChange={setCarbsG} />
             <NutrientInput label="단백질" suffix="g" value={proteinG} onChange={setProteinG} />
             <NutrientInput label="지방" suffix="g" value={fatG} onChange={setFatG} />
-            <NutrientInput label="야채" suffix="g" value={vegetableG} onChange={setVegetableG} />
           </div>
+          {/* 야채는 g이 아니라 먹었는지만 (2026-11-23 해이 결정) */}
+          <button
+            type="button"
+            onClick={() => setVeg(v => !v)}
+            className={cn("w-full mb-5 rounded-xl border py-3 text-base font-bold transition-colors",
+              veg ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground")}
+          >
+            🥬 야채 먹었어요 {veg ? "✓" : ""}
+          </button>
 
           {/* Live feedback (물은 별도 섹션에서 입력하므로 waterMl=0으로 전송하여 잠재 피드백은 다른 끌니 종합에 사용) */}
           {feedback.data && feedback.data.length > 0 && (
@@ -972,7 +981,7 @@ function MealForm({
             }
             onBragNow?.({
               item: "meal", label: "일반식", emoji: "🥗", photo: photos[0],
-              feedback: `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g`,
+              feedback: `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g${veg ? " · 🥬야채" : ""}`,
             });
             try {
               await create.mutateAsync({
@@ -1008,8 +1017,10 @@ function DailyNutritionTotals({ meals, date }: { meals: MealRow[]; date: string 
     { k: "carbsG", label: "탄수화물" },
     { k: "proteinG", label: "단백질" },
     { k: "fatG", label: "지방" },
-    { k: "vegetableG", label: "채소" },
   ];
+  // 2026-11-23: 야채는 g 막대 대신 '야채 먹은 끼니' 수로
+  const regularMeals = meals.filter(m => m.category !== "smoothie");
+  const vegMeals = regularMeals.filter(m => (m.vegetableG || 0) > 0).length;
   return (
     <div className="pt-2">
       <div className="editorial-eyebrow text-primary mb-3">TODAY TOTAL · 오늘 먹은 양</div>
@@ -1030,6 +1041,12 @@ function DailyNutritionTotals({ meals, date }: { meals: MealRow[]; date: string 
             </div>
           );
         })}
+        {regularMeals.length > 0 && (
+          <div className="flex justify-between text-sm">
+            <span>🥬 야채 먹은 끼니</span>
+            <span className="tabular-nums"><b className={vegMeals > 0 ? "text-primary" : ""}>{vegMeals}끼</b><span className="text-muted-foreground"> / {regularMeals.length}끼</span></span>
+          </div>
+        )}
       </div>
       {intake.data?.line && (
         <p className={cn("mt-4 text-[11px] font-semibold leading-snug rounded-lg px-2.5 py-1.5 whitespace-nowrap overflow-hidden text-ellipsis",
@@ -1122,7 +1139,7 @@ function MealCard({ meal, onChange }: { meal: MealRow; onChange: () => void }) {
         <NutrientStat label="탄" value={meal.carbsG} unit="g" />
         <NutrientStat label="단" value={meal.proteinG} unit="g" />
         <NutrientStat label="지" value={meal.fatG} unit="g" />
-        <NutrientStat label="채" value={meal.vegetableG} unit="g" />
+        <NutrientStat label="야채" value={meal.vegetableG > 0 ? "🥬" : "–"} unit="" />
         <NutrientStat label="물" value={meal.waterMl} unit="ml" />
       </div>
 
@@ -1154,7 +1171,7 @@ function MealCard({ meal, onChange }: { meal: MealRow; onChange: () => void }) {
   );
 }
 
-function NutrientStat({ label, value, unit }: { label: string; value: number; unit: string }) {
+function NutrientStat({ label, value, unit }: { label: string; value: number | string; unit: string }) {
   return (
     <div>
       <div className="editorial-eyebrow text-muted-foreground">{label}</div>

@@ -351,7 +351,6 @@ export default function Dashboard() {
                 <Bar dataKey="carbs" name="탄수화물 (g)" fill="var(--chart-1)" stackId="a" />
                 <Bar dataKey="protein" name="단백질 (g)" fill="var(--chart-2)" stackId="a" />
                 <Bar dataKey="fat" name="지방 (g)" fill="var(--chart-3)" stackId="a" />
-                <Bar dataKey="veg" name="야채 (g)" fill="var(--chart-4)" stackId="a" />
               </BarChart>
             </ResponsiveContainer>
           )}

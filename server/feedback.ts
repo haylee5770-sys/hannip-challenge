@@ -75,16 +75,16 @@ export function generateAutoFeedback(input: FeedbackInput): FeedbackItem[] {
     });
   }
 
-  // Vegetables
-  if (input.vegetableG === 0) {
+  // Vegetables — 2026-11-23: g이 아니라 '먹었다/안 먹었다'로 본다 (vegetableG > 0 = 야채 먹음)
+  if (!(input.vegetableG > 0)) {
     items.push({
       tone: "warning",
-      text: "야채가 빠졌어요. 한 끼에 한 줌(약 100g) 이상의 채소를 더하면 식이섬유와 미세영양소가 풍부해져요.",
+      text: "야채가 빠졌어요. 한 줌 곁들이면 식이섬유와 미세영양소가 풍부해져요.",
     });
-  } else if (input.vegetableG >= 200) {
+  } else {
     items.push({
       tone: "praise",
-      text: "채소 섭취가 풍성해요. 식이섬유와 항산화 영양소가 충분합니다.",
+      text: "야채까지 챙겼어요. 식이섬유와 항산화 영양소가 든든해요.",
     });
   }
 
@@ -92,7 +92,7 @@ export function generateAutoFeedback(input: FeedbackInput): FeedbackItem[] {
 
   // Macro balance praise
   const total = totals.carbsG + totals.proteinG + totals.fatG;
-  if (total >= 60 && totals.proteinG >= 20 && totals.vegetableG >= 100) {
+  if (total >= 60 && totals.proteinG >= 20 && totals.vegetableG > 0) {
     items.push({
       tone: "praise",
       text: "탄단지·채소 균형이 좋아요. 이 페이스를 유지하시면 충분합니다.",

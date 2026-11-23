@@ -238,7 +238,7 @@ function FeedItem(props: {
           <Macro label="탄" v={props.macros.carbs} u="g" />
           <Macro label="단" v={props.macros.protein} u="g" />
           <Macro label="지" v={props.macros.fat} u="g" />
-          <Macro label="채" v={props.macros.veg} u="g" />
+          <Macro label="야채" v={props.macros.veg > 0 ? "🥬" : "–"} u="" />
           <Macro label="물" v={props.macros.water} u="ml" />
         </div>
       )}
@@ -328,7 +328,7 @@ function FeedItem(props: {
   );
 }
 
-function Macro({ label, v, u }: { label: string; v: number; u: string }) {
+function Macro({ label, v, u }: { label: string; v: number | string; u: string }) {
   return (
     <div>
       <div className="editorial-eyebrow text-muted-foreground">{label}</div>

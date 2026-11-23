@@ -122,7 +122,7 @@ export async function getDailyLines(userId: number, date: string, opts: { birthD
         ]);
         const facts = [
           sleep ? `어젯밤 수면 ${Math.floor((sleep as any).durationMinutes / 60)}시간 ${(sleep as any).durationMinutes % 60}분 (${(sleep as any).bedHour}시 취침)` : "어젯밤 수면 기록 없음",
-          `어제 식사 기록 ${meals.length}번` + (meals.length ? ` (단백질 합계 ${meals.reduce((a: number, m: any) => a + (m.proteinG || 0), 0)}g, 채소 ${meals.reduce((a: number, m: any) => a + (m.vegetableG || 0), 0)}g)` : ""),
+          `어제 식사 기록 ${meals.length}번` + (meals.length ? ` (단백질 합계 ${meals.reduce((a: number, m: any) => a + (m.proteinG || 0), 0)}g, 야채 먹은 끼니 ${meals.filter((m: any) => (m.vegetableG || 0) > 0).length}번)` : ""),
           `어제 물 ${waters.reduce((a: number, w: any) => a + (w.volumeMl || 0), 0)}ml`,
           `어제 운동 ${exercises.length ? exercises.map((e: any) => `${e.kind ?? "운동"} ${e.minutes ?? ""}분`).join(", ") : "기록 없음"}`,
           note ? `어제 기분 점수 ${(note as any).mood}/4, 몸 따뜻하게 ${(note as any).warm ? "함" : "안 함"}` : "",
