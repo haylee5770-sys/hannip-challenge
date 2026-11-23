@@ -16,29 +16,28 @@
   .title{display:flex;align-items:baseline;gap:10px;margin-top:4px}
   .title .yr{font-family:'Cormorant Garamond',serif;font-weight:600;font-variant-numeric:lining-nums;font-feature-settings:'lnum' 1;font-size:34px;color:#ecd292;letter-spacing:.02em}
   .title .t{font-weight:700;font-size:27px;color:#fff;letter-spacing:.04em}
-  .tree{flex:1;min-height:0;width:100%;max-width:270px;margin:6px 0}
+  .tree{flex:0 1 auto;min-height:0;width:100%;max-width:270px;max-height:44vh;margin:6px 0 0}
   .light{animation:tw 1.4s infinite ease-in-out}
   .light:nth-of-type(2n){animation-delay:.7s}
   @keyframes tw{50%{opacity:.2}}
   .star{animation:glow 2s infinite ease-in-out}
   @keyframes glow{0%,100%{filter:drop-shadow(0 0 4px #ffe27a)}50%{filter:drop-shadow(0 0 18px #ffe27a)}}
-  .q{font-size:20px;font-weight:700;color:#e9e4d8;letter-spacing:.04em}
+  .q{flex:1;display:flex;flex-direction:row;flex-wrap:wrap;align-content:center;align-items:center;justify-content:center;font-size:21px;font-weight:700;color:#fff;letter-spacing:.04em;text-shadow:0 0 14px rgba(0,0,0,.9)}
   .q b{color:#ecd292}
   .name{font-weight:700;font-size:44px;color:#f1d68e;text-shadow:0 0 24px rgba(241,214,142,.55);margin:6px 0 2px;display:none;animation:pop .7s ease-out}
   @keyframes pop{0%{transform:scale(.2);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
-  .bwrap{position:relative;width:100%;margin-top:22px;padding:26px 0 30px}
+  .bwrap{position:relative;width:100%;margin-top:0;padding:26px 0 30px}
   .garland{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}
-  .garland .wire{fill:none;stroke:#1f3a1c;stroke-width:2.2}
+  .garland .wire{fill:none;stroke:#2c4a28;stroke-width:1.4}
   .bulb{animation:blink 1.6s infinite ease-in-out}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-  .btn{position:relative;width:100%;height:60px;border-radius:14px;border:1px solid #2a170b;cursor:pointer;overflow:hidden;
-       font-family:inherit;font-size:20px;font-weight:700;letter-spacing:.06em;color:#f3dc9c;text-shadow:0 1px 0 #2a170b,0 0 12px rgba(243,220,156,.35);
-       background:
-         repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 22px,rgba(0,0,0,.08) 22px 23px,rgba(0,0,0,0) 23px 61px,rgba(255,255,255,.04) 61px 62px),
-         repeating-linear-gradient(178deg,rgba(0,0,0,.12) 0 2px,rgba(0,0,0,0) 2px 9px,rgba(255,255,255,.05) 9px 10px,rgba(0,0,0,0) 10px 17px),
-         linear-gradient(180deg,#7a4a26,#5c3518 55%,#45260f);
-       box-shadow:inset 0 1px 0 rgba(255,214,160,.35),inset 0 -3px 0 rgba(0,0,0,.35),0 10px 26px rgba(0,0,0,.6)}
-  .btn:before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.35);box-shadow:0 1px 0 rgba(255,214,160,.12)}
+  .btn{position:relative;width:100%;height:60px;border-radius:30px;cursor:pointer;overflow:hidden;
+       font-family:inherit;font-size:20px;font-weight:700;letter-spacing:.06em;color:#fff3cf;text-shadow:0 1px 3px rgba(0,0,0,.5);
+       border:1.5px solid #e9c46a;background:radial-gradient(120% 140% at 50% 0%,#d62839 0%,#a3132a 55%,#6e0b1c 100%);
+       box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 0 0 3px rgba(110,11,28,.6),0 0 22px rgba(214,40,57,.45),0 10px 24px rgba(0,0,0,.55);
+       animation:breathe 2.4s infinite ease-in-out}
+  @keyframes breathe{50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 0 0 3px rgba(110,11,28,.6),0 0 34px rgba(233,196,106,.6),0 10px 24px rgba(0,0,0,.55)}}
+  .btn:before{content:'';position:absolute;left:8%;right:8%;top:3px;height:42%;border-radius:30px 30px 50% 50%;background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0))}
   .btn span{position:relative}
   .info{margin-top:-6px;align-self:center;text-align:left;color:#e9e4d8;font-size:15px;line-height:1.5}
   .info p{margin:5px 0}
@@ -98,10 +97,10 @@
       `Q ${W*0.17} ${T+22}, ${W*0.34} ${T-2} Q ${W*0.5} ${T+20}, ${W*0.66} ${T-2} Q ${W*0.83} ${T+22}, ${W-8} ${T+2} `+
       `C ${W+10} ${T+30}, ${W-2} ${B-6}, ${W-18} ${H+4}`;
     g.innerHTML=`<path class="wire" d="${d}"/>`;
-    const p=g.querySelector('path'),L=p.getTotalLength(),n=Math.round(L/22),cols=['#ff3b4f','#ffd24a','#3fd27a','#ff3b4f','#ffffff','#ffd24a'];
+    const p=g.querySelector('path'),L=p.getTotalLength(),n=Math.round(L/20),cols=['#ff3b4f','#ffd24a','#3fd27a','#ff3b4f','#ffffff','#ffd24a'];
     for(let i=0;i<=n;i++){const q=p.getPointAtLength(i*L/n),c=cols[i%cols.length];
       const e=document.createElementNS('http://www.w3.org/2000/svg','g');e.setAttribute('class','bulb');e.style.animationDelay=(Math.random()*1.8).toFixed(2)+'s';
-      e.innerHTML=`<circle cx="${q.x}" cy="${q.y+5}" r="15" fill="${c}" opacity=".18"/><circle cx="${q.x}" cy="${q.y+5}" r="9" fill="${c}" opacity=".3"/><ellipse cx="${q.x}" cy="${q.y+6}" rx="5" ry="7" fill="${c}"/><ellipse cx="${q.x-1.5}" cy="${q.y+3.5}" rx="1.4" ry="2.4" fill="#fff" opacity=".8"/><rect x="${q.x-2.6}" y="${q.y-2}" width="5.2" height="4" rx="1" fill="#6b7d5e"/>`;
+      e.innerHTML=`<circle cx="${q.x}" cy="${q.y+4}" r="8" fill="${c}" opacity=".25"/><ellipse cx="${q.x}" cy="${q.y+4}" rx="3" ry="4.2" fill="${c}"/><ellipse cx="${q.x-1}" cy="${q.y+2.6}" rx=".9" ry="1.5" fill="#fff" opacity=".8"/><rect x="${q.x-1.8}" y="${q.y-1.6}" width="3.6" height="2.6" rx=".8" fill="#6b7d5e"/>`;
       g.appendChild(e)}
   }
   garland();addEventListener('resize',garland);
