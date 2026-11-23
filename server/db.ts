@@ -58,7 +58,11 @@ export async function getDb() {
       ssl: { rejectUnauthorized: false },
       connectTimeout: 15000,
       waitForConnections: true,
-      connectionLimit: 5,
+      // 2026-11-23: 5 → 20. 크루들이 한꺼번에 들어오면 5개 통로에 줄을 서서 앱이 동그라미만 돌았다
+      connectionLimit: 20,
+      // 오래 쉬는 연결은 먼저 닫는다 — 데이터베이스(TiDB)가 몰래 끊은 연결을 다시 쓰다 멈추는 일 방지
+      maxIdle: 5,
+      idleTimeout: 60000,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
     });

@@ -203,7 +203,8 @@ export function ProfileForm({ onDone, editing }: { onDone?: () => void; editing?
 
 /** 가입 후 필수 정보가 없으면 앱 대신 이 화면 */
 export default function ProfileSetup({ children }: { children: React.ReactNode }) {
-  const me = trpc.wellness.myProfile.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
+  // 2026-11-23: 한 번 실패(시간 초과 등)해도 동그라미에 갇히지 않게 2번 더 시도
+  const me = trpc.wellness.myProfile.useQuery(undefined, { retry: 2, refetchOnWindowFocus: false });
   // 2026-11-22: 처음 정보를 다 넣으면 축하 화면 한 번
   const wasSetup = useRef(false);
   const [congrats, setCongrats] = useState(false);
