@@ -121,8 +121,10 @@ function WeighInBanner() {
       <div className="bg-rose-600 text-white text-center text-sm font-bold py-2 px-3 cursor-pointer">
         {/* 2026-11-24 해이 확정 문구 */}
         {q.data.need === "start"
-          ? <>⚖️ 새 시즌의 시작, 몸무게를 기록해 주세요<br /><span className="font-medium text-[12px]">아침 공복에 재고 체중계 사진과 함께 · 시즌 시작·끝 딱 2번만 재요</span></>
-          : <>⚖️ 시즌 마무리, 마지막 몸무게를 기록해 주세요<br /><span className="font-medium text-[12px]">아침 공복에 재고 체중계 사진과 함께 · 시즌 시작·끝 딱 2번만 재요</span></>}
+          ? <>⚖️ 새 시즌의 시작, 몸무게를 기록해 주세요<br />
+              <span className="font-medium text-[12px] leading-snug">아침 공복에 재고 체중계 사진을 올려 주세요.<br />몸무게는 시즌 시작·끝, 딱 2번만 재요.<br />📸 비포 애프터 사진도 오늘 찍어서 올려 두면 좋아요!</span></>
+          : <>⚖️ 시즌 마무리, 마지막 몸무게를 기록해 주세요<br />
+              <span className="font-medium text-[12px] leading-snug">아침 공복에 재고 체중계 사진을 올려 주세요.<br />몸무게는 시즌 시작·끝, 딱 2번만 재요.<br />📸 비포 애프터 사진도 같이 찍어서 올려 두면 좋아요!</span></>}
       </div>
     </Link>
   );
