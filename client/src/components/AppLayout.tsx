@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, ChevronRight, Users, Trophy, Medal, ShoppingBag, Gift, Palette, KeyRound } from "lucide-react";
+import { Menu, X, ChevronRight, Users, Trophy, Medal, ShoppingBag, Gift, Palette, KeyRound, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -322,23 +322,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="editorial-eyebrow text-primary mt-7 mb-2 px-1">CREW</div>
-              <div className="grid grid-cols-3 gap-2">
-                {([["/members", "멤버", Users], ["/awards", "시상식", Trophy], ["/history", "명예의 전당", Medal]] as const).map(([path, label, Icon]) => (
+              {/* 2026-11-23 해이: 사용설명서도 멤버·시상식·명예의 전당과 같은 칸으로 */}
+              <div className="grid grid-cols-4 gap-2">
+                {([["/members", "멤버", Users], ["/awards", "시상식", Trophy], ["/history", "명예의 전당", Medal], ["/manual", "사용설명서", BookOpen]] as const).map(([path, label, Icon]) => (
                   <Link key={path} href={path}>
                     <button onClick={() => setMobileOpen(false)} className="w-full rounded-2xl bg-card border border-primary/25 py-3.5 flex flex-col items-center gap-1.5">
                       <Icon className="h-5 w-5 text-primary" />
-                      <span className="text-[13px]">{label}</span>
+                      <span className="text-[12px] whitespace-nowrap">{label}</span>
                     </button>
                   </Link>
                 ))}
               </div>
-
-              {/* 2026-11-23 해이: 앱 안에 설명서 */}
-              <Link href="/manual">
-                <button onClick={() => setMobileOpen(false)} className="mt-3 w-full h-12 rounded-2xl border border-primary/50 bg-primary/10 flex items-center justify-center gap-2 text-[15px] font-bold text-primary">
-                  📖 앱 사용설명서 <span className="rounded-md bg-amber-400 px-1.5 py-0.5 text-[10px] font-black text-black">NEW 영상</span>
-                </button>
-              </Link>
 
               <div className="flex-1 min-h-6" />
 
