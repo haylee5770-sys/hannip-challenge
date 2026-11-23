@@ -16,6 +16,7 @@ export type ProofCard = {
   avatar?: string | null; // 카톡방과 같은 프로필 사진 (이름 앞 둥근 네모)
   chatLines?: string[];   // 이게돼: 가운데 칸에 카톡 말풍선으로 넣을 줄들 (한 장 분량)
   pageInfo?: { idx: number; total: number };
+  shareLines?: string[];  // 카톡에 같이 보낼 글 (첫 줄 검색용 아래에 붙는 줄들). 있으면 feedback 대신 씀
 };
 
 /** 카톡 프로필처럼 둥근 네모 사진 */
@@ -235,10 +236,10 @@ export async function makeItgeImages(card: ProofCard): Promise<Blob[]> {
 }
 
 /** 이미지 만들어 공유창 열기. 안 되는 환경이면 이미지 저장 + 문구 복사. 결과를 문자열로 돌려준다. */
-/** 성 빼고 이름만: "임지연" → "지연". 두 글자 이름이나 한글이 아닌 이름은 그대로, 띄어쓰기 뒤는 뺀다 */
+/** 성 빼고 이름만: "임지연" → "지연", "방장해이" → "해이". 세 글자 한글 이름만 첫 글자를 뺀다(4글자·2글자·영어는 그대로) */
 export function givenName(name: string | undefined | null): string {
-  const n = String(name ?? "").trim().split(/\s+/)[0] ?? "";
-  return /^[가-힣]{3,4}$/.test(n) ? n.slice(1) : n;
+  const n = (String(name ?? "").trim().split(/\s+/)[0] ?? "").replace(/^방장/, "");
+  return /^[가-힣]{3}$/.test(n) ? n.slice(1) : n;
 }
 
 /** 카톡방 돋보기 검색용 한 줄 (2026-11-23 해이 지정): 지연식단_누적2 · 지연운동_누적3 */
@@ -249,7 +250,8 @@ export function searchTag(card: ProofCard): string {
 export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
   // 2026-11-23 해이 지정: 맨 위 검색용 한 줄(지연식단_누적2) + 그 아래 내용(음식·탄단지·멘트). #해시태그는 뺌.
   // 기상은 '취침 · 기상 · 수면 시간'까지만. 평가 문장("수면이 부족하면…")은 카드 안에만 (지적처럼 느껴지지 않게)
-  const detail = card.itemLabel
+  const detail = card.shareLines?.length ? card.shareLines.join("\n")
+    : card.itemLabel
     ? (card.itemLabel === "이게돼" ? ""
       : card.itemLabel === "기상" ? (card.feedback ?? "").split(" · ").slice(0, 3).join(" · ")
       : card.feedback ?? "")
