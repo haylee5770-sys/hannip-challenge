@@ -212,6 +212,9 @@ function MembersAdmin() {
 
   // 2026-11-22: 훅은 아래 return보다 먼저 (MEMBERS 오류 고침)
   const extras = trpc.admin.userExtras.useQuery();
+  // 2026-11-23: 가입한 전화번호를 구매 기록(엑셀·네이버)과 자동 대조 → 수락할 때 엑셀을 따로 안 봐도 되게
+  const buys = trpc.admin.purchaseSummary.useQuery(undefined, { staleTime: 60_000 });
+  const yearAgo = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
   const fullReset = trpc.admin.fullReset.useMutation({ onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success("완전히 처음 상태가 됐어요. 그 계정으로 들어가면 가입 첫 화면부터 나와요"); }, onError: e => toast.error(e.message) });
   const resetSignup = trpc.admin.resetSignup.useMutation({ onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success("이제 그 계정으로 들어가면 가입 화면부터 다시 나와요"); } });
   if (list.isLoading) return <div className="py-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
@@ -232,6 +235,18 @@ function MembersAdmin() {
               {(u as any).phone && <div className="text-xs text-muted-foreground">{(u as any).phone}</div>}
               {extras.data?.[u.id]?.contactEmail && <div className="text-xs text-muted-foreground">✉️ {extras.data[u.id].contactEmail}</div>}
               {extras.data?.[u.id]?.address && <div className="text-xs text-muted-foreground leading-relaxed">🏠 {extras.data[u.id].address}</div>}
+              {buys.data && (() => {
+                const b = (buys.data as Record<number, { count: number; last: string | null }>)[u.id];
+                if (b && b.count > 0) {
+                  const recent = !!b.last && b.last >= yearAgo;
+                  return <div className={`mt-1.5 inline-block rounded-lg px-2 py-1 text-xs font-semibold ${recent ? "bg-primary/15 text-primary" : "bg-secondary text-foreground"}`}>
+                    ✅ 구매 이력 있음 · {b.count}번 · 마지막 {b.last ?? "–"}{recent ? " · 최근 1년 안" : " · 1년 넘음"}
+                  </div>;
+                }
+                return u.status === "pending"
+                  ? <div className="mt-1.5 inline-block rounded-lg bg-amber-500/15 border border-amber-400/40 px-2 py-1 text-xs font-semibold text-amber-200">⚠️ 구매 이력 없음 · 다른 번호로 샀는지 확인</div>
+                  : null;
+              })()}
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
