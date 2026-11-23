@@ -159,6 +159,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // 2026-11-23: 메뉴가 열려 있는 동안 뒤 화면(오늘)이 스크롤을 가져가지 않게 잠근다 (아이폰에서 메뉴가 안 움직였음)
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const html = document.documentElement, body = document.body;
+    const prev = [html.style.overflow, body.style.overflow];
+    html.style.overflow = "hidden"; body.style.overflow = "hidden";
+    return () => { html.style.overflow = prev[0]; body.style.overflow = prev[1]; };
+  }, [mobileOpen]);
 
   // 2026-11-22: 앱을 다시 열면(10분 넘게 안 쓰다가) 언제나 '오늘'부터
   useEffect(() => {
@@ -271,14 +279,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile drawer */}
         {/* 2026-11-22: 메뉴를 열면 메뉴만 화면 가득 (아래 페이지 내용은 안 보이게) */}
         {mobileOpen && (
-          <div className="md:hidden fixed inset-0 z-[95] bg-background overflow-y-auto">
+          // 2026-11-23: 아이폰 바탕화면 앱에서 X가 시계 줄 밑에 붙어 안 눌림 → 위·아래 안전 여백, 메뉴 안에서만 스크롤
+          <div className="md:hidden fixed inset-0 z-[95] bg-background overflow-y-auto overscroll-contain"
+            style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", WebkitOverflowScrolling: "touch" }}>
             <div className="container flex justify-end pt-4">
               <button onClick={() => setMobileOpen(false)} className="h-9 w-9 rounded-full p-[1.5px] bg-primary" aria-label="닫기">
                 <span className="h-full w-full rounded-full bg-background flex items-center justify-center"><X className="h-4 w-4" /></span>
               </button>
             </div>
             {/* 2026-11-22 메뉴 C-2 (해이 확정): 위 [프로필 수정][앱 꾸미기] 블랙 유리알 두 칸 / MY 유리 막대 / CREW 타일 / 아래 구매·신청 유리알 + 관리 버튼 */}
-            <nav className="container flex flex-col pb-8 min-h-[calc(100dvh-4.5rem)]">
+            <nav className="container flex flex-col pb-8" style={{ minHeight: "calc(100dvh - 4.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}>
               <div className="grid grid-cols-2 gap-2.5 mt-2">
                 <Link href="/profile">
                   <button onClick={() => setMobileOpen(false)} className="glass-btn w-full h-12 flex items-center justify-center gap-2 text-[15px]">
