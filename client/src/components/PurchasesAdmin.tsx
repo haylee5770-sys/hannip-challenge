@@ -49,7 +49,7 @@ export default function PurchasesAdmin() {
   };
 
   const s = stats.data;
-  const nv = s?.naver;
+  const nv = s?.naverStatus;
   const rows = ranking.data ?? [];
   const joined = rows.filter(r => r.userId).length;
 
