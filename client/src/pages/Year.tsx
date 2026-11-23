@@ -49,7 +49,8 @@ function Final2026({ past }: { past?: boolean }) {
   const [, navigate] = useLocation();
   const seasons = trpc.rounds.allSeasons.useQuery();
   const [open, setOpen] = useState<number | null>(null);
-  const s = (seasons.data ?? []).find(x => x.startDate >= "2026-11-20" && x.startDate < "2027-01-01");
+  // 2026-11-24: '테스트 시즌'은 파이널 시즌으로 착각하지 않게 뺀다
+  const s = (seasons.data ?? []).find(x => x.startDate >= "2026-11-20" && x.startDate < "2027-01-01" && !String(x.name).startsWith("테스트 시즌"));
   const today = todayKst();
   const state = s ? (s.status === "active" ? "live" : "done") : today < FINAL_2026.start ? "planned" : "planned";
   const click = () => {
@@ -68,6 +69,31 @@ function Final2026({ past }: { past?: boolean }) {
         <div className="text-2xl font-black mt-1">2026 파이널 시즌</div>
         <div className="text-xs text-muted-foreground mt-0.5">{md(FINAL_2026.start)} ~ {md(FINAL_2026.end)} · 매일 루틴 참여</div>
       </button>
+      {open && <SeasonResult seasonId={open} onClose={() => setOpen(null)} />}
+    </section>
+  );
+}
+
+/** 테스트 시즌 카드 (2026-11-24 해이): 파이널 시즌 카드 위, 같은 너비. 누르면 기록 보기. 나중에 해이가 '삭제해 줘' 하면 지움 */
+function TestSeasonCards() {
+  const [, navigate] = useLocation();
+  const seasons = trpc.rounds.allSeasons.useQuery();
+  const [open, setOpen] = useState<number | null>(null);
+  const tests = (seasons.data ?? []).filter(x => String(x.name).startsWith("테스트 시즌"));
+  if (!tests.length) return null;
+  return (
+    <section className="space-y-2">
+      {tests.map(t => (
+        <button key={t.id} type="button" onClick={() => (t.status === "active" ? navigate("/dashboard") : setOpen(t.id))}
+          className="w-full text-left rounded-3xl border border-dashed border-amber-400/60 bg-amber-400/5 p-4">
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs font-semibold tracking-wide text-amber-200">TEST SEASON</span>
+            <span className="text-[11px] text-muted-foreground">{t.status === "active" ? "진행 중 · 누르면 나의 변화" : "끝 · 누르면 결과"}</span>
+          </div>
+          <div className="text-2xl font-black mt-1">테스트 시즌</div>
+          <div className="text-xs text-muted-foreground mt-0.5">{md(t.startDate)} · <span className="text-amber-200">삭제될 예정</span></div>
+        </button>
+      ))}
       {open && <SeasonResult seasonId={open} onClose={() => setOpen(null)} />}
     </section>
   );
@@ -118,6 +144,7 @@ export default function Year() {
     <div className="space-y-4">
       {!isNewYear && (<>
         <YearHead year="2026" line1="나의" line2="마지막 시즌" />
+        <TestSeasonCards />
         <Final2026 />
         <div className="pt-6" />
       </>)}
