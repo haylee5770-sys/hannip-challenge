@@ -73,6 +73,22 @@ export async function itemCounts(userId: number, since: string, until: string): 
   return { meal, smoothie, water, exercise, wake, itge, weight, total: meal + smoothie + water + exercise + wake };
 }
 
+/**
+ * 기록 하나가 이번 회차에서 몇 번째 인증인지 (2026-11-23: 기록을 눌러 '카톡 글 다시 복사'할 때 누적 번호용)
+ * 식단은 일반식·스무디를 합쳐서 센다 (자랑하기 카드와 같은 기준). 회차 시작 전 기록이면 null
+ */
+const SEQ_TABLE = { meal: "meals", water: "waters", exercise: "exercises", wake: "sleeps", weight: "weights" } as const;
+export async function seqOf(userId: number, kind: keyof typeof SEQ_TABLE, id: number): Promise<number | null> {
+  const t = sql.raw(SEQ_TABLE[kind]);
+  const row = (await q(sql`SELECT DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM ${t} WHERE id=${id} AND userId=${userId}`))[0];
+  if (!row) return null;
+  const { since } = await countRange();
+  if (String(row.d) < since) return null;
+  const c = (await q(sql`SELECT COUNT(*) c FROM ${t} WHERE userId=${userId} AND recordedDate >= ${since}
+    AND (recordedDate < ${row.d} OR (recordedDate = ${row.d} AND id <= ${id}))`))[0]?.c;
+  return Number(c ?? 0) || null;
+}
+
 /* ---------- 순위 (모든 멤버) ---------- */
 async function rankAll(since: string, until: string, seasonId?: number) {
   // 2026-11-22: 시즌에 참여 선택이 있으면 '슈퍼루틴' 참여자만 상 대상

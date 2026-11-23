@@ -247,7 +247,8 @@ export function searchTag(card: ProofCard): string {
   return `${givenName(card.userName)}${card.itemLabel ?? card.title.replace(/\s*인증$/, "")}${card.count != null ? `_누적${card.count}` : ""}`;
 }
 
-export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
+/** 카톡에 같이 보내는 글 (2026-11-23: 기록을 눌러 '카톡 글 다시 복사'에서도 같은 글을 쓰려고 따로 뺌) */
+export function shareTextOf(card: ProofCard): string {
   // 2026-11-23 해이 확정 모양:
   //   #해이식단_누적12
   //   (빈 줄)
@@ -267,7 +268,11 @@ export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled
   const body = sections.filter(s => s.value.trim())
     .map(s => s.value.length <= 22 ? `● ${s.label} : ${s.value}` : `● ${s.label} :\n${s.value}`)
     .join("\n\n");
-  const text = [`#${searchTag(card)}`, body].filter(Boolean).join("\n\n");
+  return [`#${searchTag(card)}`, body].filter(Boolean).join("\n\n");
+}
+
+export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
+  const text = shareTextOf(card);
   const blobs = card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
     : [card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card)];
   return shareImages(blobs, text, `hannip_${card.date}`);

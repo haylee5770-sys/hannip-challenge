@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { quoteOf } from "@/lib/quotes";
 import { Link } from "wouter";
-import { shareProof, type ProofCard } from "@/lib/proofCard";
+import { shareProof, shareTextOf, type ProofCard } from "@/lib/proofCard";
 import CropCamera, { canUseInAppCamera } from "@/components/CropCamera";
 import { shareBeforeAfterCard, shareToast } from "@/lib/shareCards";
 import { loadDecor } from "@/lib/decor";
@@ -1147,6 +1147,12 @@ function MealCard({ meal, onChange }: { meal: MealRow; onChange: () => void }) {
         </div>
       )}
 
+      <div className="mb-4">
+        <CopyShareButton kind="meal" id={meal.id} label="식단" sections={[
+          { label: "먹은 음식", value: meal.description || (meal.category === "smoothie" ? "스무디" : "건강한 한 끼") },
+          { label: "영양소", value: `탄 ${meal.carbsG}g · 단 ${meal.proteinG}g · 지 ${meal.fatG}g${meal.category !== "smoothie" && meal.vegetableG > 0 ? " · 🥬야채 먹음" : ""}` },
+        ]} />
+      </div>
       <div className="grid grid-cols-5 gap-2 mb-4 text-center">
         <NutrientStat label="탄" value={meal.carbsG} unit="g" />
         <NutrientStat label="단" value={meal.proteinG} unit="g" />
@@ -1385,6 +1391,7 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
             </div>
             {openedD?.comment && <div className="text-sm">{openedD.comment}</div>}
             {opened.note && <div className="text-sm">{opened.note}</div>}
+            <CopyShareButton kind="exercise" id={opened.id} label="운동" sections={[{ label: "운동 기록", value: [opened.kind, `${opened.durationMin}분`, openedD?.distanceKm ? `${Number(openedD.distanceKm)}km` : null].filter(Boolean).join(" · ") }]} />
             <Button variant="outline" onClick={async () => { if (!(await askConfirm("이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요."))) return; del.mutate({ id: opened.id }); setOpenId(null); }} className="rounded-full text-destructive border-destructive/50">
               <Trash2 className="h-4 w-4 mr-1" /> 삭제
             </Button>
@@ -1657,6 +1664,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
               <div className="text-sm text-muted-foreground">
                 {short(sd.bedHour)}{sd.bedMinute ? ` ${sd.bedMinute}분` : ""} 취침 → {short(sd.wakeHour)}{sd.wakeMinute ? ` ${sd.wakeMinute}분` : ""} 기상
               </div>
+              <CopyShareButton kind="wake" id={sd.id} label="기상" sections={[{ label: "수면 기록", value: `${fmtClock(sd.bedHour)} 취침 · ${fmtClock(sd.wakeHour)} 기상 · ${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ""}` }]} />
               <p className="text-xs text-muted-foreground">고치려면 시간을 다시 고르고 사진을 올려 자랑하기를 누르면 이 기록이 바뀌어요.</p>
             </div>
           </Popup>
@@ -1737,6 +1745,26 @@ function CountBox({ n }: { n?: number | null }) {
   );
 }
 /** 오늘 메달(1회·2회…, 날마다 새로 시작) — 누적은 모서리 탭으로 옮김 (2026-11-21) */
+/**
+ * 📋 카톡 글 복사 (2026-11-23 해이): 자랑하기 뒤 붙여넣기를 깜빡했거나 다른 걸 복사해 버렸을 때,
+ * 기록을 눌러 이 버튼으로 같은 글(#해이식단_누적12 …)을 다시 복사한다.
+ * 누적 번호는 팝업이 열릴 때 미리 받아 둔다 (아이폰은 누른 직후에만 복사를 허락해서)
+ */
+function CopyShareButton({ kind, id, label, sections }: { kind: "meal" | "water" | "exercise" | "wake" | "weight"; id: number; label: string; sections: { label: string; value: string }[] }) {
+  const { user } = useAuth();
+  const seq = trpc.rounds.seqOf.useQuery({ kind, id }, { staleTime: 60_000 });
+  const copy = async () => {
+    const text = shareTextOf({ emoji: "", title: label, lines: [], userName: user?.name ?? "", date: "", count: seq.data ?? undefined, itemLabel: label, shareSections: sections });
+    try { await navigator.clipboard.writeText(text); toast.success("카톡 글을 복사했어요. 카톡 입력칸을 길게 눌러 붙여넣기 하세요.", { duration: 5000 }); }
+    catch { toast.error("복사가 안 됐어요. 한 번 더 눌러 주세요."); }
+  };
+  return (
+    <Button type="button" variant="outline" data-view-ok onClick={copy} disabled={seq.isLoading} className="w-full rounded-full border-primary/60 text-primary">
+      {seq.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "📋 카톡 글 복사"}
+    </Button>
+  );
+}
+
 /** 📷 바로 찍기 (2026-11-23): 카메라를 바로 연다. 요즘 안드로이드 사진 선택 화면에는 카메라가 없어서 따로 둠. 옆 칸은 '앨범' */
 function ShootBox({ onFile }: { onFile: (f: File) => void }) {
   // 2026-11-23: 앱 안 카메라(카드 사진 칸 비율 틀만 보이고 바깥은 검게) → 못 열면 휴대폰 기본 카메라
@@ -2561,6 +2589,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
                 <Trash2 className="h-4 w-4 mr-1" /> 삭제
               </Button>
             </div>
+            <CopyShareButton kind="water" id={opened.id} label="물" sections={[{ label: "물 기록", value: `${opened.volumeMl}ml` }]} />
           </div>
         )}
       </Popup>

@@ -1623,6 +1623,10 @@ const roundsRouter = router({
     const r = await rounds.countRange();
     return { ...r, counts: await rounds.itemCounts(ctx.user.id, r.since, r.until) };
   }),
+  /** 기록 하나의 누적 번호 (카톡 글 다시 복사용, 2026-11-23) */
+  seqOf: approvedProcedure
+    .input(z.object({ kind: z.enum(["meal", "water", "exercise", "wake", "weight"]), id: z.number() }))
+    .query(async ({ ctx, input }) => rounds.seqOf(ctx.user.id, input.kind, input.id)),
   current: approvedProcedure.query(async () => {
     const s = await rounds.activeRound();
     return s ? { id: s.id, name: s.name, startDate: String(s.startDate).slice(0, 10) } : null;
