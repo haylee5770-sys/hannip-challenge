@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2027 가족 마니또</title><meta property='og:title' content='🎄 2027 가족 마니또'><meta property='og:description' content='눌러서 내 마니또를 확인해 보세요 🎁'><meta property='og:type' content='website'><meta property='og:image' content='https://super-hannip.up.railway.app/manito/og.png'><meta property='og:image:width' content='1200'><meta property='og:image:height' content='630'><meta name='robots' content='noindex'>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:#fff;font-family:'Gowun Batang',serif;overflow:hidden}
+  #snow{position:fixed;inset:0;pointer-events:none}
+  .wrap{position:relative;height:100%;max-width:420px;margin:0 auto;padding:30px 24px 22px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .script{font-family:'Courier Prime','Courier New',monospace;font-weight:400;font-size:44px;line-height:1.05;letter-spacing:.02em;color:#f3d27a;text-shadow:0 0 18px rgba(243,210,122,.45)}
+  .couple{font-weight:400;font-size:14px;letter-spacing:.12em;margin-top:14px;color:#cfc9bc}
+  .couple .heart{color:#e0445c;font-size:12px;margin:0 6px;vertical-align:1px}
+  .title{display:flex;align-items:baseline;gap:10px;margin-top:4px}
+  .title .yr{font-family:'Cormorant Garamond',serif;font-weight:600;font-variant-numeric:lining-nums;font-feature-settings:'lnum' 1;font-size:34px;color:#ecd292;letter-spacing:.02em}
+  .title .t{font-weight:700;font-size:27px;color:#fff;letter-spacing:.04em}
+  .tree{flex:1;min-height:0;width:100%;max-width:270px;margin:6px 0}
+  .light{animation:tw 1.4s infinite ease-in-out}
+  .light:nth-of-type(2n){animation-delay:.7s}
+  @keyframes tw{50%{opacity:.2}}
+  .star{animation:glow 2s infinite ease-in-out}
+  @keyframes glow{0%,100%{filter:drop-shadow(0 0 4px #ffe27a)}50%{filter:drop-shadow(0 0 18px #ffe27a)}}
+  .q{font-size:20px;font-weight:700;color:#e9e4d8;letter-spacing:.04em}
+  .q b{color:#ecd292}
+  .name{font-weight:700;font-size:44px;color:#f1d68e;text-shadow:0 0 24px rgba(241,214,142,.55);margin:6px 0 2px;display:none;animation:pop .7s ease-out}
+  @keyframes pop{0%{transform:scale(.2);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+  .bwrap{position:relative;width:100%;margin-top:22px;padding:26px 0 30px}
+  .garland{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}
+  .garland .wire{fill:none;stroke:#1f3a1c;stroke-width:2.2}
+  .bulb{animation:blink 1.6s infinite ease-in-out}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .btn{position:relative;width:100%;height:60px;border-radius:14px;border:1px solid #2a170b;cursor:pointer;overflow:hidden;
+       font-family:inherit;font-size:20px;font-weight:700;letter-spacing:.06em;color:#f3dc9c;text-shadow:0 1px 0 #2a170b,0 0 12px rgba(243,220,156,.35);
+       background:
+         repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 22px,rgba(0,0,0,.08) 22px 23px,rgba(0,0,0,0) 23px 61px,rgba(255,255,255,.04) 61px 62px),
+         repeating-linear-gradient(178deg,rgba(0,0,0,.12) 0 2px,rgba(0,0,0,0) 2px 9px,rgba(255,255,255,.05) 9px 10px,rgba(0,0,0,0) 10px 17px),
+         linear-gradient(180deg,#7a4a26,#5c3518 55%,#45260f);
+       box-shadow:inset 0 1px 0 rgba(255,214,160,.35),inset 0 -3px 0 rgba(0,0,0,.35),0 10px 26px rgba(0,0,0,.6)}
+  .btn:before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.35);box-shadow:0 1px 0 rgba(255,214,160,.12)}
+  .btn span{position:relative}
+  .info{margin-top:-6px;align-self:center;text-align:left;color:#e9e4d8;font-size:15px;line-height:1.5}
+  .info p{margin:5px 0}
+  .info b{color:#ecd292;font-weight:700}
+  .snd{position:fixed;top:14px;right:14px;z-index:9;width:40px;height:40px;border-radius:50%;border:1px solid rgba(236,210,146,.45);background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer}
+  .err{margin-top:40px;font-size:17px;color:#ddd;line-height:1.7}
+  .spark{position:fixed;width:7px;height:7px;border-radius:50%;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="snow"></canvas>
+<button class="snd" id="snd" aria-label="음악">🔇</button>
+<div class="wrap">
+  <div class="script">Merry<br>Christmas</div>
+  <div class="couple" id="couple"></div>
+  <div class="title"><span class="yr">2027</span><span class="t">가족 마니또</span></div>
+
+  <svg class="tree" viewBox="0 0 300 300" aria-hidden="true">
+    <polygon class="star" points="150,6 157,24 176,24 161,36 166,54 150,43 134,54 139,36 124,24 143,24" fill="#ffd95a"/>
+    <polygon points="150,42 104,104 122,104 82,160 104,160 60,220 240,220 196,160 218,160 178,104 196,104" fill="#0c4a2e"/>
+    <path d="M110 98 Q150 116 190 96 M90 154 Q150 176 210 150 M70 212 Q150 236 230 208" stroke="#f3d27a" stroke-width="2" fill="none" opacity=".7"/>
+    <circle class="light" cx="128" cy="92" r="4.5" fill="#ff4d6d"/><circle class="light" cx="172" cy="94" r="4.5" fill="#ffd95a"/>
+    <circle class="light" cx="150" cy="108" r="4.5" fill="#7ee0ff"/><circle class="light" cx="106" cy="146" r="4.5" fill="#ffd95a"/>
+    <circle class="light" cx="140" cy="162" r="4.5" fill="#ff4d6d"/><circle class="light" cx="172" cy="164" r="4.5" fill="#b8ff7a"/>
+    <circle class="light" cx="198" cy="150" r="4.5" fill="#7ee0ff"/><circle class="light" cx="86" cy="204" r="4.5" fill="#ff4d6d"/>
+    <circle class="light" cx="122" cy="218" r="4.5" fill="#ffd95a"/><circle class="light" cx="160" cy="222" r="4.5" fill="#7ee0ff"/>
+    <circle class="light" cx="194" cy="218" r="4.5" fill="#ff4d6d"/><circle class="light" cx="218" cy="204" r="4.5" fill="#b8ff7a"/>
+    <rect x="139" y="220" width="22" height="18" fill="#4a2f17"/>
+    <rect x="30" y="236" width="58" height="50" rx="4" fill="#b3122e"/><rect x="55" y="236" width="8" height="50" fill="#f3d27a"/><rect x="30" y="255" width="58" height="8" fill="#f3d27a"/>
+    <rect x="82" y="250" width="46" height="36" rx="4" fill="#f3d27a"/><rect x="101" y="250" width="7" height="36" fill="#b3122e"/>
+    <rect x="122" y="240" width="56" height="46" rx="4" fill="#14603c"/><rect x="146" y="240" width="8" height="46" fill="#fff"/><rect x="122" y="259" width="56" height="8" fill="#fff"/>
+    <rect x="172" y="254" width="44" height="32" rx="4" fill="#6a2bb0"/><rect x="190" y="254" width="7" height="32" fill="#f3d27a"/>
+    <rect x="210" y="238" width="60" height="48" rx="4" fill="#b3122e"/><rect x="236" y="238" width="8" height="48" fill="#fff"/><rect x="210" y="258" width="60" height="8" fill="#fff"/>
+    <rect x="52" y="212" width="38" height="26" rx="3" fill="#14603c"/><rect x="67" y="212" width="7" height="26" fill="#f3d27a"/>
+    <rect x="214" y="214" width="36" height="26" rx="3" fill="#f3d27a"/><rect x="228" y="214" width="7" height="26" fill="#b3122e"/>
+  </svg>
+
+  <div class="q" id="q"></div>
+  <div class="name" id="name"></div>
+  <div class="bwrap" id="bwrap"><svg class="garland" id="garland" aria-hidden="true"></svg><button class="btn" id="btn"><span>내 마니또 확인하기</span></button></div>
+  <div class="info">
+    <p>🎁 선물은 <b>3만 원 이하</b>로 준비해요</p>
+    <p>📅 <b>12월 5일</b> 파티 날 전해 줘요</p>
+    <p>🤫 그날까지 누구에게도 <b>비밀</b>이에요</p>
+  </div>
+</div>
+<script>
+  const c=document.getElementById('snow'),x=c.getContext('2d');let W,H,f=[];
+  function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();addEventListener('resize',rs);
+  for(let i=0;i<100;i++)f.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*2+.5,s:Math.random()*.6+.25,t:Math.random()*6});
+  (function d(){x.clearRect(0,0,W,H);for(const p of f){p.y+=p.s;p.x+=Math.sin(p.t+=.01)*.35;if(p.y>H){p.y=-4;p.x=Math.random()*W}
+    x.globalAlpha=.45+.55*Math.abs(Math.sin(p.t*3));x.fillStyle='#fff';x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()}requestAnimationFrame(d)})();
+  function garland(){
+    const box=document.getElementById('bwrap'),g=document.getElementById('garland'),W=box.clientWidth,H=box.clientHeight,T=26,B=T+60;
+    g.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    const d=`M 18 ${H+4} C 2 ${B-6}, -10 ${T+30}, 8 ${T+2} `+
+      `Q ${W*0.17} ${T+22}, ${W*0.34} ${T-2} Q ${W*0.5} ${T+20}, ${W*0.66} ${T-2} Q ${W*0.83} ${T+22}, ${W-8} ${T+2} `+
+      `C ${W+10} ${T+30}, ${W-2} ${B-6}, ${W-18} ${H+4}`;
+    g.innerHTML=`<path class="wire" d="${d}"/>`;
+    const p=g.querySelector('path'),L=p.getTotalLength(),n=Math.round(L/22),cols=['#ff3b4f','#ffd24a','#3fd27a','#ff3b4f','#ffffff','#ffd24a'];
+    for(let i=0;i<=n;i++){const q=p.getPointAtLength(i*L/n),c=cols[i%cols.length];
+      const e=document.createElementNS('http://www.w3.org/2000/svg','g');e.setAttribute('class','bulb');e.style.animationDelay=(Math.random()*1.8).toFixed(2)+'s';
+      e.innerHTML=`<circle cx="${q.x}" cy="${q.y+5}" r="15" fill="${c}" opacity=".18"/><circle cx="${q.x}" cy="${q.y+5}" r="9" fill="${c}" opacity=".3"/><ellipse cx="${q.x}" cy="${q.y+6}" rx="5" ry="7" fill="${c}"/><ellipse cx="${q.x-1.5}" cy="${q.y+3.5}" rx="1.4" ry="2.4" fill="#fff" opacity=".8"/><rect x="${q.x-2.6}" y="${q.y-2}" width="5.2" height="4" rx="1" fill="#6b7d5e"/>`;
+      g.appendChild(e)}
+  }
+  garland();addEventListener('resize',garland);
+  // 2026-11-23 가족 마니또: 이름은 링크 # 뒤에만 있다 (서버·저장소에 남지 않음)
+  const KEY=new TextEncoder().encode('merry-xmas-2027');
+  let D=null;
+  try{const h=location.hash.slice(1).replace(/-/g,'+').replace(/_/g,'/');const b=atob(h+'==='.slice((h.length+3)%4));
+    const u=Uint8Array.from(b,(c,i)=>c.charCodeAt(0)^KEY[i%KEY.length]);D=JSON.parse(new TextDecoder().decode(u));}catch(e){D=null}
+  if(D&&D.g&&D.r){
+    document.getElementById('couple').innerHTML=(D.c||'').replace('♥','<span class="heart">♥</span>');
+    document.getElementById('q').innerHTML='<b>'+D.g+'</b>님의 마니또는?';
+    document.getElementById('name').textContent=D.r+'님';
+  }else{
+    document.getElementById('q').innerHTML='<div class="err">링크가 끝까지 복사되지 않았어요.<br>받은 링크를 다시 눌러 주세요.</div>';
+    document.getElementById('bwrap').style.display='none';
+  }
+  // 캐롤 (휴대폰은 화면을 한 번 눌러야 소리가 나요)
+  const bgm=new Audio('carol.m4a');bgm.loop=true;bgm.volume=.7;const sb=document.getElementById('snd');
+  function music(on){if(on){bgm.play().then(()=>sb.textContent='🔊').catch(()=>{})}else{bgm.pause();sb.textContent='🔇'}}
+  sb.onclick=e=>{e.stopPropagation();music(bgm.paused)};
+  addEventListener('pointerdown',function f(){music(true);removeEventListener('pointerdown',f)},{once:true});
+  // 버튼 효과음: 반짝이는 종소리
+  function chime(){try{const A=new (window.AudioContext||window.webkitAudioContext)(),t=A.currentTime;
+    [1046.5,1318.5,1568,2093,2637].forEach((f,i)=>{const o=A.createOscillator(),g=A.createGain();o.type='sine';o.frequency.value=f;
+      g.gain.setValueAtTime(0,t+i*.07);g.gain.linearRampToValueAtTime(.22,t+i*.07+.01);g.gain.exponentialRampToValueAtTime(.001,t+i*.07+1.4);
+      o.connect(g).connect(A.destination);o.start(t+i*.07);o.stop(t+i*.07+1.5)});
+    for(let i=0;i<14;i++){const o=A.createOscillator(),g=A.createGain(),s=t+.35+Math.random()*.9;o.type='triangle';o.frequency.value=2500+Math.random()*2500;
+      g.gain.setValueAtTime(.06,s);g.gain.exponentialRampToValueAtTime(.001,s+.25);o.connect(g).connect(A.destination);o.start(s);o.stop(s+.3)}}catch(e){}}
+  document.getElementById('btn').onclick=function(){
+    if(this.dataset.done)return;this.dataset.done=1;chime();music(true);
+    document.getElementById('q').innerHTML='<b>'+D.g+'</b>님이 몰래 챙길 사람은';
+    document.getElementById('name').style.display='block';
+    document.getElementById('bwrap').style.display='none';
+    const r=document.getElementById('name').getBoundingClientRect(),cols=['#ffd95a','#ff4d6d','#7ee0ff','#b8ff7a','#fff'];
+    for(let i=0;i<70;i++){const s=document.createElement('div');s.className='spark';s.style.background=cols[i%5];
+      s.style.left=(r.left+r.width/2)+'px';s.style.top=(r.top+r.height/2)+'px';document.body.appendChild(s);
+      const a=Math.random()*6.28,v=90+Math.random()*150;
+      s.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${Math.cos(a)*v}px,${Math.sin(a)*v+70}px)`,opacity:0}],{duration:1300+Math.random()*700,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>s.remove()}
+  };
+  if(new URLSearchParams(location.search).get('open')==='1'&&D)setTimeout(()=>document.getElementById('btn').click(),300);
+</script>
+</body>
+</html>
