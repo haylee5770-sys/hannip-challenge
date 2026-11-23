@@ -1474,7 +1474,9 @@ const sleepRouter = router({
     .query(async ({ ctx, input }) => {
       const date = input?.date ?? new Date().toISOString().slice(0, 10);
       const row = await db.getSleepByDate(ctx.user.id, date);
-      return row ?? null;
+      if (!row) return null;
+      const morningPhotoUrl = await db.getSleepMorningPhoto(ctx.user.id, date).catch(() => null);
+      return { ...row, morningPhotoUrl };
     }),
 
   /** 내 수면 추이. since부터 오늘까지. */

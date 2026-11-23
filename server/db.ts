@@ -914,6 +914,12 @@ export async function setSleepMorningPhoto(userId: number, date: string, url: st
   const conn = await db();
   await conn.execute(sql`UPDATE sleeps SET morningPhotoUrl = ${url} WHERE userId = ${userId} AND recordedDate = ${date}`);
 }
+/** 기상 인증 사진 불러오기 (2026-11-23: 저장만 되고 화면에서 다시 볼 수 없던 누락 보완) */
+export async function getSleepMorningPhoto(userId: number, date: string): Promise<string | null> {
+  const conn = await db();
+  const res: any = await conn.execute(sql`SELECT morningPhotoUrl FROM sleeps WHERE userId = ${userId} AND recordedDate = ${date} LIMIT 1`);
+  return (rowsOf(res)[0] as any)?.morningPhotoUrl ?? null;
+}
 
 /* -------- Happy notes (행복 한 줄 일기) -------- */
 

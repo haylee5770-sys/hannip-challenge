@@ -1552,6 +1552,8 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
     });
   };
 
+  // 2026-11-23: 수면도 다른 칸처럼 '1회' 동그라미 → 누르면 기상 사진·시간 (지난 날짜도)
+  const [sleepOpen, setSleepOpen] = useState(false);
   const fmtH = (v: number) => v.toString().padStart(2, "0");
   const fmtM = (v: number) => v.toString().padStart(2, "0");
   const fmtBedH = (v: number) => {
@@ -1638,6 +1640,22 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
           {upsertSleep.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>
       </div>
+      {todaySleep.data && (() => { const sd = todaySleep.data as any; const m = sd.durationMinutes ?? 0; return (
+        <div className="mt-3">
+          <Medals items={[{ id: sd.id, label: "1회", sub: `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ""}` }]} onOpen={() => setSleepOpen(true)} />
+          <Popup open={sleepOpen} onClose={() => setSleepOpen(false)}>
+            <div className="space-y-3">
+              {sd.morningPhotoUrl
+                ? <img src={sd.morningPhotoUrl} alt="기상 인증 사진" className="w-full rounded-xl object-cover max-h-[60vh]" />
+                : <div className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">기상 사진이 없어요</div>}
+              <div className="text-lg font-semibold">☀️ 기상 · {Math.floor(m / 60)}시간{m % 60 ? ` ${m % 60}분` : ""}</div>
+              <div className="text-sm text-muted-foreground">
+                {short(sd.bedHour)}{sd.bedMinute ? ` ${sd.bedMinute}분` : ""} 취침 → {short(sd.wakeHour)}{sd.wakeMinute ? ` ${sd.wakeMinute}분` : ""} 기상
+              </div>
+              <p className="text-xs text-muted-foreground">고치려면 시간을 다시 고르고 사진을 올려 자랑하기를 누르면 이 기록이 바뀌어요.</p>
+            </div>
+          </Popup>
+        </div>); })()}
     </section>
   );
 }
