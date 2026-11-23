@@ -1,5 +1,6 @@
 import { askConfirm } from "@/lib/askConfirm";
 import PageTitle from "@/components/PageTitle";
+import PurchasesAdmin from "@/components/PurchasesAdmin";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { todayLocal } from "@shared/utils";
@@ -132,6 +133,9 @@ export default function Admin() {
 
       <Big k="crew" label="💬 의견·신청" sub="크루 의견 · 상 받기 신청 · 이벤트" />
       {open === "crew" && <div className="pb-4"><CrewAdmin /></div>}
+
+      <Big k="purchases" label="🛒 구매 기록" sub="예전 주문 넣기 · 네이버 자동 · 구매 순위 · 크루 공개" />
+      {open === "purchases" && <div className="pb-4"><PurchasesAdmin /></div>}
 
       <div className="grid grid-cols-2 gap-2 pt-3">
         <Small k="report" label="📊 리포트" />

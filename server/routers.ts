@@ -816,6 +816,11 @@ const adminRouter = router({
   purchaseStats: adminProcedure.query(async () => ({ ...(await purchases.stats()), naver: await naver.naverStatus() })),
   purchaseImport: adminProcedure.input(z.object({ text: z.string().min(1).max(5_000_000) })).mutation(async ({ input }) => purchases.importExcel(input.text)),
   naverSync: adminProcedure.mutation(async () => naver.syncNaverOrders()),
+  /** 크루에게 '내 구매 기록' 공개 여부 (2026-11-23: 처음엔 비공개, 방장이 확인 후 켬) */
+  purchaseCrewOpen: adminProcedure.query(async () => (await purchases.getState("purchase.crewOpen")) === "1"),
+  setPurchaseCrewOpen: adminProcedure.input(z.object({ open: z.boolean() })).mutation(async ({ input }) => {
+    await purchases.setState("purchase.crewOpen", input.open ? "1" : "0"); return { ok: true };
+  }),
   /** 크루 명단 (2026-11-22) */
   rosterList: adminProcedure.query(async () => roster.listRoster()),
   rosterImport: adminProcedure.input(z.object({ text: z.string().min(1).max(200000) })).mutation(async ({ input }) => roster.importRoster(input.text)),
@@ -1689,6 +1694,19 @@ const crewRouter = router({
   joinEvent: approvedProcedure.input(z.object({ eventId: z.number() })).mutation(async ({ ctx, input }) => sp.joinEvent(ctx.user.id, input.eventId)),
   feedbacks: adminProcedure.query(async () => sp.listFeedbacks()),
   feedbackDone: adminProcedure.input(z.object({ id: z.number(), done: z.boolean() })).mutation(async ({ input }) => { await sp.setFeedbackDone(input.id, input.done); return { ok: true }; }),
+  /** 내 구매 기록 (2026-11-23). 방장이 공개하기 전에는 방장만 미리 본다. 본인 전화번호로 맞춘 기록만 */
+  myPurchases: approvedProcedure.query(async ({ ctx }) => {
+    const open = (await purchases.getState("purchase.crewOpen")) === "1";
+    const isAdmin = ctx.user.role === "admin";
+    if (!open && !isAdmin) return { visible: false as const, open };
+    const r = await purchases.forUser(ctx.user.id);
+    return {
+      visible: true as const, open, preview: !open,
+      hasPhone: r.phones.length > 0,
+      summary: r.summary,
+      rows: r.rows.map((x: any) => ({ id: Number(x.id), orderDate: x.orderDate ?? null, product: x.product ?? "", opt: x.opt ?? "", qty: Number(x.qty) || 1, kind: x.kind ?? "구매", status: x.status ?? null })),
+    };
+  }),
   myOptions: approvedProcedure.query(async ({ ctx }) => ({
     gifts: await sp.myGifts(ctx.user.id),
     events: await sp.listOpenEvents(true),

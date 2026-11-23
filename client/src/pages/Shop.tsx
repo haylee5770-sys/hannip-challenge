@@ -2,6 +2,7 @@
 // 15개 구매: 10% 할인 / 45개 구매: 10% 할인 + 3,000원 추가 할인
 // 후기 이벤트: 2달에 한 번(홀수달) 1명 네이버페이 2만 원권 (2026-11-22 변경) · 포토 후기 적립: 45개 2,000원 / 15개 1,000원
 import PageTitle from "@/components/PageTitle";
+import MyPurchases from "@/components/MyPurchases";
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -120,6 +121,9 @@ export default function Shop() {
       </section>
 
       <p className="text-center text-[11px] text-muted-foreground">2달 동안 남긴 후기를 모두 모아 홀수달에 1명을 뽑아요.</p>
+
+      {/* 2026-11-23: 내 구매 기록 — 방장이 공개하기 전엔 방장만 보임 */}
+      <MyPurchases />
 
       {pick && (
         <div className="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-6" onClick={() => setPick(null)}>
