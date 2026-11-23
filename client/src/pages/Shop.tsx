@@ -32,13 +32,13 @@ export default function Shop() {
       {/* 2026-11-23 (해이): 제목 빼고 이벤트를 작게 → 아래 네이버 구매 버튼이 첫 화면에 보이게 */}
       <section className="rounded-2xl border border-primary bg-primary/10 px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-black leading-snug break-keep">후기 남기면 네이버페이 <span className="text-primary">2만 원권</span> 🎁</h2>
+          <h2 className="text-xl font-black leading-snug break-keep">🎁 후기왕 <span className="text-primary">20,000원 적립</span></h2>
           <span className="shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5">2달에 1명</span>
         </div>
         <ul className="mt-1.5 space-y-0.5 text-[11px] leading-snug text-muted-foreground break-keep">
           <li>✔ <b className="text-foreground">정성과 진심을 담아 후기를 적어 주신 분께</b></li>
           <li>✔ <b className="text-foreground">슈퍼한입 챌린지를 널리 알리고 싶으신 분께</b></li>
-          <li>✔ <b className="text-foreground">2달에 한 번</b>(1·3·5·7·9·11월) <b className="text-foreground">1명</b>을 뽑아 네이버페이 2만 원권을 드려요</li>
+          <li>✔ <b className="text-foreground">2달에 한 번</b>(1·3·5·7·9·11월) <b className="text-foreground">1명</b>을 뽑아 <b className="text-foreground">20,000원을 적립</b>해 드려요</li>
           <li>✔ 15개·45개 <b className="text-foreground">어떤 상품이든</b> 괜찮아요</li>
           <li>✔ 우리 방 멤버만 사는 상품이라 <b className="text-foreground">당첨 확률 높아요</b></li>
         </ul>
