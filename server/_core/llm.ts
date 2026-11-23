@@ -107,6 +107,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     max_tokens: maxTokens,
   };
 
+  // 2026-11-23: 같은 사진에 같은 답이 나오게 쓰는 곳만 지정 (식단 사진 분석)
+  if (typeof (params as any).temperature === "number") payload.temperature = (params as any).temperature;
+  if (typeof (params as any).seed === "number") payload.seed = (params as any).seed;
+
   const responseFormat = buildResponseFormat(params);
   if (responseFormat) payload.response_format = responseFormat;
 
