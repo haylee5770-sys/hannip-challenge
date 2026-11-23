@@ -113,7 +113,10 @@ export default function Shop() {
             </div>
           </div>
         </div>
-        <p className="text-[11px] text-muted-foreground text-center leading-relaxed break-keep">크루 선물 2개는 <b className="text-foreground">배송 메시지에 '닉네임 크루'</b>를 적어 주셔야 함께 나가요.<br />선물 금액은 45개 정가 기준 개당 약 6,440원으로 계산했어요.</p>
+        <div className="text-center leading-relaxed break-keep">
+          <p className="text-[11px] text-muted-foreground">크루 선물 2개는 <b className="text-foreground">배송 메시지에 '닉네임 크루'</b>를 적어 주셔야 함께 나가요.</p>
+          <p className="text-xs font-bold text-red-500 mt-1">배송 메시지에 적어 주시지 않으면 자동으로 발송되지 않아요.<br />이건 AI로도 안 돼요.</p>
+        </div>
       </section>
 
       <p className="text-center text-[11px] text-muted-foreground">2달 동안 남긴 후기를 모두 모아 홀수달에 1명을 뽑아요.</p>
