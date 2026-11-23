@@ -66,8 +66,8 @@ export async function ensureSeasonPlusSchema() {
 }
 
 /* ---------- 시즌 ---------- */
-export type SeasonInfo = { id: number; name: string; shortName: string; startDate: string; planEnd: string | null; detoxStart: string | null; detoxEnd: string | null; status: string };
-const toInfo = (s: any): SeasonInfo => ({ id: Number(s.id), name: s.name, shortName: s.shortName ?? "", startDate: d10(s.startDate)!, planEnd: d10(s.planEnd), detoxStart: d10(s.detoxStart), detoxEnd: d10(s.detoxEnd), status: s.status });
+export type SeasonInfo = { id: number; name: string; shortName: string; startDate: string; endDate: string | null; planEnd: string | null; detoxStart: string | null; detoxEnd: string | null; status: string };
+const toInfo = (s: any): SeasonInfo => ({ id: Number(s.id), name: s.name, shortName: s.shortName ?? "", startDate: d10(s.startDate)!, endDate: d10(s.endDate), planEnd: d10(s.planEnd), detoxStart: d10(s.detoxStart), detoxEnd: d10(s.detoxEnd), status: s.status });
 
 export async function activeSeasonInfo(): Promise<SeasonInfo | null> {
   const r = (await q(sql`SELECT * FROM seasons WHERE status='active' ORDER BY id DESC LIMIT 1`))[0];

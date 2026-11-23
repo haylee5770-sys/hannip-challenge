@@ -1685,11 +1685,18 @@ const roundsRouter = router({
   mySeasonSummary: approvedProcedure.input(z.object({ seasonId: z.number() })).query(async ({ ctx, input }) => {
     const all = await sp.allSeasonInfos();
     const s = all.find(x => x.id === input.seasonId); if (!s) return null;
-    const until = s.status === "active" ? rounds.kstToday() : (s.planEnd ?? rounds.kstToday());
-    const counts = await rounds.itemCounts(ctx.user.id, s.startDate, until);
-    const w = await db.getDb().then(c => c ? c.execute(sqlTag`SELECT kg, DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM weights WHERE userId=${ctx.user.id} AND recordedDate BETWEEN ${s.startDate} AND ${until} ORDER BY recordedDate`) : null).catch(() => null);
+    // 2026-11-24: 테스트 시즌은 앱을 다시 연 날(11/20)부터 그동안의 활동을 모두 센다
+    const since = String(s.name).startsWith("테스트 시즌") ? rounds.APP_RESTART_DATE : s.startDate;
+    // 끝난 시즌은 실제로 끝난 날까지만. 다음 시즌이 같은 날 시작했으면 그 전날까지 (다음 시즌 기록이 섞이지 않게)
+    let until = s.status === "active" ? rounds.kstToday() : (s.endDate ?? s.planEnd ?? rounds.kstToday());
+    const next = all.find(x => x.id !== s.id && x.startDate > s.startDate);
+    if (s.status !== "active" && next && next.startDate <= until) {
+      const d = new Date(next.startDate + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - 1); until = d.toISOString().slice(0, 10);
+    }
+    const counts = await rounds.itemCounts(ctx.user.id, since, until);
+    const w = await db.getDb().then(c => c ? c.execute(sqlTag`SELECT kg, DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM weights WHERE userId=${ctx.user.id} AND recordedDate BETWEEN ${since} AND ${until} ORDER BY recordedDate`) : null).catch(() => null);
     const ws = Array.isArray(w) && Array.isArray((w as any)[0]) ? (w as any)[0] : [];
-    return { season: s, counts, weightStart: ws[0] ? Number(ws[0].kg) : null, weightEnd: ws.length > 1 ? Number(ws[ws.length - 1].kg) : null };
+    return { season: s, since, until, counts, weightStart: ws[0] ? Number(ws[0].kg) : null, weightEnd: ws.length > 1 ? Number(ws[ws.length - 1].kg) : null };
   }),
   /** 1년 달력: 날짜별 기상·식단 여부 */
   dayFlags: approvedProcedure

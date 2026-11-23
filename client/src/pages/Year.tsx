@@ -27,10 +27,16 @@ function SeasonResult({ seasonId, onClose }: { seasonId: number; onClose: () => 
           <div className="text-center">
             <div className="text-xs text-primary font-bold tracking-widest">SEASON RESULT</div>
             <div className="text-xl font-black mt-1">{d.season.name}</div>
-            <div className="text-xs text-muted-foreground">{md(d.season.startDate)} ~ {d.season.planEnd ? md(d.season.planEnd) : ""}</div>
+            <div className="text-xs text-muted-foreground">{md(d.since)} ~ {md(d.until)}</div>
+          </div>
+          {/* 2026-11-24 해이: 그동안 한 것을 항목별 총합으로 */}
+          <div className="rounded-2xl bg-primary/10 border border-primary/30 py-3 text-center">
+            <div className="text-3xl font-black text-primary">{d.counts.total}</div>
+            <div className="text-[11px] text-muted-foreground">전체 인증 (수면·식단·물·운동)</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            {([["인증", d.counts.total], ["이게돼", d.counts.itge], ["운동", d.counts.exercise]] as const).map(([k, v]) => (
+            {([["😴 수면", d.counts.wake], ["🥗 식단", d.counts.meal + d.counts.smoothie], ["💧 물", d.counts.water],
+               ["💪 운동", d.counts.exercise], ["✨ 이게돼", d.counts.itge], ["⚖️ 체중", d.counts.weight]] as const).map(([k, v]) => (
               <div key={k} className="rounded-2xl bg-white/[0.05] py-3"><div className="text-2xl font-black text-primary">{v}</div><div className="text-[11px] text-muted-foreground">{k}</div></div>
             ))}
           </div>
