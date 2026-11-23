@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import AddressField from "./AddressField";
+import { askConfirm } from "@/lib/askConfirm";
 
 const glass = "w-full rounded-3xl border border-white/20 bg-white/[0.06] backdrop-blur-xl px-5 py-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] active:scale-[0.98] transition";
 const field = "w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-base outline-none focus:border-primary";
@@ -142,6 +143,10 @@ function FeedbackEdit({ row, onDone }: { row: any; onDone: () => void }) {
     onSuccess: () => { utils.crew.myFeedbacks.invalidate(); toast.success("의견을 고쳤어요."); onDone(); },
     onError: e => toast.error(e.message),
   });
+  const del = trpc.crew.deleteFeedback.useMutation({
+    onSuccess: () => { utils.crew.myFeedbacks.invalidate(); toast.success("의견을 지웠어요."); onDone(); },
+    onError: e => toast.error(e.message),
+  });
   return (
     <div className="rounded-2xl border border-primary/60 bg-white/[0.04] p-3 space-y-3">
       <div className="grid grid-cols-2 gap-2">
@@ -162,6 +167,16 @@ function FeedbackEdit({ row, onDone }: { row: any; onDone: () => void }) {
           onClick={() => save.mutate({ id: row.id, kind, text, imageDataUrl: newImg ?? undefined, removeImage: !img && !!row.imageUrl })}
           className="h-11 rounded-2xl glass-btn text-sm font-bold disabled:opacity-40">{save.isPending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "고친 내용 저장"}</button>
       </div>
+      {/* 2026-11-23: 방장이 아직 확인·답장 안 한 의견만 지울 수 있어요 */}
+      {!row.done && !row.reply ? (
+        <button type="button" disabled={del.isPending}
+          onClick={async () => { if (await askConfirm("이 의견을 지울까요?\n지우면 되돌릴 수 없어요.", "삭제")) del.mutate({ id: row.id }); }}
+          className="w-full h-10 rounded-2xl border border-destructive/50 text-sm font-bold text-destructive disabled:opacity-40">
+          {del.isPending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "🗑 의견 삭제"}
+        </button>
+      ) : (
+        <p className="text-center text-[11px] text-muted-foreground">방장이 이미 확인한 의견이라 지울 수 없어요.</p>
+      )}
     </div>
   );
 }

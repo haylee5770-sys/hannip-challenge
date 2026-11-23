@@ -1698,6 +1698,11 @@ const crewRouter = router({
   feedbackDone: adminProcedure.input(z.object({ id: z.number(), done: z.boolean() })).mutation(async ({ input }) => { await sp.setFeedbackDone(input.id, input.done); return { ok: true }; }),
   /** 의견 답장 (2026-11-23) */
   feedbackReply: adminProcedure.input(z.object({ id: z.number(), reply: z.string().max(3000) })).mutation(async ({ input }) => { await sp.replyFeedback(input.id, input.reply); return { ok: true }; }),
+  deleteFeedback: approvedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    const r = await sp.deleteMyFeedback(ctx.user.id, input.id);
+    if (!r.ok) throw new TRPCError({ code: "BAD_REQUEST", message: r.message });
+    return { ok: true };
+  }),
   feedbackRepliesSeen: approvedProcedure.mutation(async ({ ctx }) => { await sp.markRepliesSeen(ctx.user.id); return { ok: true }; }),
   unseenReplies: approvedProcedure.query(async ({ ctx }) => sp.unseenReplyCount(ctx.user.id)),
   /** 내 구매 기록 (2026-11-23). 방장이 공개하기 전에는 방장만 미리 본다. 본인 전화번호로 맞춘 기록만 */

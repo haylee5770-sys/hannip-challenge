@@ -145,6 +145,14 @@ export async function replyFeedback(id: number, reply: string) {
   if (r) await q(sql`UPDATE feedbacks SET reply=${r}, repliedAt=CURRENT_TIMESTAMP, replySeen=false, done=true WHERE id=${id}`);
   else await q(sql`UPDATE feedbacks SET reply=NULL, repliedAt=NULL, replySeen=false WHERE id=${id}`);
 }
+/** 크루가 자기 의견 지우기 (2026-11-23) — 방장이 아직 '확인함'·답장 안 한 것만 */
+export async function deleteMyFeedback(userId: number, id: number) {
+  const row = (await q(sql`SELECT done, reply FROM feedbacks WHERE id=${id} AND userId=${userId}`))[0];
+  if (!row) return { ok: false, message: "의견을 찾을 수 없어요." };
+  if (row.done || row.reply) return { ok: false, message: "방장이 이미 확인한 의견이라 지울 수 없어요." };
+  await q(sql`DELETE FROM feedbacks WHERE id=${id} AND userId=${userId} AND done=false AND reply IS NULL`);
+  return { ok: true, message: "" };
+}
 /** 크루가 내 의견 화면을 열면 답장을 '봤음'으로 */
 export async function markRepliesSeen(userId: number) {
   await q(sql`UPDATE feedbacks SET replySeen=true WHERE userId=${userId} AND reply IS NOT NULL AND replySeen=false`);
