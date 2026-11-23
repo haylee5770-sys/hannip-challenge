@@ -1660,6 +1660,8 @@ const roundsRouter = router({
       catch (e: any) { throw new TRPCError({ code: "BAD_REQUEST", message: e?.message ?? "예약하지 못했어요." }); }
     }),
   cancelScheduledSeason: adminProcedure.mutation(async () => sp.cancelScheduledSeason()),
+  renameActiveSeason: adminProcedure.input(z.object({ name: z.string().min(1).max(128), shortName: z.string().max(32) }))
+    .mutation(async ({ input }) => sp.renameActiveSeason(input.name, input.shortName)),
   seasonInfo: approvedProcedure.query(async () => sp.activeSeasonInfo()),
   // 2026-11-22: 새 앱 이전 시험용 회차(10.5기 미니 챌린지 시험 등)는 크루 화면에 안 보이게
   allSeasons: approvedProcedure.query(async () => (await sp.allSeasonInfos()).filter(s => String(s.startDate) >= "2026-11-20")),

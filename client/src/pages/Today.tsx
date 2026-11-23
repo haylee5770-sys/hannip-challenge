@@ -283,7 +283,6 @@ export default function Today() {
   };
 
   // Season progress (live)
-  const seasonProgress = trpc.seasons.myProgress.useQuery(undefined, { refetchInterval: 60_000 });
   // 스트릭 + 주간 요약
   const myStreak = trpc.seasons.myStreak.useQuery(undefined, { refetchOnWindowFocus: false });
   const weeklyNudge = trpc.seasons.weeklyNudge.useQuery(undefined, { refetchOnWindowFocus: false });
@@ -301,53 +300,7 @@ export default function Today() {
 
       {/* 우리 방 모토 한 줄 (주간 안내 대신, 2026-11-20) */}
 
-      {/* Season banner */}
-      {seasonProgress.data?.season && (
-        <section className="mb-4 rounded-2xl bg-card border border-border px-5 py-4 md:px-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="flex items-baseline gap-4">
-              <div>
-                <div className="editorial-eyebrow text-muted-foreground">SEASON</div>
-                <div className="font-serif text-xl md:text-2xl">{seasonProgress.data.season.name}</div>
-              </div>
-              <div className="hidden md:block w-px h-10 bg-border" />
-              <div>
-                <div className="editorial-eyebrow text-muted-foreground">DAY</div>
-                <div className="font-serif text-xl md:text-2xl tabular-nums">
-                  {seasonProgress.data.dayNumber ?? "-"} <span className="text-muted-foreground text-sm">/ {seasonProgress.data.totalDays}</span>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-5 gap-3 md:gap-6 text-center md:text-right">
-              <div>
-                <div className="editorial-eyebrow text-muted-foreground">기상</div>
-                <div className="font-serif text-xl tabular-nums">{seasonProgress.data.counts.weight}</div>
-              </div>
-              <div>
-                <div className="editorial-eyebrow text-muted-foreground">식단</div>
-                <div className="font-serif text-xl tabular-nums">{seasonProgress.data.counts.meal}</div>
-              </div>
-              <div>
-                <div className="editorial-eyebrow text-muted-foreground">물</div>
-                <div className="font-serif text-xl tabular-nums">{seasonProgress.data.counts.water ?? 0}</div>
-              </div>
-              <div>
-                <div className="editorial-eyebrow text-muted-foreground">운동</div>
-                <div className="font-serif text-xl tabular-nums">{seasonProgress.data.counts.exercise}</div>
-              </div>
-              <div>
-                <div className="editorial-eyebrow text-muted-foreground">감량</div>
-                <div className={cn(
-                  "font-serif text-xl tabular-nums",
-                  seasonProgress.data.lossPercent > 0 ? "text-emerald-700" : seasonProgress.data.lossPercent < 0 ? "text-rose-700" : "",
-                )}>
-                  {seasonProgress.data.lossPercent > 0 ? "−" : seasonProgress.data.lossPercent < 0 ? "+" : ""}{Math.abs(seasonProgress.data.lossPercent).toFixed(2)}%
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      {/* 2026-11-24 해이: 오늘 탭의 시즌 이름·DAY 줄은 뺌 (1년·나의 변화에서 봄) */}
 
       {/* 우리 방 모토 — 오늘 칸 위, 가운데 */}
       {/* 점 없이 첫 글자(꾸·자·자·인)만 굵게, 나머지는 얇게 (2026-11-21) */}

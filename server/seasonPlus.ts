@@ -114,19 +114,8 @@ export async function runDueScheduledSeason(endCurrent: () => Promise<any>) {
   const { setState } = await import("./purchases");
   try {
     await setState(SCHED_KEY, ""); // 두 번 시작되지 않게 먼저 지운다
-    const r = await startSeason(s.adminId, s, endCurrent);
-    const startDate = kstToday();
-    const epoch = Math.floor(new Date(s.startAt).getTime() / 1000);
-    const moved: string[] = [];
-    for (const t of DATED_TABLES) {
-      try {
-        const res: any = await (await db.getDb())!.execute(sql`UPDATE IGNORE ${sql.raw(t)} SET recordedDate = DATE_SUB(recordedDate, INTERVAL 1 DAY)
-          WHERE recordedDate = ${startDate} AND UNIX_TIMESTAMP(createdAt) < ${epoch}`);
-        const n = Number(res?.[0]?.affectedRows ?? 0);
-        if (n) moved.push(`${t} ${n}`);
-      } catch (e: any) { console.warn("[season schedule] move skip", t, (e?.message ?? "").slice(0, 100)); }
-    }
-    const msg = `${new Date().toISOString()} 예약 시작 완료 · 시즌 ${r.seasonNumber} '${s.name}' · 시작 전 기록 전날로: ${moved.join(", ") || "없음"}`;
+    const r = await startSeason(s.adminId, s, endCurrent, new Date(s.startAt));
+    const msg = `${new Date().toISOString()} 예약 시작 완료 · 시즌 ${r.seasonNumber} '${s.name}' · 시작 전 기록 전날로: ${r.moved.join(", ") || "없음"}`;
     await setState("season.lastScheduledRun", msg);
     console.log("[season schedule]", msg);
   } catch (e: any) {
@@ -140,7 +129,23 @@ export function startSeasonScheduleTimer(endCurrent: () => Promise<any>) {
 }
 
 /** 방장이 시즌 시작 (진행 중 회차가 있으면 먼저 종료·결산) */
-export async function startSeason(adminId: number, input: { name: string; shortName: string; planEnd: string; detoxStart?: string | null; detoxEnd?: string | null }, endCurrent: () => Promise<any>) {
+/** 시즌 시작 순간 '딱 끊기' (2026-11-24 해이): 시작 날짜에 시작 시각 전에 올린 기록은 전날로 옮겨서 새 시즌에 안 섞이게 (지우지 않음) */
+async function cutBefore(startDate: string, cutAt: Date) {
+  const epoch = Math.floor(cutAt.getTime() / 1000);
+  const moved: string[] = [];
+  for (const t of DATED_TABLES) {
+    try {
+      const res: any = await (await db.getDb())!.execute(sql`UPDATE IGNORE ${sql.raw(t)} SET recordedDate = DATE_SUB(recordedDate, INTERVAL 1 DAY)
+        WHERE recordedDate = ${startDate} AND UNIX_TIMESTAMP(createdAt) < ${epoch}`);
+      const n = Number(res?.[0]?.affectedRows ?? 0);
+      if (n) moved.push(`${t} ${n}`);
+    } catch (e: any) { console.warn("[season cut] skip", t, (e?.message ?? "").slice(0, 100)); }
+  }
+  return moved;
+}
+
+/** 방장이 시즌 시작 (진행 중 회차가 있으면 먼저 종료·결산). 누른 순간(또는 예약 시각)에 딱 끊는다 */
+export async function startSeason(adminId: number, input: { name: string; shortName: string; planEnd: string; detoxStart?: string | null; detoxEnd?: string | null }, endCurrent: () => Promise<any>, cutAt: Date = new Date()) {
   const cur = await activeSeasonInfo();
   if (cur) await endCurrent();
   const all = await db.listSeasons();
@@ -148,7 +153,19 @@ export async function startSeason(adminId: number, input: { name: string; shortN
   const today = kstToday();
   const id = await db.createSeason({ seasonNumber: n, totalDays: 365, name: input.name, startDate: today, endDate: addDays(today, 364), status: "active", createdByUserId: adminId } as any);
   await q(sql`UPDATE seasons SET roundType='season', shortName=${input.shortName}, planEnd=${input.planEnd}, detoxStart=${input.detoxStart || null}, detoxEnd=${input.detoxEnd || null} WHERE id=${id}`);
-  return { id, seasonNumber: n };
+  const moved = await cutBefore(today, cutAt);
+  console.log("[season start]", input.name, "cut", cutAt.toISOString(), "moved", moved.join(", ") || "none");
+  return { id, seasonNumber: n, moved };
+}
+
+/**
+ * 지금 진행 중인 시즌 이름 바꾸기 (2026-11-24 해이: 시험으로 눌러 본 시즌을 '테스트 시즌 (삭제될 예정)'으로 남기기)
+ */
+export async function renameActiveSeason(name: string, shortName: string) {
+  const cur = await activeSeasonInfo();
+  if (!cur) return { ok: false };
+  await q(sql`UPDATE seasons SET name=${name}, shortName=${shortName} WHERE id=${cur.id}`);
+  return { ok: true };
 }
 
 export async function myEntry(userId: number) {

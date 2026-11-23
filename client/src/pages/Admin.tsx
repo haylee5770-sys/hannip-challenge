@@ -59,12 +59,19 @@ function RoundControl() {
   const [startAt, setStartAt] = useState(tomorrow4);
   const fmtKst = (iso: string) => new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", weekday: "short", hour: "numeric", minute: "2-digit" });
   const schedule = trpc.rounds.scheduleSeason.useMutation({ onSuccess: () => { toast.success("예약했어요. 그 시각에 자동으로 시작돼요."); utils.rounds.scheduledSeason.invalidate(); }, onError: e => toast.error(e.message) });
+  const rename = trpc.rounds.renameActiveSeason.useMutation({ onSuccess: () => { toast.success("테스트 시즌으로 표시했어요."); after(); }, onError: e => toast.error(e.message) });
   const cancelSched = trpc.rounds.cancelScheduledSeason.useMutation({ onSuccess: () => { toast.success("예약을 취소했어요."); utils.rounds.scheduledSeason.invalidate(); } });
   return (
     <section className="mt-6 rounded-2xl bg-card border border-primary/50 p-5 space-y-3">
       <div className="text-sm">
         {cur.data ? <>지금 진행 중: <b className="text-primary">{cur.data.name}</b> <span className="text-muted-foreground">({cur.data.startDate} ~ {cur.data.planEnd ?? ""})</span>
-          {counts.data && <div className="text-xs text-muted-foreground mt-1">참여: 슈퍼루틴 {counts.data.routine}명 · 3일 디톡스 {counts.data.detox}명</div>}</>
+          {counts.data && <div className="text-xs text-muted-foreground mt-1">참여: 슈퍼루틴 {counts.data.routine}명 · 3일 디톡스 {counts.data.detox}명</div>}
+          {/* 2026-11-24 해이: 시험으로 눌러 본 시즌은 '테스트 시즌 (삭제될 예정)'으로 남겨서 다 같이 보게 → 나중에 삭제 */}
+          {!cur.data.name.startsWith("테스트 시즌") && (
+            <button type="button" disabled={rename.isPending}
+              onClick={async () => { if (await askConfirm(`'${cur.data!.name}'을 '테스트 시즌 (삭제될 예정)'으로 바꿀까요?\n다음 시즌이 시작되면 테스트 시즌으로 저장돼요.`, "바꾸기")) rename.mutate({ name: "테스트 시즌 (삭제될 예정)", shortName: "테스트" }); }}
+              className="mt-2 w-full rounded-xl border border-amber-400/60 py-2.5 text-sm font-semibold text-amber-200">🧪 지금 시즌을 '테스트 시즌 (삭제될 예정)'으로 표시</button>
+          )}</>
           : <span className="text-muted-foreground">지금은 테스트 기간이에요. (기록은 남지만 시즌 번호·시상에는 들어가지 않아요)</span>}
       </div>
       <div className="rounded-xl border border-border p-3 space-y-2">
