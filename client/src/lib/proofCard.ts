@@ -16,7 +16,7 @@ export type ProofCard = {
   avatar?: string | null; // 카톡방과 같은 프로필 사진 (이름 앞 둥근 네모)
   chatLines?: string[];   // 이게돼: 가운데 칸에 카톡 말풍선으로 넣을 줄들 (한 장 분량)
   pageInfo?: { idx: number; total: number };
-  shareLines?: string[];  // 카톡에 같이 보낼 글 (첫 줄 검색용 아래에 붙는 줄들). 있으면 feedback 대신 씀
+  shareSections?: { label: string; value: string }[];  // 카톡 글의 '● 제목 : 내용' 칸들. 있으면 feedback 대신 씀
 };
 
 /** 카톡 프로필처럼 둥근 네모 사진 */
@@ -248,15 +248,26 @@ export function searchTag(card: ProofCard): string {
 }
 
 export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
-  // 2026-11-23 해이 지정: 맨 위 검색용 한 줄(지연식단_누적2) + 그 아래 내용(음식·탄단지·멘트). #해시태그는 뺌.
+  // 2026-11-23 해이 확정 모양:
+  //   #해이식단_누적12
+  //   (빈 줄)
+  //   ● 먹은 음식 : 레드단스          ← 짧으면 같은 줄
+  //   ● 먹은 음식 :(줄바꿈)돼지 삼겹살 …  ← 길면 다음 줄
+  //   (칸 사이 빈 줄)
   // 기상은 '취침 · 기상 · 수면 시간'까지만. 평가 문장("수면이 부족하면…")은 카드 안에만 (지적처럼 느껴지지 않게)
-  const detail = card.shareLines?.length ? card.shareLines.join("\n")
-    : card.itemLabel
-    ? (card.itemLabel === "이게돼" ? ""
-      : card.itemLabel === "기상" ? (card.feedback ?? "").split(" · ").slice(0, 3).join(" · ")
-      : card.feedback ?? "")
-    : (card.lines[0] ?? "");
-  const text = [searchTag(card), detail.trim()].filter(Boolean).join("\n");
+  const fb = (card.feedback ?? "").trim();
+  const sections: { label: string; value: string }[] = card.shareSections?.length ? card.shareSections
+    : card.itemLabel === "이게돼" ? []
+    : card.itemLabel === "기상" ? [{ label: "수면 기록", value: fb.split(" · ").slice(0, 3).join(" · ") }]
+    : card.itemLabel === "운동" ? [{ label: "운동 기록", value: fb }]
+    : card.itemLabel === "물" ? [{ label: "물 기록", value: fb.replace(/\s*\(목표의[^)]*\)/, "") }]
+    : card.itemLabel === "체중" ? [{ label: "체중 기록", value: fb }]
+    : card.itemLabel ? [{ label: "기록", value: fb }]
+    : card.lines[0] ? [{ label: "기록", value: card.lines[0] }] : [];
+  const body = sections.filter(s => s.value.trim())
+    .map(s => s.value.length <= 22 ? `● ${s.label} : ${s.value}` : `● ${s.label} :\n${s.value}`)
+    .join("\n\n");
+  const text = [`#${searchTag(card)}`, body].filter(Boolean).join("\n\n");
   const blobs = card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
     : [card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card)];
   return shareImages(blobs, text, `hannip_${card.date}`);

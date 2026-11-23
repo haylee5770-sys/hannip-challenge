@@ -85,7 +85,7 @@ export default function Today() {
     const time = new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
     // 카톡 자랑 사진에서는 일반식·스무디 모두 '식단'으로 (누적은 둘을 합친 숫자) (2026-11-21)
     const shownLabel = p.item === "meal" || p.item === "smoothie" ? "식단" : p.label;
-    const card: ProofCard = { emoji: p.emoji, title: shownLabel, lines: [], userName, date, count: n, photo: p.photo, itemLabel: shownLabel, feedback: p.feedback, shareLines: p.shareLines, time, avatar: (user as any)?.avatarUrl ?? null };
+    const card: ProofCard = { emoji: p.emoji, title: shownLabel, lines: [], userName, date, count: n, photo: p.photo, itemLabel: shownLabel, feedback: p.feedback, shareSections: p.shareSections, time, avatar: (user as any)?.avatarUrl ?? null };
     utils.happy.yearProgress.invalidate();
     shareProof(card)
       .then(r => {
@@ -946,9 +946,9 @@ function MealForm({
                 feedback: pickedList.length
                   ? `${pickedList.map(p => p.name).join(" · ")} · 탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g`
                   : "오늘도 스무디로 몸을 챙겼어요",
-                shareLines: pickedList.length ? [
-                  `🍽 먹은 음식: ${pickedList.map(p => p.name).join(", ")}`,
-                  `💪 영양소: 탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g`,
+                shareSections: pickedList.length ? [
+                  { label: "먹은 음식", value: pickedList.map(p => p.name).join(", ") },
+                  { label: "영양소", value: `탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g` },
                 ] : undefined,
               });
               try {
@@ -987,9 +987,9 @@ function MealForm({
               item: "meal", label: "일반식", emoji: "🥗", photo: photos[0],
               feedback: `${description.trim() || "건강한 한 끼"} · 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g${veg ? " · 🥬야채" : ""}`,
               // 카톡 글은 줄을 나눠 한눈에 (2026-11-23 해이 요청)
-              shareLines: [
-                `🍽 먹은 음식: ${description.trim() || "건강한 한 끼"}`,
-                `💪 영양소: 탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g${veg ? " · 🥬야채" : ""}`,
+              shareSections: [
+                { label: "먹은 음식", value: description.trim() || "건강한 한 끼" },
+                { label: "영양소", value: `탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g${veg ? " · 🥬야채 먹음" : ""}` },
               ],
             });
             try {
@@ -1644,7 +1644,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
 
 /* ----------------- 공통: 자랑하기 형식 · 큰 횟수 배지 · 메달 · 팝업 (2026-11-20) ----------------- */
 export type BragItem = "meal" | "smoothie" | "water" | "exercise" | "wake" | "weight";
-export type BragFn = (p: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string; add?: number; shareLines?: string[] }) => void;
+export type BragFn = (p: { item: BragItem; label: string; emoji: string; photo?: string; feedback: string; add?: number; shareSections?: { label: string; value: string }[] }) => void;
 
 function CountBadge({ n }: { n?: number | null }) {
   if (n == null) return null;
