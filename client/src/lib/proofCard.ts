@@ -250,7 +250,9 @@ export async function shareImages(blobs: Blob[], text: string, baseName: string)
   const nav = navigator as any;
   if (!isKakaoInApp() && nav.canShare && nav.canShare({ files })) {
     try {
-      await nav.share({ files, text });
+      // 2026-11-23: 사진만 보낸다. 글까지 넘기면 아이폰 카톡은 사진 아래에 같은 내용 글을 한 번 더 보내고(중복),
+      // 갤럭시는 글을 버려서 서로 달랐다. 카드 안에 이름·항목·누적·멘트가 다 있으니 글은 필요 없다.
+      await nav.share({ files });
       return "shared";
     } catch (e: any) {
       // 저장하느라 시간이 걸려 '누른 직후'가 아니면 브라우저가 막는다 → 버튼 한 번 더 누르게
