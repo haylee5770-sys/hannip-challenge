@@ -6,7 +6,7 @@ export type PastSeason = { no: string; sub?: string; awards: PastAward[] };
 export const PAST_AWARDS: PastSeason[] = [
   { no: "16기", sub: "3일 디톡스", awards: [{ label: "인증상 1등", name: "고윤정" }, { label: "인증상 2등", name: "장나라" }] },
   { no: "15기", sub: "미니 챌린지", awards: [{ label: "인증상", name: "고윤정" }, { label: "감량상", name: "카즈하" }] },
-  { no: "14기", awards: [{ label: "감량상", name: "카즈하", note: "7.24% 감량" }, { label: "운동상", name: "고윤정", note: "23회" }, { label: "인증상", name: "장나라", note: "281회" }] },
+  { no: "14기", awards: [{ label: "감량상", name: "김태희" }, // 2026-11-23 해이: 카즈하 → 김태희, 숫자는 모름 { label: "운동상", name: "고윤정", note: "23회" }, { label: "인증상", name: "장나라", note: "281회" }] },
   { no: "13기", sub: "미니 챌린지", awards: [{ label: "1등", name: "김지원, 고윤정" }] },
   { no: "12기", awards: [{ label: "감량상", name: "근영, 희선", note: "6.48% 감량" }, { label: "운동상", name: "김지원", note: "24회" }, { label: "인증상", name: "제니", note: "206회" }] },
   { no: "11기", awards: [{ label: "감량상", name: "제니", note: "7.28% 감량" }, { label: "운동상", name: "김지원", note: "40회" }, { label: "인증상", name: "수지", note: "208회" }] },
