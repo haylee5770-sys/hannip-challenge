@@ -333,6 +333,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
 
+              {/* 2026-11-23 해이: 앱 안에 설명서 */}
+              <Link href="/manual">
+                <button onClick={() => setMobileOpen(false)} className="mt-3 w-full h-12 rounded-2xl border border-primary/50 bg-primary/10 flex items-center justify-center gap-2 text-[15px] font-bold text-primary">
+                  📖 앱 사용설명서 <span className="rounded-md bg-amber-400 px-1.5 py-0.5 text-[10px] font-black text-black">NEW 영상</span>
+                </button>
+              </Link>
+
               <div className="flex-1 min-h-6" />
 
               <div className="grid grid-cols-2 gap-2.5">
