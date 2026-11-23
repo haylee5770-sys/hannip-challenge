@@ -1041,6 +1041,8 @@ function CrewAdmin() {
   const add = trpc.crew.addEvent.useMutation({ onSuccess: () => { setTitle(""); utils.crew.events.invalidate(); } });
   const openEv = trpc.crew.setEventOpen.useMutation({ onSuccess: () => utils.crew.events.invalidate() });
   const day = (d: any) => { const t = new Date(new Date(d).getTime() + 9 * 3600_000); return `${t.getUTCMonth() + 1}/${t.getUTCDate()}`; };
+  // 2026-11-23: 의견은 몇 시 몇 분까지 (앱을 고친 시각과 비교해 '고치기 전 의견'인지 알 수 있게)
+  const dt = (d: any) => { const t = new Date(new Date(d).getTime() + 9 * 3600_000); return `${t.getUTCMonth() + 1}/${t.getUTCDate()} ${String(t.getUTCHours()).padStart(2, "0")}:${String(t.getUTCMinutes()).padStart(2, "0")}`; };
   const copyAll = () => {
     const rows = (rq.data ?? []).filter((r: any) => !r.sent).map((r: any) => [r.label, r.nickname ?? "", r.realName, r.phone, r.address].join(String.fromCharCode(9)));
     navigator.clipboard?.writeText([["신청", "닉네임", "이름", "전화번호", "주소"].join(String.fromCharCode(9)), ...rows].join(String.fromCharCode(10))); toast.success("아직 안 보낸 신청을 엑셀 형식으로 복사했어요");
@@ -1075,7 +1077,7 @@ function CrewAdmin() {
         <h3 className="font-bold">💬 크루 의견 {(fb.data ?? []).filter((f: any) => !f.done).length}건</h3>
         {(fb.data ?? []).map((f: any) => (
           <div key={f.id} className={`rounded-2xl border p-3 text-sm space-y-1 ${f.done ? "opacity-60 border-border" : "border-primary/50"}`}>
-            <div className="flex justify-between"><b>{f.kind === "bug" ? "🐞 오류" : "💡 의견"} · {f.name ?? "멤버"}</b><span className="text-[11px] text-muted-foreground">{day(f.createdAt)}</span></div>
+            <div className="flex justify-between"><b>{f.kind === "bug" ? "🐞 오류" : "💡 의견"} · {f.name ?? "멤버"}</b><span className="text-[11px] text-muted-foreground text-right">{dt(f.createdAt)}{f.editedAt ? <><br />고침 {dt(f.editedAt)}</> : null}</span></div>
             <div className="whitespace-pre-wrap allow-select">{f.text}</div>
             {f.imageUrl && <a href={f.imageUrl} target="_blank" rel="noreferrer"><img src={f.imageUrl} alt="첨부" className="mt-1 max-h-60 rounded-xl" /></a>}
             <FeedbackReplyBox f={f} />
@@ -1103,9 +1105,22 @@ function FeedbackReplyBox({ f }: { f: any }) {
       <button type="button" className="mt-1 text-xs underline text-muted-foreground" onClick={() => setEditing(true)}>답장 고치기</button>
     </div>
   );
+  // 2026-11-23 해이: 누르면 바로 보내지는 답장 (해결했을 때 등)
+  const QUICK = [
+    ["✅ 해결했어요", "해결했습니다! 의견 감사합니다 💚 덕분에 앱이 더 좋아졌어요."],
+    ["🔧 고치는 중", "확인했어요! 지금 고치고 있어요. 조금만 기다려 주세요 💚"],
+    ["💡 좋은 의견", "좋은 의견 감사해요! 검토해서 반영해 볼게요 💚"],
+  ] as const;
   return (
     <div className="mt-2 space-y-1.5">
-      <textarea value={text} onChange={e => setText(e.target.value)} rows={2} placeholder="답장 쓰기 (크루에게 보여요)"
+      <div className="flex flex-wrap gap-1.5">
+        {QUICK.map(([l, msg]) => (
+          <button key={l} type="button" disabled={save.isPending}
+            onClick={() => { setText(msg); save.mutate({ id: f.id, reply: msg }); }}
+            className="rounded-full border border-primary/50 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-40">{l}</button>
+        ))}
+      </div>
+      <textarea value={text} onChange={e => setText(e.target.value)} rows={2} placeholder="직접 답장 쓰기 (크루에게 보여요)"
         className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-primary" />
       <div className="flex justify-end gap-2">
         {f.reply && <Button size="sm" variant="ghost" className="rounded-xl" onClick={() => { setText(f.reply); setEditing(false); }}>취소</Button>}

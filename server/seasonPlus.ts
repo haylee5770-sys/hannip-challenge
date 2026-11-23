@@ -51,6 +51,7 @@ export async function ensureSeasonPlusSchema() {
     ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS reply TEXT", "feedbacks.reply"],
     ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS repliedAt TIMESTAMP NULL", "feedbacks.repliedAt"],
     ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS replySeen BOOLEAN NOT NULL DEFAULT false", "feedbacks.replySeen"],
+    ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS editedAt TIMESTAMP NULL", "feedbacks.editedAt"],
     [`CREATE TABLE IF NOT EXISTS openEvents (
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(200) NOT NULL,
@@ -137,7 +138,7 @@ export async function addFeedback(userId: number, kind: "bug" | "idea", text: st
   await q(sql`INSERT INTO feedbacks (userId, kind, text, imageUrl) VALUES (${userId}, ${kind}, ${text}, ${imageUrl})`);
 }
 export async function listFeedbacks() {
-  return q(sql`SELECT f.id, f.kind, f.text, f.imageUrl, f.done, f.createdAt, f.reply, f.repliedAt, u.name FROM feedbacks f LEFT JOIN users u ON u.id=f.userId ORDER BY f.id DESC LIMIT 300`);
+  return q(sql`SELECT f.id, f.kind, f.text, f.imageUrl, f.done, f.createdAt, f.reply, f.repliedAt, f.editedAt, u.name FROM feedbacks f LEFT JOIN users u ON u.id=f.userId ORDER BY f.id DESC LIMIT 300`);
 }
 /** 방장 답장 (2026-11-23). 답장하면 '확인함'도 같이 켜고, 크루에게는 새 답장으로 보이게 */
 export async function replyFeedback(id: number, reply: string) {
@@ -167,8 +168,8 @@ export async function myFeedbacks(userId: number) {
 }
 /** 내 의견 고치기 — 본인 것만. 고치면 방장이 다시 보도록 '확인' 표시를 푼다 */
 export async function editFeedback(userId: number, id: number, kind: "bug" | "idea", text: string, image: { url: string | null } | undefined) {
-  if (image) await q(sql`UPDATE feedbacks SET kind=${kind}, text=${text}, imageUrl=${image.url}, done=false WHERE id=${id} AND userId=${userId}`);
-  else await q(sql`UPDATE feedbacks SET kind=${kind}, text=${text}, done=false WHERE id=${id} AND userId=${userId}`);
+  if (image) await q(sql`UPDATE feedbacks SET kind=${kind}, text=${text}, imageUrl=${image.url}, done=false, editedAt=CURRENT_TIMESTAMP WHERE id=${id} AND userId=${userId}`);
+  else await q(sql`UPDATE feedbacks SET kind=${kind}, text=${text}, done=false, editedAt=CURRENT_TIMESTAMP WHERE id=${id} AND userId=${userId}`);
 }
 
 /* ---------- 선물·이벤트 신청 ---------- */
