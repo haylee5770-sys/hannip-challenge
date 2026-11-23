@@ -159,6 +159,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const unseenReplies = trpc.crew.unseenReplies.useQuery(undefined, { enabled: !!user && user.status === "approved", staleTime: 5 * 60_000 });
   // 2026-11-23: 메뉴가 열려 있는 동안 뒤 화면(오늘)이 스크롤을 가져가지 않게 잠근다 (아이폰에서 메뉴가 안 움직였음)
   useEffect(() => {
     if (!mobileOpen) return;
@@ -339,6 +340,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <Link key={path} href={path}>
                     <button onClick={() => setMobileOpen(false)} className="glass-btn w-full h-12 text-[15px] flex items-center justify-center gap-1.5">
                       <Icon className="h-4 w-4 relative z-[1]" /><span className="relative z-[1]">{label}</span>
+                      {/* 2026-11-23: 의견에 방장 답장이 새로 오면 '신청하기'에 빨간 점 */}
+                      {path === "/apply" && (unseenReplies.data ?? 0) > 0 && <span className="relative z-[1] h-2.5 w-2.5 rounded-full bg-rose-500" aria-label="새 답장" />}
                     </button>
                   </Link>
                 ))}

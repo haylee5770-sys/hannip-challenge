@@ -1078,10 +1078,41 @@ function CrewAdmin() {
             <div className="flex justify-between"><b>{f.kind === "bug" ? "🐞 오류" : "💡 의견"} · {f.name ?? "멤버"}</b><span className="text-[11px] text-muted-foreground">{day(f.createdAt)}</span></div>
             <div className="whitespace-pre-wrap allow-select">{f.text}</div>
             {f.imageUrl && <a href={f.imageUrl} target="_blank" rel="noreferrer"><img src={f.imageUrl} alt="첨부" className="mt-1 max-h-60 rounded-xl" /></a>}
+            <FeedbackReplyBox f={f} />
             <label className="text-xs flex items-center gap-1 justify-end"><input type="checkbox" checked={!!f.done} onChange={e => done.mutate({ id: f.id, done: e.target.checked })} />확인함</label>
           </div>
         ))}
       </section>
+    </div>
+  );
+}
+
+/** 의견 답장 (2026-11-23): 쓰면 크루의 '내가 보낸 의견' 아래에 '방장 답장'으로 보여요 */
+function FeedbackReplyBox({ f }: { f: any }) {
+  const utils = trpc.useUtils();
+  const [editing, setEditing] = useState(!f.reply);
+  const [text, setText] = useState<string>(f.reply ?? "");
+  const save = trpc.crew.feedbackReply.useMutation({
+    onSuccess: () => { utils.crew.feedbacks.invalidate(); setEditing(false); toast.success(text.trim() ? "답장을 보냈어요. 크루의 의견 화면에 보여요." : "답장을 지웠어요."); },
+    onError: e => toast.error(e.message),
+  });
+  if (!editing && f.reply) return (
+    <div className="mt-2 rounded-xl bg-primary/10 border border-primary/30 p-2.5">
+      <div className="text-[11px] font-bold text-primary mb-1">💚 보낸 답장 {f.repliedAt ? `· ${new Date(f.repliedAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}` : ""}</div>
+      <div className="whitespace-pre-wrap text-sm">{f.reply}</div>
+      <button type="button" className="mt-1 text-xs underline text-muted-foreground" onClick={() => setEditing(true)}>답장 고치기</button>
+    </div>
+  );
+  return (
+    <div className="mt-2 space-y-1.5">
+      <textarea value={text} onChange={e => setText(e.target.value)} rows={2} placeholder="답장 쓰기 (크루에게 보여요)"
+        className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-primary" />
+      <div className="flex justify-end gap-2">
+        {f.reply && <Button size="sm" variant="ghost" className="rounded-xl" onClick={() => { setText(f.reply); setEditing(false); }}>취소</Button>}
+        <Button size="sm" className="rounded-xl glass-btn" disabled={save.isPending || (!text.trim() && !f.reply)} onClick={() => save.mutate({ id: f.id, reply: text })}>
+          {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : f.reply ? "고친 답장 보내기" : "답장 보내기"}
+        </Button>
+      </div>
     </div>
   );
 }

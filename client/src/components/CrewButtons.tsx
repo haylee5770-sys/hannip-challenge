@@ -1,5 +1,5 @@
 // 꾸미기 맨 아래 (2026-11-22): 💬 의견 보내기 · 🎁 신청하기(선물 신청 / 이벤트 신청)
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -96,6 +96,14 @@ function MyFeedbacks() {
   const list = trpc.crew.myFeedbacks.useQuery();
   const [openId, setOpenId] = useState<number | null>(null);
   const rows = (list.data ?? []) as any[];
+  // 2026-11-23: 방장 답장 — 이 화면을 열면 '봤음'으로. 지금 화면에서는 '새 답장' 표시를 그대로 보여 준다
+  const utils = trpc.useUtils();
+  const seen = trpc.crew.feedbackRepliesSeen.useMutation({ onSuccess: () => utils.crew.unseenReplies.invalidate() });
+  const [freshIds] = useState<Set<number>>(() => new Set());
+  useEffect(() => {
+    const fresh = rows.filter(r => r.reply && !r.replySeen);
+    if (fresh.length) { fresh.forEach(r => freshIds.add(r.id)); seen.mutate(); }
+  }, [list.data]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!rows.length) return null;
   return (
     <div className="pt-4 space-y-2">
@@ -111,6 +119,12 @@ function MyFeedbacks() {
             </div>
             <div className="text-sm whitespace-pre-wrap break-words">{r.text}</div>
             {r.imageUrl && <img src={r.imageUrl} alt="첨부" className="mt-1 max-h-32 rounded-xl" />}
+            {r.reply && (
+              <div className="mt-2 rounded-xl bg-primary/10 border border-primary/30 p-2.5">
+                <div className="text-[11px] font-bold text-primary mb-0.5">💚 방장 답장 {freshIds.has(r.id) && <span className="ml-1 rounded bg-rose-500 px-1.5 py-0.5 text-[10px] text-white">새 답장</span>}</div>
+                <div className="text-sm whitespace-pre-wrap break-words">{r.reply}</div>
+              </div>
+            )}
           </button>
         ))}
     </div>
@@ -286,6 +300,7 @@ export function EventSheet({ onClose, inline }: { onClose: () => void; inline?: 
 
 export default function CrewButtons() {
   const [open, setOpen] = useState<null | "fb" | "award" | "event">(null);
+  const unseen = trpc.crew.unseenReplies.useQuery(undefined, { staleTime: 60_000 });
   return (
     <section className="space-y-3 pt-4">
       <div className="grid grid-cols-2 gap-3">
@@ -299,7 +314,7 @@ export default function CrewButtons() {
         </button>
       </div>
       <button type="button" className={glass} onClick={() => setOpen("fb")}>
-        <div className="text-base font-bold">💬 의견 보내기</div>
+        <div className="text-base font-bold">💬 의견 보내기 {(unseen.data ?? 0) > 0 && <span className="ml-1 rounded-full bg-rose-500 px-2 py-0.5 text-[11px] text-white align-middle">새 답장 {unseen.data}</span>}</div>
         <div className="text-xs text-muted-foreground mt-0.5">오류를 발견했거나, 이러면 좋겠다 싶을 때</div>
       </button>
       {open === "fb" && <FeedbackSheet onClose={() => setOpen(null)} />}

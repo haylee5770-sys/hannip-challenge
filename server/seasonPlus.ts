@@ -47,6 +47,10 @@ export async function ensureSeasonPlusSchema() {
       sent BOOLEAN NOT NULL DEFAULT false,
       createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`, "giftRequests"],
+    // 2026-11-23: 의견에 방장 답장
+    ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS reply TEXT", "feedbacks.reply"],
+    ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS repliedAt TIMESTAMP NULL", "feedbacks.repliedAt"],
+    ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS replySeen BOOLEAN NOT NULL DEFAULT false", "feedbacks.replySeen"],
     [`CREATE TABLE IF NOT EXISTS openEvents (
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(200) NOT NULL,
@@ -133,12 +137,25 @@ export async function addFeedback(userId: number, kind: "bug" | "idea", text: st
   await q(sql`INSERT INTO feedbacks (userId, kind, text, imageUrl) VALUES (${userId}, ${kind}, ${text}, ${imageUrl})`);
 }
 export async function listFeedbacks() {
-  return q(sql`SELECT f.id, f.kind, f.text, f.imageUrl, f.done, f.createdAt, u.name FROM feedbacks f LEFT JOIN users u ON u.id=f.userId ORDER BY f.id DESC LIMIT 300`);
+  return q(sql`SELECT f.id, f.kind, f.text, f.imageUrl, f.done, f.createdAt, f.reply, f.repliedAt, u.name FROM feedbacks f LEFT JOIN users u ON u.id=f.userId ORDER BY f.id DESC LIMIT 300`);
+}
+/** 방장 답장 (2026-11-23). 답장하면 '확인함'도 같이 켜고, 크루에게는 새 답장으로 보이게 */
+export async function replyFeedback(id: number, reply: string) {
+  const r = reply.trim();
+  if (r) await q(sql`UPDATE feedbacks SET reply=${r}, repliedAt=CURRENT_TIMESTAMP, replySeen=false, done=true WHERE id=${id}`);
+  else await q(sql`UPDATE feedbacks SET reply=NULL, repliedAt=NULL, replySeen=false WHERE id=${id}`);
+}
+/** 크루가 내 의견 화면을 열면 답장을 '봤음'으로 */
+export async function markRepliesSeen(userId: number) {
+  await q(sql`UPDATE feedbacks SET replySeen=true WHERE userId=${userId} AND reply IS NOT NULL AND replySeen=false`);
+}
+export async function unseenReplyCount(userId: number) {
+  return Number((await q(sql`SELECT COUNT(*) c FROM feedbacks WHERE userId=${userId} AND reply IS NOT NULL AND replySeen=false`))[0]?.c ?? 0);
 }
 export async function setFeedbackDone(id: number, done: boolean) { await q(sql`UPDATE feedbacks SET done=${done} WHERE id=${id}`); }
 /** 내가 보낸 의견 목록 (2026-11-23: 보낸 뒤에도 다시 보고 고칠 수 있게) */
 export async function myFeedbacks(userId: number) {
-  return q(sql`SELECT id, kind, text, imageUrl, done, createdAt FROM feedbacks WHERE userId=${userId} ORDER BY id DESC LIMIT 100`);
+  return q(sql`SELECT id, kind, text, imageUrl, done, createdAt, reply, repliedAt, replySeen FROM feedbacks WHERE userId=${userId} ORDER BY id DESC LIMIT 100`);
 }
 /** 내 의견 고치기 — 본인 것만. 고치면 방장이 다시 보도록 '확인' 표시를 푼다 */
 export async function editFeedback(userId: number, id: number, kind: "bug" | "idea", text: string, image: { url: string | null } | undefined) {
