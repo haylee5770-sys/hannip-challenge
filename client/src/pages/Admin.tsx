@@ -1117,8 +1117,11 @@ function FeedbackReplyBox({ f }: { f: any }) {
       <div className="flex flex-wrap gap-1.5">
         {QUICK.map(([l, msg]) => (
           <button key={l} type="button" disabled={save.isPending}
-            onClick={() => setText(msg)}
-            className="rounded-full border border-primary/50 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-40">{l}</button>
+            // 2026-11-23 해이: 누를 때마다 이어서 써지게. 같은 걸 한 번 더 누르면 그 문장은 빠짐
+            onClick={() => setText(t => t.includes(msg)
+              ? t.replace(msg, "").replace(/\n{2,}/g, "\n").trim()
+              : (t.trim() ? `${t.trim()}\n${msg}` : msg))}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-40 ${text.includes(msg) ? "border-primary bg-primary text-primary-foreground" : "border-primary/50 text-primary"}`}>{l}</button>
         ))}
       </div>
       <textarea value={text} onChange={e => setText(e.target.value)} rows={2} placeholder="직접 답장 쓰기 (크루에게 보여요)"
