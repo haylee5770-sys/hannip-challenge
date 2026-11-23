@@ -1049,6 +1049,8 @@ function CrewAdmin() {
   };
   return (
     <div className="space-y-8">
+      <FeedbackInbox list={(fb.data ?? []) as any[]} dt={dt}
+        onDone={(id, v) => done.mutate({ id, done: v })} />
       <section className="space-y-2">
         <div className="flex items-center justify-between"><h3 className="font-bold">🎁 선물·이벤트 신청 {(rq.data ?? []).filter((r: any) => !r.sent).length}건</h3>
           <Button size="sm" variant="outline" className="rounded-xl" onClick={copyAll}><Copy className="h-3.5 w-3.5 mr-1" />엑셀로 복사</Button></div>
@@ -1073,19 +1075,69 @@ function CrewAdmin() {
           </div>
         ))}
       </section>
-      <section className="space-y-2">
-        <h3 className="font-bold">💬 크루 의견 {(fb.data ?? []).filter((f: any) => !f.done).length}건</h3>
-        {(fb.data ?? []).map((f: any) => (
-          <div key={f.id} className={`rounded-2xl border p-3 text-sm space-y-1 ${f.done ? "opacity-60 border-border" : "border-primary/50"}`}>
-            <div className="flex justify-between"><b>{f.kind === "bug" ? "🐞 오류" : "💡 의견"} · {f.name ?? "멤버"}</b><span className="text-[11px] text-muted-foreground text-right">{dt(f.createdAt)}{f.editedAt ? <><br />고침 {dt(f.editedAt)}</> : null}</span></div>
-            <div className="whitespace-pre-wrap allow-select">{f.text}</div>
-            {f.imageUrl && <a href={f.imageUrl} target="_blank" rel="noreferrer"><img src={f.imageUrl} alt="첨부" className="mt-1 max-h-60 rounded-xl" /></a>}
-            <FeedbackReplyBox f={f} />
-            <label className="text-xs flex items-center gap-1 justify-end"><input type="checkbox" checked={!!f.done} onChange={e => done.mutate({ id: f.id, done: e.target.checked })} />확인함</label>
-          </div>
-        ))}
-      </section>
     </div>
+  );
+}
+
+/**
+ * 크루 의견함 (2026-11-23 해이): 왼쪽 [미확인 NEW n] · 오른쪽 [확인 완료 n] 큰 버튼 →
+ * 사람별로 묶어서 이름을 누르면 그 사람 의견이 펼쳐짐. '확인함'이나 답장을 하면 확인 완료로 옮겨감
+ */
+function FeedbackInbox({ list, dt, onDone }: { list: any[]; dt: (d: any) => string; onDone: (id: number, v: boolean) => void }) {
+  const [tab, setTab] = useState<"new" | "done">("new");
+  const [openName, setOpenName] = useState<string | null>(null);
+  const unread = list.filter(f => !f.done);
+  const read = list.filter(f => f.done);
+  const shown = tab === "new" ? unread : read;
+  const groups = new Map<string, any[]>();
+  for (const f of shown) { const k = f.name ?? "멤버"; if (!groups.has(k)) groups.set(k, []); groups.get(k)!.push(f); }
+  const people = Array.from(groups.entries()).sort((a, b) => Math.max(...b[1].map(x => +new Date(x.createdAt))) - Math.max(...a[1].map(x => +new Date(x.createdAt))));
+  return (
+    <section className="space-y-3">
+      <h3 className="font-bold">💬 크루 의견</h3>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={() => { setTab("new"); setOpenName(null); }}
+          className={`h-20 rounded-2xl border-2 flex flex-col items-center justify-center ${tab === "new" ? "border-amber-400 bg-amber-400/15" : "border-border bg-card"}`}>
+          <span className="text-base font-black">미확인</span>
+          <span className="mt-1 flex items-center gap-1.5">
+            {unread.length > 0 && <span className="rounded-md bg-amber-400 px-1.5 py-0.5 text-[10px] font-black text-black">NEW</span>}
+            <span className="text-xl font-black tabular-nums">{unread.length}</span>
+          </span>
+        </button>
+        <button type="button" onClick={() => { setTab("done"); setOpenName(null); }}
+          className={`h-20 rounded-2xl border-2 flex flex-col items-center justify-center ${tab === "done" ? "border-primary bg-primary/15" : "border-border bg-card"}`}>
+          <span className="text-base font-black">✅ 확인 완료</span>
+          <span className="mt-1 text-xl font-black tabular-nums">{read.length}</span>
+        </button>
+      </div>
+      {people.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground py-6">{tab === "new" ? "새 의견이 없어요 🙌" : "아직 확인한 의견이 없어요"}</p>
+      ) : people.map(([name, items]) => (
+        <div key={name} className="rounded-2xl border border-border bg-card">
+          <button type="button" onClick={() => setOpenName(openName === name ? null : name)} className="w-full flex items-center justify-between px-4 py-3 text-left">
+            <span className="flex items-center gap-2">
+              <b className="text-base">{name}</b>
+              <span className="text-xs text-muted-foreground">{items.length}건</span>
+              {tab === "new" && <span className="rounded-md bg-amber-400 px-1.5 py-0.5 text-[10px] font-black text-black">NEW</span>}
+            </span>
+            <span className="text-muted-foreground">{openName === name ? "▲" : "▼"}</span>
+          </button>
+          {openName === name && (
+            <div className="space-y-2 px-3 pb-3">
+              {items.map(f => (
+                <div key={f.id} className={`rounded-2xl border p-3 text-sm space-y-1 ${f.done ? "border-border" : "border-amber-400/60"}`}>
+                  <div className="flex justify-between gap-2"><b>{f.kind === "bug" ? "🐞 오류" : "💡 의견"}</b><span className="text-[11px] text-muted-foreground text-right">{dt(f.createdAt)}{f.editedAt ? <><br />고침 {dt(f.editedAt)}</> : null}</span></div>
+                  <div className="whitespace-pre-wrap allow-select">{f.text}</div>
+                  {f.imageUrl && <a href={f.imageUrl} target="_blank" rel="noreferrer"><img src={f.imageUrl} alt="첨부" className="mt-1 max-h-60 rounded-xl" /></a>}
+                  <FeedbackReplyBox f={f} />
+                  <label className="text-xs flex items-center gap-1 justify-end"><input type="checkbox" checked={!!f.done} onChange={e => onDone(f.id, e.target.checked)} />{f.done ? "확인함 (풀면 미확인으로)" : "확인함"}</label>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
   );
 }
 
