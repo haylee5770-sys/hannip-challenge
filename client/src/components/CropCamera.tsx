@@ -1,11 +1,11 @@
 // 📷 바로 찍기 — 앱 안 카메라 (2026-11-23 해이)
-// 인증 카드 사진 칸(가로 900 × 세로 780)과 같은 비율의 틀만 보이고 바깥은 검게 가린다.
+// 인증 카드 사진 칸과 같은 비율의 틀만 보이고 바깥은 검게 가린다. (2026-11-25: 새 디자인 사진 칸 1080 × 1050)
 // 찍으면 틀 안에 보이던 그대로만 잘라서 넘긴다 (전체로 찍었는데 카드에는 가운데만 나오던 문제).
 // 카메라를 못 열면(권한 거절·카톡 안 브라우저 등) 휴대폰 기본 카메라로 넘어간다.
 import { useEffect, useRef, useState } from "react";
 import { Loader2, RefreshCw, X } from "lucide-react";
 
-export const PROOF_PHOTO_RATIO = 900 / 780; // proofCard.ts makeProofImage2 의 사진 칸 (bw 900 × bh 780)
+export const PROOF_PHOTO_RATIO = 1080 / 1050; // proofCard.ts makeProofImage2 의 사진 칸 (가로 끝까지 1080 × 시간 아래부터 바닥까지 1050)
 
 export function canUseInAppCamera() {
   return typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
