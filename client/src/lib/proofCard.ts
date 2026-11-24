@@ -42,9 +42,16 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   const bodyFont = getComputedStyle(document.body).fontFamily || "sans-serif";
   try { await (document as any).fonts?.ready; } catch {}
 
+  // 2026-11-25 해이 확정(A안): 바깥 테두리·위쪽 바 없이 카드 전체를 한 판으로, 왼쪽 위에서 포인트색 빛이 은은하게
   g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  g.fillStyle = "rgba(255,255,255,0.06)"; roundRect(g, 40, 40, W - 80, H - 80, 44); g.fill();
-  g.fillStyle = accent; roundRect(g, 40, 40, W - 80, 12, 6); g.fill();
+  g.fillStyle = "rgba(255,255,255,0.06)"; g.fillRect(0, 0, W, H);
+  const glowA = (a: number) => /^#[0-9a-f]{6}$/i.test(accent) ? `${accent}${Math.round(a * 255).toString(16).padStart(2, "0")}` : `rgba(185,166,255,${a})`;
+  const gl1 = g.createRadialGradient(W * 0.18, -H * 0.12, 0, W * 0.18, -H * 0.12, W * 0.75);
+  gl1.addColorStop(0, glowA(0.55)); gl1.addColorStop(1, glowA(0));
+  g.fillStyle = gl1; g.fillRect(0, 0, W, 420);
+  const gl2 = g.createRadialGradient(W, -H * 0.08, 0, W, -H * 0.08, W * 0.5);
+  gl2.addColorStop(0, glowA(0.22)); gl2.addColorStop(1, glowA(0));
+  g.fillStyle = gl2; g.fillRect(0, 0, W, 420);
 
   // 맨 위 한 줄 (2026-11-20 시안2): 이름(흰색) + 항목(포인트색) 같은 글씨·크기·두께, 오른쪽 동그라미 안에 인증 번호
   const name = card.userName || "멤버";
@@ -52,16 +59,16 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   const hasCount = card.count != null;
   // 2026-11-21: 이름 앞에 카톡과 같은 프로필 사진(둥근 네모)
   const AV = 120, avX = 90, textX = avX + AV + 26;
-  await drawAvatar(g, card.avatar, avX, 108, AV, name, accent);
+  await drawAvatar(g, card.avatar, avX, 60, AV, name, accent);
   const maxHeadW = (hasCount ? W - 90 - 200 : W - 90) - textX;
   let size = 92;
   for (; size > 40; size -= 4) { g.font = `900 ${size}px ${bodyFont}`; if (g.measureText(`${name} ${item}`).width <= maxHeadW) break; }
   g.textAlign = "left"; g.font = `900 ${size}px ${bodyFont}`;
-  g.fillStyle = "#ffffff"; g.fillText(name, textX, 200);
+  g.fillStyle = "#ffffff"; g.fillText(name, textX, 152);
   const nw = g.measureText(name + " ").width;
-  g.fillStyle = accent; g.fillText(item, textX + nw, 200);
+  g.fillStyle = accent; g.fillText(item, textX + nw, 152);
   if (hasCount) {
-    const cx = W - 170, cy = 168, r = 80;
+    const cx = W - 160, cy = 120, r = 80;
     // 2026-11-22 (해이): 네온·번짐 없이 깔끔한 꽉 찬 동그라미
     // 2026-11-24 해이: 앱의 '누적 1회' 유리알 동그라미와 똑같이 (한 톤 진한 같은 색 + 흰 테두리 + 위쪽 반짝임, 글씨 '누적' / 'N회')
     g.save();
@@ -82,13 +89,16 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   // 시계 + 날짜·시간 (아래 피드백 글씨와 같은 크기·두께)
   g.textAlign = "left";
   g.save(); g.strokeStyle = "#ececea"; g.lineWidth = 5; g.lineCap = "round";
-  g.beginPath(); g.arc(114, 284, 22, 0, Math.PI * 2); g.stroke();
-  g.beginPath(); g.moveTo(114, 284); g.lineTo(114, 272); g.moveTo(114, 284); g.lineTo(124, 287); g.stroke(); g.restore();
+  g.beginPath(); g.arc(114, 236, 22, 0, Math.PI * 2); g.stroke();
+  g.beginPath(); g.moveTo(114, 236); g.lineTo(114, 224); g.moveTo(114, 236); g.lineTo(124, 239); g.stroke(); g.restore();
   g.fillStyle = "#ececea"; g.font = `600 40px ${bodyFont}`;
-  g.fillText(`${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}`, 154, 298);
+  g.fillText(`${fmtDate(card.date)}${card.time ? `  ${card.time}` : ""}`, 154, 250);
 
   // 가운데: 사진 또는 글 (이게돼는 카톡 대화 화면처럼)
-  const bx = 90, by = 352, bw = W - 180, bh = 780;
+  // 사진은 시간 아래부터 바닥까지, 양옆 끝까지 꽉 (글 카드는 예전처럼 안쪽 상자)
+  const photoTop = 300;
+  const bx = 70, by = photoTop, bw = W - 140, bh = 820;
+  let photoDone = false;
   if (card.chatLines) {
     // 연회색 바탕 + 프로필·이름 + 흰 말풍선 (2026-11-21)
     g.save(); roundRect(g, bx, by, bw, bh, 32); g.clip();
@@ -115,11 +125,17 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   } else if (card.photo) {
     try {
       const img = await loadImg(card.photo);
-      g.save(); roundRect(g, bx, by, bw, bh, 32); g.clip();
-      const s = Math.max(bw / img.width, bh / img.height);
+      const pw = W, ph = H - photoTop;
+      const s = Math.max(pw / img.width, ph / img.height);
       const iw = img.width * s, ih = img.height * s;
-      g.drawImage(img, bx + (bw - iw) / 2, by + (bh - ih) / 2, iw, ih);
+      g.save(); g.beginPath(); g.rect(0, photoTop, pw, ph); g.clip();
+      g.drawImage(img, (pw - iw) / 2, photoTop + (ph - ih) / 2, iw, ih);
+      // 아래쪽을 살짝 어둡게 → 기록 글씨가 어떤 사진에서도 잘 보이게
+      const sh = g.createLinearGradient(0, H - 300, 0, H);
+      sh.addColorStop(0, "rgba(15,12,24,0)"); sh.addColorStop(1, "rgba(15,12,24,0.88)");
+      g.fillStyle = sh; g.fillRect(0, H - 300, W, 300);
       g.restore();
+      photoDone = true;
     } catch { drawBodyText(g, card.lines.join("\n") || card.title, bx, by, bw, bh, bodyFont); }
   } else {
     g.fillStyle = "rgba(255,255,255,0.05)"; roundRect(g, bx, by, bw, bh, 32); g.fill();
@@ -129,11 +145,15 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   // 맨 아래: 피드백
   const fb = card.feedback ?? card.lines[0] ?? "";
   if (fb) {
-    g.textAlign = "left"; g.fillStyle = "#ececea"; g.font = `600 40px ${bodyFont}`;
-    wrap(g, `💬 ${fb}`, W - 180).slice(0, 2).forEach((l, i) => g.fillText(l, 90, 1190 + i * 52));
+    g.textAlign = "left"; g.fillStyle = "#ffffff"; g.font = `700 42px ${bodyFont}`;
+    if (photoDone) { g.save(); g.shadowColor = "rgba(0,0,0,0.6)"; g.shadowBlur = 8; }
+    const ls = wrap(g, `💬 ${fb}`, W - 140).slice(0, 2);
+    const y0 = photoDone ? H - 70 - (ls.length - 1) * 54 : 1180;
+    ls.forEach((l, i) => g.fillText(l, 70, y0 + i * 54));
+    if (photoDone) g.restore();
   }
-  g.textAlign = "center"; g.fillStyle = "rgba(255,255,255,0.22)"; g.font = `500 26px ${bodyFont}`;
-  g.fillText("super hannip Challenge", W / 2, H - 62);
+  g.textAlign = "center"; g.fillStyle = "rgba(255,255,255,0.35)"; g.font = `500 24px ${bodyFont}`;
+  g.fillText("super hannip Challenge", W / 2, H - 22);
   return await new Promise<Blob>((res) => c.toBlob(b => res(b!), "image/png"));
 }
 
