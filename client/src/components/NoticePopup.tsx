@@ -62,7 +62,7 @@ export default function NoticePopup() {
           <div className="text-center text-[11px] text-muted-foreground">글씨가 작으면 사진을 눌러 크게 보세요 🔍</div>
           {done ? (
             <div className="grid grid-cols-2 gap-1.5">
-              <button type="button" onClick={() => close()} className="h-11 rounded-2xl glass-btn font-black text-sm">✅ 다 읽었어요</button>
+              <button type="button" onClick={() => close()} className="h-11 rounded-2xl glass-btn font-black text-sm leading-tight">✅ 다 읽었어요,<br />이제 안 헷갈려요!</button>
               {n.manualHash ? <button type="button" onClick={() => close(true)} className="h-11 rounded-2xl border border-primary/60 text-primary font-bold text-xs">{n.manualLabel ?? "사용설명서에서 보기"}</button> : null}
             </div>
           ) : (
