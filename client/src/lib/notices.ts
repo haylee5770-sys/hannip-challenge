@@ -11,7 +11,7 @@ export type Notice = {
 };
 
 // 00.jpg(인증 멈추고 새로고침)는 빼고 01~12만 — 팝업이 떴다면 이미 새로고침된 것 (2026-11-24 해이)
-const n1124 = Array.from({ length: 13 }, (_, i) => `/notice/1124/${String(i + 1).padStart(2, "0")}.jpg?v=3`); // 사진을 바꾸면 v 숫자를 올린다(옛 사진이 남지 않게)
+const n1124 = Array.from({ length: 14 }, (_, i) => `/notice/1124/${String(i + 1).padStart(2, "0")}.jpg?v=4`); // 사진을 바꾸면 v 숫자를 올린다(옛 사진이 남지 않게)
 
 export const NOTICES: Notice[] = [
   {
