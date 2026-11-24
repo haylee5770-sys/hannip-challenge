@@ -15,7 +15,7 @@ const n1124 = Array.from({ length: 14 }, (_, i) => `/notice/1124/${String(i + 1)
 
 export const NOTICES: Notice[] = [
   {
-    id: "2026-11-24-update-v2", // 글씨 키운 최종본 — 먼저 본 사람도 한 번 더 뜨게
+    id: "2026-11-24-update-v3", // 글씨 키운 최종본 — 먼저 본 사람도 한 번 더 뜨게
     title: "🆕 11월 24일 앱 업데이트",
     sub: "크루님 의견으로 앱이 바뀌었어요. 끝까지 넘겨 봐 주세요!",
     images: n1124,
