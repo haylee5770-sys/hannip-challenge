@@ -10,7 +10,7 @@ export type Notice = {
   manualLabel?: string;
 };
 
-const n1124 = Array.from({ length: 12 }, (_, i) => `/notice/1124/${String(i).padStart(2, "0")}.jpg`);
+const n1124 = Array.from({ length: 13 }, (_, i) => `/notice/1124/${String(i).padStart(2, "0")}.jpg`);
 
 export const NOTICES: Notice[] = [
   {
