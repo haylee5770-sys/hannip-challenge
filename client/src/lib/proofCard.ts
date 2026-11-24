@@ -309,9 +309,11 @@ export function shareTextOf(card: ProofCard): string {
     : card.itemLabel === "체중" ? [{ label: "체중 기록", value: fb }]
     : card.itemLabel ? [{ label: "기록", value: fb }]
     : card.lines[0] ? [{ label: "기록", value: card.lines[0] }] : [];
+  // 2026-11-24 해이: 기상은 '● 취침 : 새벽 1시' 처럼 한 줄씩 붙여서 (칸 사이 빈 줄 없이)
+  const sleep = card.itemLabel === "기상";
   const body = sections.filter(s => s.value.trim())
-    .map(s => s.value.length <= 22 ? `● ${s.label} : ${s.value}` : `● ${s.label} :\n${s.value}`)
-    .join("\n\n");
+    .map(s => sleep || s.value.length <= 22 ? `● ${s.label} : ${s.value}` : `● ${s.label} :\n${s.value}`)
+    .join(sleep ? "\n" : "\n\n");
   return [`#${searchTag(card)}`, body].filter(Boolean).join("\n\n");
 }
 

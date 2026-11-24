@@ -1399,6 +1399,17 @@ function HalfBtn({ on, onClick }: { on: boolean; onClick: () => void }) {
 }
 const SLEEP_WAKE_CHOICES = [4, 5, 6, 7, 8, 9, 10]; // 2026-11-24 해이: 10시까지 + 옆에 노란 30분 버튼
 function fmtHM(h: number, m: number): string { return `${fmtClock(h)}${m ? ` ${m}분` : ""}`; }
+/** 수면 카톡 글 (2026-11-24 해이): 취침 / 기상 / 총 수면 시간 / 한 줄 — 한 줄씩 */
+function sleepShareSections(bH: number, bM: number, wH: number, wM: number) {
+  const ev = evaluateSleepClient(bH, bM, wH, wM);
+  const d = ev.durationMinutes;
+  return [
+    { label: "취침", value: fmtHM(bH, bM) },
+    { label: "기상", value: fmtHM(wH, wM) },
+    { label: "총 수면 시간", value: `${Math.floor(d / 60)}시간${d % 60 ? ` ${d % 60}분` : ""}` },
+    { label: "한 줄", value: ev.message.replace("반쪽짜리에요", "반쪽짜리예요") },
+  ];
+}
 function fmtClock(h: number): string {
   if (h === 0) return "밤 12시";
   if (h < 12) return `${h <= 5 ? "새벽" : "아침"} ${h}시`;
@@ -1519,6 +1530,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
     // 누른 순간 바로 카톡 공유창 (오늘 이미 기록이 있으면 번호는 그대로)
     const d = computeSleepMin(bedHour, bedMinute, wakeHour, wakeMinute);
     onBrag?.({ item: "wake", label: "기상", emoji: "☀️", photo: wakePhoto, add: todaySleep.data ? 0 : 1,
+      shareSections: sleepShareSections(bedHour, bedMinute, wakeHour, wakeMinute),
       feedback: `${fmtHM(bedHour, bedMinute)} 취침 · ${fmtHM(wakeHour, wakeMinute)} 기상 · ${Math.floor(d / 60)}시간${d % 60 ? ` ${d % 60}분` : ""} · ${evalResult.message}` });
     upsertSleep.mutate({
       photoBase64: wakePhoto,
@@ -1648,7 +1660,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
               <div className="text-sm text-muted-foreground">
                 {short(sd.bedHour)}{sd.bedMinute ? ` ${sd.bedMinute}분` : ""} 취침 → {short(sd.wakeHour)}{sd.wakeMinute ? ` ${sd.wakeMinute}분` : ""} 기상
               </div>
-              <CopyShareButton kind="wake" id={sd.id} label="기상" sections={[{ label: "수면 기록", value: `${fmtHM(sd.bedHour, sd.bedMinute)} 취침 · ${fmtHM(sd.wakeHour, sd.wakeMinute)} 기상 · ${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ""}` }]} />
+              <CopyShareButton kind="wake" id={sd.id} label="기상" sections={sleepShareSections(sd.bedHour, sd.bedMinute, sd.wakeHour, sd.wakeMinute)} />
               <p className="text-xs text-muted-foreground">고치려면 시간을 다시 고르고 사진을 올려 자랑하기를 누르면 이 기록이 바뀌어요.</p>
             </div>
           </Popup>
