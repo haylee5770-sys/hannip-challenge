@@ -285,18 +285,22 @@ export async function shareImages(blobs: Blob[], text: string, baseName: string)
   if (!isKakaoInApp() && nav.canShare && nav.canShare({ files })) {
     // 2026-11-23: 글도 같이 넘긴다(카톡방 검색용). 아이폰 카톡은 사진 + 글 한 줄로 올라가고,
     // 갤럭시 카톡은 글을 버리므로 글을 미리 복사해 둔다 → 사진 올린 뒤 입력칸 길게 눌러 '붙여넣기'.
+    // 2026-11-24 해이: 아이폰도 갤럭시처럼 '사진만' 넘긴다. 사진+글을 같이 넘기면 아이폰 카톡 공유창에
+    // 오픈채팅방이 안 뜨는 사람이 생김 → 글은 미리 복사해 두고 붙여넣기 (갤럭시와 같은 방식)
     const android = /Android/i.test(navigator.userAgent);
-    if (android && text) { try { await navigator.clipboard.writeText(text); } catch {} }
+    const ios = isIOS();
+    if ((android || ios) && text) { navigator.clipboard?.writeText(text).catch(() => {}); } // 기다리지 않음: 공유창이 '누른 직후'에 떠야 해서
     try {
-      await nav.share({ files, text });
-      if (android && text) {
+      await nav.share(ios ? { files } : { files, text });
+      if ((android || ios) && text) {
         const { toast } = await import("sonner");
         toast.success(`'${text.split("\n")[0]}' 글을 복사해 뒀어요. 카톡 입력칸을 길게 눌러 붙여넣기 해 주세요.`, { duration: 6000 });
       }
       return "shared";
     } catch (e: any) {
       // 저장하느라 시간이 걸려 '누른 직후'가 아니면 브라우저가 막는다 → 버튼 한 번 더 누르게
-      return e?.name === "NotAllowedError" ? "blocked" : "cancelled";
+      if (e?.name === "NotAllowedError") return "blocked";
+      return "cancelled";
     }
   }
   // 카톡 안 브라우저: 공유·다운로드가 막혀 있음 → 사진을 화면에 띄워 '길게 눌러 저장'하게
@@ -315,6 +319,11 @@ export async function shareImages(blobs: Blob[], text: string, baseName: string)
   }
   try { await navigator.clipboard.writeText(text); } catch {}
   return "downloaded";
+}
+
+export function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 }
 
 export function isKakaoInApp(): boolean {
