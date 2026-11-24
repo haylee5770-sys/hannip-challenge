@@ -1386,18 +1386,37 @@ const BED_HOUR_VALUES = [
   7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
 ];
 const MINUTE_VALUES = Array.from({ length: 6 }, (_, i) => i * 10);
-const SLEEP_BED_CHOICES = [20, 21, 22, 23, 0, 1, 2];
-/** 노란 '30분' 버튼 (2026-11-24 해이): 시간을 누르고 30분을 누르면 1시 30분 · 9시 30분. 다시 누르면 정각 */
-function HalfBtn({ on, onClick }: { on: boolean; onClick: () => void }) {
+const SLEEP_BED_CHOICES = [21, 22, 23, 0, 1, 2]; // 이른·늦은 시각은 − / + 로
+/** 수면 시각 고르기 (2026-11-24 해이): 큰 시각 + − / + 10분씩 + 빠른 시간 버튼(누르면 정각) */
+function TimePickRow({ label, h, m, hours, onChange }: { label: string; h: number; m: number; hours: number[]; onChange: (h: number, m: number) => void }) {
+  const step = (d: number) => { const t = ((h * 60 + m + d) % 1440 + 1440) % 1440; onChange(Math.floor(t / 60), t % 60); };
+  const period = h < 5 ? "새벽" : h < 12 ? "아침" : h < 18 ? "낮" : "밤";
+  const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const chip = (x: number) => `${x === 0 ? 12 : x > 12 ? x - 12 : x}시`;
   return (
-    <button type="button" onClick={onClick}
-      className={cn("rounded-lg py-2 text-xs font-bold tabular-nums border-2 transition-colors whitespace-nowrap",
-        on ? "bg-amber-400 border-amber-400 text-black" : "border-amber-400/80 text-amber-300")}>
-      30분
-    </button>
+    <div className="mb-3 rounded-2xl border border-border bg-background/40 p-3">
+      <div className="text-sm font-bold text-primary mb-2">{label}</div>
+      <div className="flex items-center gap-2">
+        <button type="button" aria-label={`${label} 10분 빠르게`} onClick={() => step(-10)}
+          className="w-14 h-14 shrink-0 rounded-full border-2 border-primary text-primary text-3xl leading-none active:scale-95">−</button>
+        <div className="flex-1 text-center">
+          <div className="text-3xl font-black tabular-nums">{period} {hh}:{String(m).padStart(2, "0")}</div>
+          <div className="text-[11px] text-muted-foreground">− / + 누를 때마다 10분씩</div>
+        </div>
+        <button type="button" aria-label={`${label} 10분 늦게`} onClick={() => step(10)}
+          className="w-14 h-14 shrink-0 rounded-full border-2 border-primary text-primary text-3xl leading-none active:scale-95">+</button>
+      </div>
+      <div className="grid gap-1.5 mt-3" style={{ gridTemplateColumns: `repeat(${hours.length}, minmax(0, 1fr))` }}>
+        {hours.map(x => (
+          <button key={x} type="button" onClick={() => onChange(x, 0)}
+            className={cn("rounded-lg py-2 text-xs tabular-nums border transition-colors",
+              h === x ? "glass-fill font-semibold" : "border-border text-muted-foreground")}>{chip(x)}</button>
+        ))}
+      </div>
+    </div>
   );
 }
-const SLEEP_WAKE_CHOICES = [4, 5, 6, 7, 8, 9, 10]; // 2026-11-24 해이: 10시까지 + 옆에 노란 30분 버튼
+const SLEEP_WAKE_CHOICES = [5, 6, 7, 8, 9, 10]; // 2026-11-24 해이 확정
 function fmtHM(h: number, m: number): string { return `${fmtClock(h)}${m ? ` ${m}분` : ""}`; }
 /** 수면 카톡 글 (2026-11-24 해이): 취침 / 기상 / 총 수면 시간 / 한 줄 — 한 줄씩 */
 function sleepShareSections(bH: number, bM: number, wH: number, wM: number) {
@@ -1576,34 +1595,11 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
         <div className="mb-3 rounded-xl bg-primary/10 px-3 py-2 text-sm text-primary">
           ✓ 인증 완료 · {hm(sd.bedHour, sd.bedMinute)} 취침 → {hm(sd.wakeHour, sd.wakeMinute)} 기상 · <b>{Math.floor(m / 60)}시간{m % 60 ? ` ${m % 60}분` : ""}</b>
         </div>); })()}
-      {/* 취침 한 줄 (밤 8시~새벽 2시) */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-8 text-xs text-muted-foreground shrink-0">취침</span>
-        <div className="grid grid-cols-8 gap-1 flex-1">
-          {SLEEP_BED_CHOICES.map(h => (
-            <button key={h} type="button" onClick={() => setBedHour(h)}
-              className={cn("rounded-lg py-2 text-xs tabular-nums border transition-colors",
-                bedHour === h ? "glass-fill font-semibold" : "border-border text-muted-foreground")}>
-              {short(h)}
-            </button>
-          ))}
-          <HalfBtn on={bedMinute === 30} onClick={() => setBedMinute(bedMinute === 30 ? 0 : 30)} />
-        </div>
-      </div>
-      {/* 기상 한 줄 (새벽 4시~아침 10시) + 30분 */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="w-8 text-xs text-muted-foreground shrink-0">기상</span>
-        <div className="grid grid-cols-8 gap-1 flex-1">
-          {SLEEP_WAKE_CHOICES.map(h => (
-            <button key={h} type="button" onClick={() => setWakeHour(h)}
-              className={cn("rounded-lg py-2 text-xs tabular-nums border transition-colors",
-                wakeHour === h ? "glass-fill font-semibold" : "border-border text-muted-foreground")}>
-              {short(h)}
-            </button>
-          ))}
-          <HalfBtn on={wakeMinute === 30} onClick={() => setWakeMinute(wakeMinute === 30 ? 0 : 30)} />
-        </div>
-      </div>
+      {/* 2026-11-24 해이 확정: 크게 보이는 시각 + − / + (10분씩) + 아래 빠른 시간 버튼 */}
+      <TimePickRow label="취침" h={bedHour} m={bedMinute} hours={SLEEP_BED_CHOICES}
+        onChange={(h, m) => { setBedHour(h); setBedMinute(m); }} />
+      <TimePickRow label="기상" h={wakeHour} m={wakeMinute} hours={SLEEP_WAKE_CHOICES}
+        onChange={(h, m) => { setWakeHour(h); setWakeMinute(m); }} />
       {/* 기상 인증: 아침 따뜻한 물 한 잔 사진 (필수) */}
       <div className="flex items-center gap-2 mb-3">
         {wakePhoto ? (
