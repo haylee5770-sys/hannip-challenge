@@ -154,6 +154,7 @@ export default function Today() {
       utils.weights.myHistory.invalidate();
       utils.feed.today.invalidate();
       utils.seasons.myProgress.invalidate();
+      utils.rounds.weighStatus.invalidate(); // 빨간 '몸무게 기록' 띠 바로 없애기
       toast.success("체중이 기록되었습니다");
       setInbodyPhotoBase64(null);
       if (inbodyFileRef.current) inbodyFileRef.current.value = "";
@@ -450,6 +451,7 @@ function WeightSection({ date, userName, onBrag, weightCount }: { date: string; 
       await save.mutateAsync({ recordedDate: date, weightKg: kg, skeletalMuscleKg: Number.isFinite(s) ? s : null, bodyFatPercent: Number.isFinite(b) ? b : null, inbodyPhotoBase64: photo });
     } catch { toast.error("저장이 안 됐어요. 기록이 남지 않았으니 다시 눌러 주세요."); return; }
     utils.weights.myHistory.invalidate(); utils.wellness.weighIn.invalidate(); utils.wellness.intake.invalidate(); utils.rounds.myCounts.invalidate();
+    utils.rounds.weighStatus.invalidate(); // 빨간 '몸무게 기록' 띠 바로 없애기
     setOpen(false); setPhoto(null); setW(""); setSmm(""); setBf(""); setNotes([]);
   };
 
