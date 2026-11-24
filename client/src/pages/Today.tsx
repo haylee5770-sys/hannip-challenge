@@ -1396,16 +1396,14 @@ function TimePickRow({ label, h, m, hours, onChange }: { label: string; h: numbe
   return (
     <div className="mb-3 rounded-2xl border border-border bg-background/40 p-3">
       <div className="text-sm font-bold text-primary mb-2">{label}</div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-3">
         <button type="button" aria-label={`${label} 10분 빠르게`} onClick={() => step(-10)}
-          className="w-12 h-12 shrink-0 rounded-full border-2 border-primary text-primary text-2xl leading-none active:scale-95">−</button>
-        <div className="flex-1 text-center">
-          <div className="text-3xl font-black tabular-nums">{period} {hh}:{String(m).padStart(2, "0")}</div>
-          <div className="text-[11px] text-muted-foreground">− / + 누를 때마다 10분씩</div>
-        </div>
+          className="pm-orb">−</button>
+        <div className="text-3xl font-black tabular-nums whitespace-nowrap px-1">{period} {hh}:{String(m).padStart(2, "0")}</div>
         <button type="button" aria-label={`${label} 10분 늦게`} onClick={() => step(10)}
-          className="w-12 h-12 shrink-0 rounded-full border-2 border-primary text-primary text-2xl leading-none active:scale-95">+</button>
+          className="pm-orb">+</button>
       </div>
+      <div className="text-center text-[11px] text-muted-foreground mt-1">− / + 누를 때마다 10분씩</div>
       <div className="grid gap-1.5 mt-3" style={{ gridTemplateColumns: `repeat(${hours.length}, minmax(0, 1fr))` }}>
         {hours.map(x => (
           <button key={x} type="button" onClick={() => onChange(x, 0)}
