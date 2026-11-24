@@ -4,7 +4,7 @@ export default function Manual() {
   return (
     <div className="-mx-4 md:mx-0">
       <iframe
-        src="/guide/index.html"
+        src={`/guide/index.html${typeof window !== "undefined" ? window.location.hash : ""}`} // 2026-11-24: 공지 팝업에서 #v17_brag 처럼 바로 그 페이지로
         title="앱 사용설명서"
         className="w-full border-0 bg-[#1d1e22] md:rounded-2xl"
         style={{ height: "calc(100dvh - 9rem - env(safe-area-inset-top))", minHeight: 480 }}

@@ -17,6 +17,7 @@ import { isKakaoInApp, openInExternalBrowser } from "@/lib/proofCard";
 import type { ConfirmReq } from "@/lib/askConfirm";
 import { askConfirm } from "@/lib/askConfirm";
 import BragSheet from "@/components/BragSheet";
+import NoticePopup from "@/components/NoticePopup";
 
 // 2026-11-22 방장 지정 순서 · 묶음: act 활동 / buy 구매·신청(연두) / me 꾸미기·프로필(베이지) / 관리(방장만, 하늘색)
 const NAV_ITEMS = [
@@ -337,6 +338,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <KakaoInAppNotice />
         <ProofPreview />
         <BragSheet />
+        <NoticePopup />
         <ConfirmHost />
 
         {/* Mobile drawer */}
