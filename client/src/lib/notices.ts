@@ -10,7 +10,7 @@ export type Notice = {
   manualLabel?: string;
 };
 
-const n1124 = Array.from({ length: 13 }, (_, i) => `/notice/1124/${String(i).padStart(2, "0")}.jpg`);
+const n1124 = Array.from({ length: 13 }, (_, i) => `/notice/1124/${String(i).padStart(2, "0")}.jpg?v=2`); // 사진을 바꾸면 v 숫자를 올린다(옛 사진이 남지 않게)
 
 export const NOTICES: Notice[] = [
   {
