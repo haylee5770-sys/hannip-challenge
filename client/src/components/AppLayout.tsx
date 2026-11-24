@@ -247,7 +247,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         window.removeEventListener("popstate", onPop);
         try { window.close(); } catch {}
         // 앱 안에서 쌓인 화면 기록을 한 번에 지나 앱 밖으로 (한 칸만 돌아가 '오늘'이 다시 뜨던 문제)
-        history.go(-Math.max(1, history.length - baseLen + 1));
+        // (바탕화면 앱처럼 앞 기록이 없으면 범위를 넘지 않게 — 넘으면 브라우저가 아무것도 안 함)
+        const back = Math.min(history.length - baseLen + 1, history.length - 1);
+        if (back > 0) history.go(-back);
       }
       else push();
     };
