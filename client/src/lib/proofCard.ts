@@ -60,7 +60,8 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   // 2026-11-21: 이름 앞에 카톡과 같은 프로필 사진(둥근 네모)
   const AV = 120, avX = 90, textX = avX + AV + 26;
   await drawAvatar(g, card.avatar, avX, 60, AV, name, accent);
-  const maxHeadW = (hasCount ? W - 90 - 200 : W - 90) - textX;
+  // 2026-11-24 해이: 누적 동그라미를 키워서 가운데 쪽으로 넓어졌으므로 제목 자리를 그만큼 비움
+  const maxHeadW = (hasCount ? W - 310 : W - 90) - textX;
   let size = 92;
   for (; size > 40; size -= 4) { g.font = `900 ${size}px ${bodyFont}`; if (g.measureText(`${name} ${item}`).width <= maxHeadW) break; }
   g.textAlign = "left"; g.font = `900 ${size}px ${bodyFont}`;
@@ -68,7 +69,8 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   const nw = g.measureText(name + " ").width;
   g.fillStyle = accent; g.fillText(item, textX + nw, 152);
   if (hasCount) {
-    const cx = W - 160, cy = 120, r = 80;
+    // 2026-11-24 해이: 동그라미 약 1.4배 크게, 가운데·아래쪽으로 넓어지게 (반지름 80 → 112)
+    const cx = W - 172, cy = 140, r = 112;
     // 2026-11-22 (해이): 네온·번짐 없이 깔끔한 꽉 찬 동그라미
     // 2026-11-24 해이: 앱의 '누적 1회' 유리알 동그라미와 똑같이 (한 톤 진한 같은 색 + 흰 테두리 + 위쪽 반짝임, 글씨 '누적' / 'N회')
     g.save();
@@ -82,9 +84,9 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
     g.fillStyle = hl; g.beginPath(); g.ellipse(cx, cy - r * 0.66, r * 0.56, r * 0.26, 0, 0, Math.PI * 2); g.fill();
     g.restore();
     g.textAlign = "center";
-    g.fillStyle = "rgba(255,255,255,0.75)"; g.font = `700 24px ${bodyFont}`; g.fillText("누적", cx, cy - 22);
+    g.fillStyle = "rgba(255,255,255,0.75)"; g.font = `700 33px ${bodyFont}`; g.fillText("누적", cx, cy - 30);
     const cs = `${card.count}회`;
-    g.fillStyle = "#f4fff7"; g.font = `900 ${cs.length >= 4 ? 46 : 58}px ${bodyFont}`; g.fillText(cs, cx, cy + 38);
+    g.fillStyle = "#f4fff7"; g.font = `900 ${cs.length >= 4 ? 64 : 80}px ${bodyFont}`; g.fillText(cs, cx, cy + 54);
   }
   // 시계 + 날짜·시간 (아래 피드백 글씨와 같은 크기·두께)
   g.textAlign = "left";
