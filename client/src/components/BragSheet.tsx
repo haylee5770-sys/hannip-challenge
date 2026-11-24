@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useIsMutating, useQueryClient } from "@tanstack/react-query";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
-import { makeProofBlobs, savePhotosToPhone, shareImages, shareTextOf, type ProofCard } from "@/lib/proofCard";
+import { isIOS, makeProofBlobs, savePhotosToPhone, shareImages, shareTextOf, type ProofCard } from "@/lib/proofCard";
 import { listPending, openBrag, removePending } from "@/lib/bragQueue";
 
 export default function BragSheet() {
@@ -15,6 +15,7 @@ export default function BragSheet() {
   const [blobs, setBlobs] = useState<Blob[] | null>(null);
   const [previews, setPreviews] = useState<string[]>([]); // 2026-11-24: 이게돼처럼 여러 장이면 전부 보여 준다
   const [failed, setFailed] = useState(false);
+  const [saveIdx, setSaveIdx] = useState(0);
   const saving = useIsMutating() > 0;
   const qc = useQueryClient();
   const openedAt = useRef(0);
@@ -22,7 +23,7 @@ export default function BragSheet() {
   useEffect(() => {
     const h = (e: Event) => {
       const d = (e as CustomEvent).detail as { card: ProofCard; key: string };
-      setCur(d); setBlobs(null); setFailed(false); openedAt.current = Date.now();
+      setCur(d); setBlobs(null); setFailed(false); setSaveIdx(0); openedAt.current = Date.now();
       setPreviews([]);
       makeProofBlobs(d.card).then(b => { setBlobs(b); setPreviews(b.map(x => URL.createObjectURL(x))); }).catch(() => setBlobs([]));
     };
@@ -54,10 +55,19 @@ export default function BragSheet() {
     if (r === "shared" || r === "downloaded" || r === "preview") { removePending(cur.key); close(); }
     else if (r === "blocked") toast.error("한 번만 더 눌러 주세요.");
   };
+  // 2026-11-24 해이: 여러 장을 한꺼번에 내려받으면 갤럭시가 "여러 파일 다운로드" 허용 창을 띄움 → 한 번 누를 때 한 장씩
   const keep = async () => {
     if (!blobs?.length) return;
-    const r = await savePhotosToPhone(blobs, base);
-    if (r === "saved") toast.success("내 폰에 저장했어요. 갤러리의 'Download' 앨범에 있어요.");
+    if (isIOS() || blobs.length === 1) {
+      const r = await savePhotosToPhone(blobs, base);
+      if (r === "saved") toast.success("내 폰에 저장했어요. 갤러리의 'Download' 앨범에 있어요.");
+      return;
+    }
+    const i = Math.min(saveIdx, blobs.length - 1);
+    await savePhotosToPhone([blobs[i]], `${base}_${i + 1}`);
+    const next = i + 1;
+    setSaveIdx(next);
+    toast.success(next < blobs.length ? `${next}장 저장했어요. 한 번 더 누르면 ${next + 1}번째 장도 저장돼요.` : "모두 저장했어요. 갤러리의 'Download' 앨범에 있어요.");
   };
 
   return (
@@ -87,7 +97,10 @@ export default function BragSheet() {
           </button>
           <p className="text-center text-[11px] text-muted-foreground">누르면 글이 복사돼요. 사진을 올린 뒤 입력칸을 길게 눌러 '붙여넣기' 해 주세요.</p>
           <button type="button" disabled={!blobs?.length} onClick={keep}
-            className="w-full h-11 rounded-2xl border border-border text-sm font-bold disabled:opacity-50">📥 인증 사진 내 폰에 저장</button>
+            className="w-full h-11 rounded-2xl border border-border text-sm font-bold disabled:opacity-50">
+            {blobs && blobs.length > 1 && !isIOS()
+              ? (saveIdx >= blobs.length ? "✓ 모두 저장했어요" : `📥 내 폰에 저장 (${saveIdx + 1}/${blobs.length}장)`)
+              : "📥 인증 사진 내 폰에 저장"}</button>
           <button type="button" onClick={close} className="w-full text-sm text-muted-foreground underline">나중에 자랑할게요 (⏳ 자랑 전으로 남아요)</button>
         </>)}
       </div>
