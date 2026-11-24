@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";
-import { shareProof } from "@/lib/proofCard";
+import { openBrag } from "@/lib/bragQueue";
 
 type Note = { id: number; userId: number; recordedDate: string; content: string; summary: string; createdAt: string };
 const todayKst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
@@ -60,11 +60,11 @@ export default function Itge() {
       setText("");
       utils.itge.mine.invalidate(); utils.itge.crew.invalidate();
       toast.success("이게돼가 올라갔어요 💚");
-      shareProof({
+      openBrag({
         emoji: "✨", title: "이게돼", lines: [], userName: user?.name ?? "", date: todayKst(),
         itemLabel: "이게돼", count: r.count, body, avatar: (user as any)?.avatarUrl ?? null,
         time: new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }),
-      }).catch(() => {});
+      });
     },
     onError: (e) => toast.error(e.message),
   });

@@ -1707,10 +1707,14 @@ const roundsRouter = router({
 /* 의견 보내기 · 선물/이벤트 신청 (2026-11-22) */
 const crewRouter = router({
   sendFeedback: approvedProcedure
-    .input(z.object({ kind: z.enum(["bug", "idea"]), text: z.string().min(2).max(3000), imageDataUrl: z.string().max(8_000_000).optional() }))
+    // 2026-11-24 해이: 사진 3장까지 (주소는 줄바꿈으로 이어서 imageUrl 한 칸에 저장)
+    .input(z.object({ kind: z.enum(["bug", "idea"]), text: z.string().min(2).max(3000), imageDataUrl: z.string().max(8_000_000).optional(),
+      imageDataUrls: z.array(z.string().max(8_000_000)).max(3).optional() }))
     .mutation(async ({ ctx, input }) => {
-      let url: string | null = null;
-      if (input.imageDataUrl) url = (await uploadDataUrl(input.imageDataUrl, `feedback/${ctx.user.id}-${Date.now()}`)).url;
+      const imgs = (input.imageDataUrls?.length ? input.imageDataUrls : input.imageDataUrl ? [input.imageDataUrl] : []).slice(0, 3);
+      const urls: string[] = [];
+      for (let i = 0; i < imgs.length; i++) urls.push((await uploadDataUrl(imgs[i], `feedback/${ctx.user.id}-${Date.now()}-${i}`)).url);
+      const url: string | null = urls.length ? urls.join("\n") : null;
       await sp.addFeedback(ctx.user.id, input.kind, input.text.trim(), url);
       return { ok: true };
     }),

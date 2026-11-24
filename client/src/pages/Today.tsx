@@ -22,6 +22,8 @@ import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { quoteOf } from "@/lib/quotes";
 import { Link } from "wouter";
 import { shareProof, shareTextOf, type ProofCard } from "@/lib/proofCard";
+import { openBrag } from "@/lib/bragQueue";
+import { PendingBrags } from "@/components/BragSheet";
 import CropCamera, { canUseInAppCamera } from "@/components/CropCamera";
 import { shareBeforeAfterCard, shareToast } from "@/lib/shareCards";
 import { loadDecor } from "@/lib/decor";
@@ -88,12 +90,8 @@ export default function Today() {
     const shownLabel = p.item === "meal" || p.item === "smoothie" ? "식단" : p.label;
     const card: ProofCard = { emoji: p.emoji, title: shownLabel, lines: [], userName, date, count: n, photo: p.photo, itemLabel: shownLabel, feedback: p.feedback, shareSections: p.shareSections, time, avatar: (user as any)?.avatarUrl ?? null };
     utils.happy.yearProgress.invalidate();
-    shareProof(card)
-      .then(r => {
-        if (r === "downloaded") toast.success("인증 사진을 저장하고 문구를 복사했어요.");
-        if (r === "blocked") setBragCard(card);
-      })
-      .catch(() => setBragCard(card));
+    // 2026-11-24: 공유창을 바로 열지 않고 '저장 완료 → 카톡에 자랑하기' 창을 띄운다 (저장 끊김·여러 번 눌러야 하는 문제)
+    openBrag(card);
   };
   const setKakaoShareText = (text: string | null) => {
     if (!text) return;
@@ -107,12 +105,7 @@ export default function Today() {
       userName,
       date,
     };
-    shareProof(card)
-      .then(r => {
-        if (r === "downloaded") toast.success("인증 사진을 저장하고 문구를 복사했어요. 카톡에 사진과 함께 붙여 넣어 주세요.");
-        if (r === "blocked") setBragCard(card);
-      })
-      .catch(() => setBragCard(card));
+    openBrag(card);
   };
 
   // Weight state
@@ -340,6 +333,7 @@ export default function Today() {
       />
       <TodayTabs tab={tab} setTab={setTab} sleepDone={!!sleepToday.data} sleepMin={sleepToday.data?.durationMinutes ?? null} mealN={myMealsToday.data?.length ?? 0} waterMl={watersTodayTop.data?.totalMl ?? 0} exN={myExercisesToday.data?.length ?? 0} weighDone={!!weighInTop.data?.doneThisMonth} weighKg={(weighInTop.data as any)?.lastKg ?? null} />
       {/* 지난 날짜는 보기만: 기록 버튼 회색 유리 + 누르면 안내 팝업 (2026-11-21, 방장 포함 모두) */}
+      <PendingBrags date={date} />
       <div className={isPast ? "past-lock" : undefined} onClickCapture={isPast ? blockPast : undefined} onFocusCapture={isPast ? (e) => { const t = e.target as HTMLElement; if (t.matches("input,textarea,select") && !t.closest("[data-view-ok]")) t.blur(); } : undefined}>
       {/* Sleep — 수면 기록 */}
       {show("sleep") && <SleepSection date={date} sleepCount={myCounts.data?.counts.wake} onBrag={bragItem} />}
@@ -1465,7 +1459,12 @@ function WheelPicker({
 
 function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?: number; onBrag?: BragFn }) {
   const [wakePhoto, setWakePhoto] = useState<string | null>(null);
+  const [wakeMl, setWakeMl] = useState<number | null>(null); // 2026-11-24: 기상 물 한 잔 → 물 기록에도 자동으로
   const wakeRef = useRef<HTMLInputElement>(null);
+  const addWater = trpc.waters.multiCreate.useMutation({
+    onSuccess: () => { utils.waters.byDate.invalidate(); utils.rounds.myCounts.invalidate(); utils.seasons.myProgress.invalidate(); },
+    onError: () => toast.error("물 기록은 안 들어갔어요. 물 칸에서 한 번 더 올려 주세요."),
+  });
   const utils = trpc.useUtils();
   const todaySleep = trpc.sleep.byDate.useQuery({ date });
   const sleepHistory = trpc.sleep.list.useQuery({ since: undefined } as any);
@@ -1497,13 +1496,15 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
       utils.sleep.list.invalidate();
       utils.seasons.myProgress.invalidate();
       utils.happy.yearProgress.invalidate(); utils.rounds.myCounts.invalidate();
-      setWakePhoto(null); if (wakeRef.current) wakeRef.current.value = "";
+      setWakePhoto(null); setWakeMl(null); if (wakeRef.current) wakeRef.current.value = "";
     },
     onError: () => toast.error("저장이 안 됐어요. 기록이 남지 않았으니 다시 눌러 주세요."),
   });
 
   const handleSave = () => {
     if (!wakePhoto) { toast.error("아침 따뜻한 물 한 잔 사진을 올려 주세요"); return; }
+    const firstToday = !todaySleep.data; // 오늘 처음 인증할 때만 물 기록에 더한다 (고칠 때 두 번 안 들어가게)
+    if (firstToday && wakeMl == null) { toast.error("물 한 잔이 몇 ml였는지 골라 주세요"); return; }
     // 누른 순간 바로 카톡 공유창 (오늘 이미 기록이 있으면 번호는 그대로)
     const d = computeSleepMin(bedHour, bedMinute, wakeHour, wakeMinute);
     onBrag?.({ item: "wake", label: "기상", emoji: "☀️", photo: wakePhoto, add: todaySleep.data ? 0 : 1,
@@ -1516,6 +1517,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
       wakeHour,
       wakeMinute,
     });
+    if (firstToday && wakeMl != null) addWater.mutate({ recordedDate: date, volumeMl: wakeMl, photoBase64: [wakePhoto] });
   };
 
   // 2026-11-23: 수면도 다른 칸처럼 '1회' 동그라미 → 누르면 기상 사진·시간 (지난 날짜도)
@@ -1593,6 +1595,20 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
         {!wakePhoto && <ShootBox onFile={fl => void shrinkFile(fl).then(setWakePhoto)} />}
         <span className="text-xs text-muted-foreground leading-relaxed">☀️ 기상 인증 · 아침을 깨우는<br /><b className="text-foreground">따뜻한 물 한 잔</b> 사진 (필수)</span>
       </div>
+      {!todaySleep.data && (
+        <div className="mb-3 space-y-1.5">
+          <div className={cn("text-xs font-bold", wakeMl == null ? "text-amber-300" : "text-primary")}>
+            {wakeMl == null ? "💧 이 물 몇 ml? 고르면 물 기록에도 1회 자동으로 들어가요" : `💧 물 기록에도 ${wakeMl}ml 1회 들어가요`}
+          </div>
+          <div className={cn("grid grid-cols-4 gap-1.5 rounded-lg", wakeMl == null && !!wakePhoto && "nudge")}>
+            {WATER_VOLUME_OPTIONS.map(v => (
+              <button key={v} type="button" onClick={() => setWakeMl(v)}
+                className={cn("rounded-lg border py-2 text-xs tabular-nums whitespace-nowrap transition-colors",
+                  wakeMl === v ? "glass-fill font-semibold" : "border-border text-muted-foreground")}>{v}ml</button>
+            ))}
+          </div>
+        </div>
+      )}
       {/* 결과 */}
       <div className="flex items-center gap-3 mb-3">
         <span className="text-lg font-semibold tabular-nums">{hours}시간{mins ? ` ${mins}분` : ""}</span>
@@ -2423,7 +2439,8 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
   const lastPhotos = useRef<string[]>([]);
   const utils = trpc.useUtils();
   const watersToday = trpc.waters.byDate.useQuery({ date });
-  const [volumeMl, setVolumeMl] = useState<number>(500);
+  // 2026-11-24 해이: 처음엔 아무것도 안 골라진 상태. 지난번 고른 ml가 남아 있지 않게 매번 다시 고른다
+  const [volumeMl, setVolumeMl] = useState<number | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -2435,9 +2452,9 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
     onSuccess: (res) => {
       utils.waters.byDate.invalidate(); utils.rounds.myCounts.invalidate();
       utils.seasons.myProgress.invalidate();
-      toast.success(`물 ${res.count}회 기록되었습니다 (${(volumeMl * res.count).toLocaleString()}ml)`);
+      toast.success(`물 ${res.count}회 기록되었습니다 (${((volumeMl ?? 0) * res.count).toLocaleString()}ml)`);
       setAdding(false);
-      setPhotos([]);
+      setPhotos([]); setVolumeMl(null);
       if (fileRef.current) fileRef.current.value = "";
     },
     onError: (e) => toast.error(e.message),
@@ -2486,7 +2503,8 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
       {!adding && <AddButton label="물 기록 추가" onClick={() => setAdding(true)} count={waterCount} />}
       {adding && (<div className="space-y-3 rounded-xl border border-border p-4">
       {/* 한 잔당 용량 */}
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className={cn("text-xs font-bold", volumeMl == null ? "text-amber-300" : "text-muted-foreground")}>{volumeMl == null ? "👇 한 잔 용량을 골라 주세요 (필수)" : `한 잔 ${volumeMl}ml`}</div>
+      <div className={cn("grid grid-cols-4 gap-1.5 rounded-lg", volumeMl == null && photos.length > 0 && "nudge")}>
         {WATER_VOLUME_OPTIONS.map((v) => (
           <button key={v} type="button" onClick={() => setVolumeMl(v)}
             className={cn("rounded-lg border py-2 text-xs tabular-nums whitespace-nowrap transition-colors",
@@ -2514,10 +2532,11 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
         <span className="text-[11px] text-muted-foreground">사진 1장 = 1회 · 최대 8장</span>
       </div>
       <div className={ACTIONS_ROW}>
-        <Button variant="ghost" onClick={() => { setAdding(false); setPhotos([]); }} className={CANCEL_BTN}>취소</Button>
+        <Button variant="ghost" onClick={() => { setAdding(false); setPhotos([]); setVolumeMl(null); }} className={CANCEL_BTN}>취소</Button>
         <Button
           onClick={() => {
             if (photos.length === 0) { toast.error("물 사진을 1장 이상 첨부해 주세요"); return; }
+            if (volumeMl == null) { toast.error("한 잔 용량(ml)을 골라 주세요"); return; }
             lastPhotos.current = photos;
             const newTotal = totalMl + volumeMl * photos.length;
             onBrag?.({ item: "water", label: "물", emoji: "💧", photo: photos[0], add: photos.length,
@@ -2525,7 +2544,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
             create.mutate({ recordedDate: date, volumeMl, photoBase64: photos });
           }}
           disabled={create.isPending}
-          className={cn(BRAG_BTN, photos.length > 0 && !create.isPending && "nudge")}
+          className={cn(BRAG_BTN, photos.length > 0 && volumeMl != null && !create.isPending && "nudge", volumeMl == null && "opacity-50")}
         >
           {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "자랑하기"}
         </Button>

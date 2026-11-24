@@ -12,9 +12,11 @@ import { Menu, X, ChevronRight, Users, Trophy, Medal, ShoppingBag, Gift, Palette
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { isKakaoInApp, openInExternalBrowser } from "@/lib/proofCard";
 import type { ConfirmReq } from "@/lib/askConfirm";
+import { askConfirm } from "@/lib/askConfirm";
+import BragSheet from "@/components/BragSheet";
 
 // 2026-11-22 방장 지정 순서 · 묶음: act 활동 / buy 구매·신청(연두) / me 꾸미기·프로필(베이지) / 관리(방장만, 하늘색)
 const NAV_ITEMS = [
@@ -222,6 +224,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 2026-11-24 해이: 뒤로 가기를 누르다 앱이 꺼지는 문제 → 다른 화면에서 뒤로 = '오늘' 화면,
+  // '오늘'에서 한 번 더 뒤로 = "앱을 종료할까요?" 묻고 [종료]를 눌러야만 나간다
+  const locRef = useRef(location);
+  locRef.current = location;
+  useEffect(() => {
+    const GUARD = { hannipGuard: 1 };
+    const push = () => { try { history.pushState(GUARD, ""); } catch {} };
+    if (!(history.state && history.state.hannipGuard)) push();
+    let asking = false;
+    const onPop = async () => {
+      const path = window.location.pathname;
+      if (path !== "/today" && path !== "/") { navigate("/today", { replace: true }); push(); return; }
+      if (locRef.current !== "/today" && locRef.current !== "/") { push(); return; } // 다른 화면에서 '오늘'로 돌아온 것
+      if (asking) return;
+      asking = true;
+      const ok = await askConfirm("앱을 종료할까요?", "종료");
+      asking = false;
+      if (ok) { window.removeEventListener("popstate", onPop); history.back(); }
+      else push();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const isAdmin = user?.role === "admin";
   const items = isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
 
@@ -309,6 +336,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {user && <YearProgressBar />}
         <KakaoInAppNotice />
         <ProofPreview />
+        <BragSheet />
         <ConfirmHost />
 
         {/* Mobile drawer */}

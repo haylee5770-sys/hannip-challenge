@@ -20,5 +20,6 @@ export const PAST_AWARDS: PastSeason[] = [
   { no: "6기", awards: [{ label: "감량상", name: "나나", note: "8.98% 감량" }, { label: "운동상", name: "수지", note: "39회" }, { label: "인증상", name: "청하", note: "259회" }] },
   { no: "5기", awards: [{ label: "감량상", name: "영지", note: "8.95% 감량" }, { label: "운동상", name: "수지", note: "54회" }, { label: "인증상", name: "지아", note: "180회" }] },
   { no: "4기", awards: [{ label: "감량상", name: "청하", note: "8.82% 감량" }, { label: "운동상", name: "수지", note: "32회" }, { label: "인증상", name: "윤정", note: "276회" }] },
-  { no: "3기", awards: [{ label: "감량상", name: "보아" }, { label: "운동상", name: "카리나" }, { label: "인증상", name: "청하" }] },
+  // 2026-11-24 해이: 3기 감량상 보아 → 지연
+  { no: "3기", awards: [{ label: "감량상", name: "지연" }, { label: "운동상", name: "카리나" }, { label: "인증상", name: "청하" }] },
 ];

@@ -1182,7 +1182,7 @@ function FeedbackInbox({ list, dt, onDone }: { list: any[]; dt: (d: any) => stri
                 <div key={f.id} className={`rounded-2xl border p-3 text-sm space-y-1 ${f.done ? "border-border" : "border-amber-400/60"}`}>
                   <div className="flex justify-between gap-2"><b>{f.kind === "bug" ? "🐞 오류" : "💡 의견"}</b><span className="text-[11px] text-muted-foreground text-right">{dt(f.createdAt)}{f.editedAt ? <><br />고침 {dt(f.editedAt)}</> : null}</span></div>
                   <div className="whitespace-pre-wrap allow-select">{f.text}</div>
-                  {f.imageUrl && <a href={f.imageUrl} target="_blank" rel="noreferrer"><img src={f.imageUrl} alt="첨부" className="mt-1 max-h-60 rounded-xl" /></a>}
+                  {f.imageUrl && <div className="mt-1 flex flex-wrap gap-1.5">{String(f.imageUrl).split("\n").filter(Boolean).map((u: string) => <a key={u} href={u} target="_blank" rel="noreferrer"><img src={u} alt="첨부" className="max-h-60 rounded-xl" /></a>)}</div>}
                   <FeedbackReplyBox f={f} />
                   <label className="text-xs flex items-center gap-1 justify-end"><input type="checkbox" checked={!!f.done} onChange={e => onDone(f.id, e.target.checked)} />{f.done ? "확인함 (풀면 미확인으로)" : "확인함"}</label>
                 </div>

@@ -47,12 +47,12 @@ function Sheet({ title, onClose, children, inline }: { title: string; onClose: (
 export function FeedbackSheet({ onClose, inline }: { onClose: () => void; inline?: boolean }) {
   const [kind, setKind] = useState<"bug" | "idea">("bug");
   const [text, setText] = useState("");
-  const [img, setImg] = useState<string | null>(null);
+  const [imgs, setImgs] = useState<string[]>([]); // 2026-11-24 해이: 사진 3장까지
   const [sent, setSent] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
   const send = trpc.crew.sendFeedback.useMutation({ onSuccess: () => { setSent(true); utils.crew.myFeedbacks.invalidate(); }, onError: e => toast.error(e.message) });
-  const again = () => { setText(""); setImg(null); setSent(false); };
+  const again = () => { setText(""); setImgs([]); setSent(false); };
   const share = async () => {
     const msg = `[${kind === "bug" ? "🐞 오류 발견" : "💡 의견"}] ${text}`;
     try { if (navigator.share) await navigator.share({ text: msg }); else { await navigator.clipboard.writeText(msg); toast.success("글을 복사했어요. 카톡방에 붙여 넣어 주세요."); } } catch { /* 취소 */ }
@@ -72,6 +72,7 @@ export function FeedbackSheet({ onClose, inline }: { onClose: () => void; inline
   );
   return (
     <Sheet inline={inline} title="💬 의견 보내기" onClose={onClose}>
+      <p className="rounded-2xl border border-primary/60 bg-primary/10 px-3 py-2 text-sm font-bold text-primary">📷 사진은 3장까지 올릴 수 있어요. 가장 중요한 것만 올려 주세요.</p>
       <div className="grid grid-cols-2 gap-2">
         {([["bug", "🐞 오류 발견"], ["idea", "💡 의견 내기"]] as const).map(([k, l]) => (
           <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-2xl border py-3 font-bold ${kind === k ? "glass-fill" : "border-border text-muted-foreground"}`}>{l}</button>
@@ -79,13 +80,24 @@ export function FeedbackSheet({ onClose, inline }: { onClose: () => void; inline
       </div>
       <textarea className={field + " resize-none"} rows={5} value={text} onChange={e => setText(e.target.value)}
         placeholder={kind === "bug" ? "어디에서 어떤 문제가 있었는지 알려 주세요" : "이러면 좋겠어요! 편하게 적어 주세요"} />
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (f) setImg(await shrink(f)); }} />
-      {img ? (
-        <div className="relative"><img src={img} alt="첨부" className="w-full rounded-2xl" /><button type="button" onClick={() => setImg(null)} className="absolute top-2 right-2 rounded-full bg-black/70 p-1"><X className="h-4 w-4" /></button></div>
-      ) : (
-        <button type="button" onClick={() => fileRef.current?.click()} className="w-full rounded-2xl border border-dashed border-border py-4 text-sm text-muted-foreground">📷 캡처 사진 붙이기 (선택)</button>
+      <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={async e => {
+        const fs = Array.from(e.target.files ?? []); e.currentTarget.value = "";
+        const room = 3 - imgs.length;
+        if (fs.length > room) toast.error(`사진은 3장까지예요. ${room}장만 넣었어요.`);
+        const out: string[] = []; for (const f of fs.slice(0, room)) out.push(await shrink(f));
+        setImgs(prev => [...prev, ...out].slice(0, 3));
+      }} />
+      {imgs.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {imgs.map((src, i) => (
+            <div key={i} className="relative"><img src={src} alt={`첨부 ${i + 1}`} className="w-full aspect-square object-cover rounded-xl" /><button type="button" onClick={() => setImgs(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 rounded-full bg-black/70 p-1"><X className="h-3.5 w-3.5" /></button></div>
+          ))}
+        </div>
       )}
-      <button type="button" disabled={text.trim().length < 2 || send.isPending} onClick={() => send.mutate({ kind, text, imageDataUrl: img ?? undefined })}
+      {imgs.length < 3 && (
+        <button type="button" onClick={() => fileRef.current?.click()} className="w-full rounded-2xl border border-dashed border-border py-4 text-sm text-muted-foreground">📷 캡처 사진 붙이기 (선택 · {imgs.length}/3장)</button>
+      )}
+      <button type="button" disabled={text.trim().length < 2 || send.isPending} onClick={() => send.mutate({ kind, text, imageDataUrls: imgs.length ? imgs : undefined })}
         className="w-full h-12 rounded-2xl glass-btn font-bold disabled:opacity-40">{send.isPending ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : "보내기"}</button>
       <MyFeedbacks />
     </Sheet>
@@ -119,7 +131,7 @@ function MyFeedbacks() {
               <span className={r.done ? "text-primary font-semibold" : ""}>{r.done ? "✓ 방장 확인" : "✏️ 고치기"}</span>
             </div>
             <div className="text-sm whitespace-pre-wrap break-words">{r.text}</div>
-            {r.imageUrl && <img src={r.imageUrl} alt="첨부" className="mt-1 max-h-32 rounded-xl" />}
+            {r.imageUrl && <div className="mt-1 flex gap-1.5">{String(r.imageUrl).split("\n").filter(Boolean).map((u: string) => <img key={u} src={u} alt="첨부" className="max-h-32 rounded-xl" />)}</div>}
             {r.reply && (
               <div className="mt-2 rounded-xl bg-primary/10 border border-primary/30 p-2.5">
                 <div className="text-[11px] font-bold text-primary mb-0.5">💚 방장 답장 {freshIds.has(r.id) && <span className="ml-1 rounded bg-rose-500 px-1.5 py-0.5 text-[10px] text-white">새 답장</span>}</div>
@@ -135,7 +147,7 @@ function MyFeedbacks() {
 function FeedbackEdit({ row, onDone }: { row: any; onDone: () => void }) {
   const [kind, setKind] = useState<"bug" | "idea">(row.kind === "idea" ? "idea" : "bug");
   const [text, setText] = useState<string>(row.text ?? "");
-  const [img, setImg] = useState<string | null>(row.imageUrl ?? null);
+  const [img, setImg] = useState<string | null>(row.imageUrl ? String(row.imageUrl).split("\n")[0] : null);
   const [newImg, setNewImg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();

@@ -258,7 +258,7 @@ export function shareTextOf(card: ProofCard): string {
   // 기상은 '취침 · 기상 · 수면 시간'까지만. 평가 문장("수면이 부족하면…")은 카드 안에만 (지적처럼 느껴지지 않게)
   const fb = (card.feedback ?? "").trim();
   const sections: { label: string; value: string }[] = card.shareSections?.length ? card.shareSections
-    : card.itemLabel === "이게돼" ? []
+    : card.itemLabel === "이게돼" ? (card.body?.trim() ? [{ label: "이게돼", value: card.body.trim() }] : []) // 2026-11-24: 일기 내용도 글로 붙여넣기
     : card.itemLabel === "기상" ? [{ label: "수면 기록", value: fb.split(" · ").slice(0, 3).join(" · ") }]
     : card.itemLabel === "운동" ? [{ label: "운동 기록", value: fb }]
     : card.itemLabel === "물" ? [{ label: "물 기록", value: fb.replace(/\s*\(목표의[^)]*\)/, "") }]
@@ -271,11 +271,32 @@ export function shareTextOf(card: ProofCard): string {
   return [`#${searchTag(card)}`, body].filter(Boolean).join("\n\n");
 }
 
+/** 인증 카드 사진 만들기 (자랑 창에서 미리 만들어 두려고 따로 뺌, 2026-11-24) */
+export async function makeProofBlobs(card: ProofCard): Promise<Blob[]> {
+  return card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
+    : [card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card)];
+}
+
 export async function shareProof(card: ProofCard): Promise<"shared" | "cancelled" | "blocked" | "downloaded" | "preview"> {
   const text = shareTextOf(card);
-  const blobs = card.itemLabel === "이게돼" && card.body ? await makeItgeImages(card)
-    : [card.itemLabel ? await makeProofImage2(card) : await makeProofImage(card)];
+  const blobs = await makeProofBlobs(card);
   return shareImages(blobs, text, `hannip_${card.date}`);
+}
+
+/** 내 폰에 저장 (2026-11-24): 갤럭시·PC는 바로 다운로드(갤러리 'Download' 앨범), 아이폰은 공유창 → '이미지 저장' */
+export async function savePhotosToPhone(blobs: Blob[], baseName: string): Promise<"saved" | "shared" | "cancelled"> {
+  const files = blobs.map((b, i) => new File([b], `${baseName}${blobs.length > 1 ? `_${i + 1}` : ""}.png`, { type: "image/png" }));
+  const nav = navigator as any;
+  if (isIOS() && nav.canShare && nav.canShare({ files })) {
+    try { await nav.share({ files }); return "shared"; } catch { return "cancelled"; }
+  }
+  for (const f of files) {
+    const url = URL.createObjectURL(f);
+    const a = document.createElement("a");
+    a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  return "saved";
 }
 
 /** 이미지 여러 장을 공유창(카톡 등)으로 — 카톡 안이면 미리보기, PC면 저장 (2026-11-22: 나의 변화·비포애프터·시상식 카드도 같이 씀) */
