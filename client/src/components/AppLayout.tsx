@@ -231,6 +231,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   locRef.current = location;
   useEffect(() => {
     const GUARD = { hannipGuard: 1 };
+    const baseLen = history.length; // 앱을 연 순간의 기록 개수 → 종료할 때 앱 안 기록을 한꺼번에 건너뛰려고 (2026-11-25 카즈하 의견)
     const push = () => { try { history.pushState(GUARD, ""); } catch {} };
     if (!(history.state && history.state.hannipGuard)) push();
     let asking = false;
@@ -242,7 +243,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       asking = true;
       const ok = await askConfirm("앱을 종료할까요?", "종료");
       asking = false;
-      if (ok) { window.removeEventListener("popstate", onPop); history.back(); }
+      if (ok) {
+        window.removeEventListener("popstate", onPop);
+        try { window.close(); } catch {}
+        // 앱 안에서 쌓인 화면 기록을 한 번에 지나 앱 밖으로 (한 칸만 돌아가 '오늘'이 다시 뜨던 문제)
+        history.go(-Math.max(1, history.length - baseLen + 1));
+      }
       else push();
     };
     window.addEventListener("popstate", onPop);
