@@ -659,6 +659,17 @@ function MealForm({
     waterMl: parseInt(waterMl) || 0,
   }), [carbsG, proteinG, fatG, veg, waterMl]);
 
+  // 2026-11-25 해이: 카톡 글에 '오늘 총 섭취'와 '야채'를 한 줄씩 (이번 것까지 더한 값)
+  const dayTotalSections = (c: number, p: number, f: number, vegNow: boolean, add: number) => {
+    const tc = mealsToday.reduce((a, m) => a + (m.carbsG || 0), 0) + c;
+    const tp = mealsToday.reduce((a, m) => a + (m.proteinG || 0), 0) + p;
+    const tf = mealsToday.reduce((a, m) => a + (m.fatG || 0), 0) + f;
+    const vegToday = vegNow || mealsToday.some(m => (m.vegetableG || 0) > 0);
+    return [
+      { label: `오늘 총 섭취 (${mealsToday.length + add}번째)`, value: `탄 ${tc}g · 단 ${tp}g · 지 ${tf}g` },
+      { label: "야채", value: vegToday ? "🥬 오늘 먹었어요" : "아직 안 먹었어요" },
+    ];
+  };
   const feedback = trpc.meals.feedback.useQuery(
     { ...numbers, mealsToday },
     { enabled: numbers.carbsG + numbers.proteinG + numbers.fatG + numbers.vegetableG + numbers.waterMl > 0 }
@@ -901,6 +912,7 @@ function MealForm({
                 shareSections: pickedList.length ? [
                   { label: "먹은 음식", value: pickedList.map(p => p.name).join(", ") },
                   { label: "영양소", value: `탄 ${pickedList.reduce((a, p) => a + p.carbsG, 0)}g · 단 ${pickedList.reduce((a, p) => a + p.proteinG, 0)}g · 지 ${pickedList.reduce((a, p) => a + p.fatG, 0)}g` },
+                  ...dayTotalSections(pickedList.reduce((a, p) => a + p.carbsG, 0), pickedList.reduce((a, p) => a + p.proteinG, 0), pickedList.reduce((a, p) => a + p.fatG, 0), false, pickedList.length),
                 ] : undefined,
               });
               try {
@@ -942,6 +954,7 @@ function MealForm({
               shareSections: [
                 { label: "먹은 음식", value: description.trim() || "건강한 한 끼" },
                 { label: "영양소", value: `탄 ${numbers.carbsG}g · 단 ${numbers.proteinG}g · 지 ${numbers.fatG}g${veg ? " · 🥬야채 먹음" : ""}` },
+                ...dayTotalSections(numbers.carbsG, numbers.proteinG, numbers.fatG, !!veg, 1),
               ],
             });
             try {
@@ -1233,6 +1246,11 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
     onBrag?.({
       item: "exercise", label: "운동", emoji: "💪", photo,
       feedback: [sportName, km ? `${km}${kind === "swim" ? "m" : "km"}` : null, `${m}분`, kind === "distance" && pace ? `페이스 ${pace}` : null, feelLabel, sweat ? "땀 폭발 💦" : null].filter(Boolean).join(" · "),
+      // 2026-11-25 해이: 이번 인증 한 줄 + 오늘 총 누적 한 줄
+      shareSections: [
+        { label: "운동 기록", value: [sportName, km ? `${km}${kind === "swim" ? "m" : "km"}` : null, `${m}분`, feelLabel, sweat ? "땀 폭발 💦" : null].filter(Boolean).join(" · ") },
+        { label: "오늘 총 운동", value: `${exercises.reduce((a, e) => a + (e.durationMin || 0), 0) + m}분 (${exercises.length + 1}번째)` },
+      ],
     });
     create.mutate({
       recordedDate: date, sport, minutes: m, feel, sweat, photoBase64: photo,
@@ -2559,7 +2577,12 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
             lastPhotos.current = photos;
             const newTotal = totalMl + volumeMl * photos.length;
             onBrag?.({ item: "water", label: "물", emoji: "💧", photo: photos[0], add: photos.length,
-              feedback: `${volumeMl}ml · 오늘 ${newTotal.toLocaleString()}ml (목표의 ${Math.min(100, Math.round(newTotal / WATER_DAILY_TARGET_ML * 100))}%)` });
+              feedback: `${volumeMl}ml · 오늘 ${newTotal.toLocaleString()}ml (목표의 ${Math.min(100, Math.round(newTotal / WATER_DAILY_TARGET_ML * 100))}%)`,
+              // 2026-11-25 해이: 이번 인증 한 줄 + 오늘 총 마신 양 한 줄
+              shareSections: [
+                { label: "물 기록", value: `${volumeMl.toLocaleString()}ml${photos.length > 1 ? ` × ${photos.length}잔` : ""}` },
+                { label: "오늘 총 마신 양", value: `${newTotal.toLocaleString()}ml (목표의 ${Math.min(100, Math.round(newTotal / WATER_DAILY_TARGET_ML * 100))}%)` },
+              ] });
             create.mutate({ recordedDate: date, volumeMl, photoBase64: photos });
           }}
           disabled={create.isPending}
