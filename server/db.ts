@@ -643,6 +643,7 @@ export async function countWeightDaysInRange(userId: number, since: string, unti
       eq(weights.userId, userId),
       gte(weights.recordedDate, since),
       lte(weights.recordedDate, until),
+      sql`bragged = 1`,
     ));
   const set = new Set(rows.map(r => r.d));
   return set.size;
@@ -657,6 +658,7 @@ export async function countMealDaysInRange(userId: number, since: string, until:
       eq(meals.userId, userId),
       gte(meals.recordedDate, since),
       lte(meals.recordedDate, until),
+      sql`bragged = 1`,
     ));
   const set = new Set(rows.map(r => r.d));
   return set.size;
@@ -671,6 +673,7 @@ export async function countExerciseDaysInRange(userId: number, since: string, un
       eq(exercises.userId, userId),
       gte(exercises.recordedDate, since),
       lte(exercises.recordedDate, until),
+      sql`bragged = 1`,
     ));
   const set = new Set(rows.map(r => r.d));
   return set.size;
@@ -1023,6 +1026,7 @@ export async function countWatersInRange(userId: number, since: string, until: s
       eq(waters.userId, userId),
       gte(waters.recordedDate, since),
       lte(waters.recordedDate, until),
+      sql`bragged = 1`,
     ));
   return rows.length;
 }

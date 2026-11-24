@@ -61,14 +61,14 @@ export async function countRange(): Promise<{ since: string; until: string; seas
 export type ItemCounts = { meal: number; smoothie: number; water: number; exercise: number; wake: number; itge: number; weight: number; total: number };
 export async function itemCounts(userId: number, since: string, until: string): Promise<ItemCounts> {
   const one = async (query: any) => Number((await q(query))[0]?.c ?? 0);
-  const weight = await one(sql`SELECT COUNT(*) c FROM weights WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`).catch(() => 0);
+  const weight = await one(sql`SELECT COUNT(*) c FROM weights WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until}`).catch(() => 0);
   const [meal, smoothie, water, exercise, wake, itge] = await Promise.all([
-    one(sql`SELECT COUNT(*) c FROM meals WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until} AND category <> 'smoothie'`),
-    one(sql`SELECT COUNT(*) c FROM meals WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until} AND category = 'smoothie'`),
-    one(sql`SELECT COUNT(*) c FROM waters WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`),
-    one(sql`SELECT COUNT(*) c FROM exercises WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`),
-    one(sql`SELECT COUNT(*) c FROM sleeps WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`),
-    one(sql`SELECT COUNT(*) c FROM itgeNotes WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`).catch(() => 0),
+    one(sql`SELECT COUNT(*) c FROM meals WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until} AND category <> 'smoothie'`),
+    one(sql`SELECT COUNT(*) c FROM meals WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until} AND category = 'smoothie'`),
+    one(sql`SELECT COUNT(*) c FROM waters WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until}`),
+    one(sql`SELECT COUNT(*) c FROM exercises WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until}`),
+    one(sql`SELECT COUNT(*) c FROM sleeps WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until}`),
+    one(sql`SELECT COUNT(*) c FROM itgeNotes WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until}`).catch(() => 0),
   ]);
   return { meal, smoothie, water, exercise, wake, itge, weight, total: meal + smoothie + water + exercise + wake };
 }
@@ -84,7 +84,7 @@ export async function seqOf(userId: number, kind: keyof typeof SEQ_TABLE, id: nu
   if (!row) return null;
   const { since } = await countRange();
   if (String(row.d) < since) return null;
-  const c = (await q(sql`SELECT COUNT(*) c FROM ${t} WHERE userId=${userId} AND recordedDate >= ${since}
+  const c = (await q(sql`SELECT COUNT(*) c FROM ${t} WHERE userId=${userId} AND bragged=1 AND recordedDate >= ${since}
     AND (recordedDate < ${row.d} OR (recordedDate = ${row.d} AND id <= ${id}))`))[0]?.c;
   return Number(c ?? 0) || null;
 }
@@ -200,7 +200,7 @@ export async function createItge(userId: number, date: string, content: string) 
   await q(sql`UPDATE itgeNotes SET summaryV=1 WHERE userId=${userId} AND summaryV=0 AND content=${content}`).catch(() => {});
   const range = await countRange();
   const c = await itemCounts(userId, range.since, range.until);
-  return { summary, count: c.itge };
+  return { summary, count: c.itge + 1 }; // 방금 쓴 글은 아직 자랑 전 → 자랑하면 이 번호
 }
 
 export async function listItge(userId: number) {
@@ -209,15 +209,15 @@ export async function listItge(userId: number) {
 
 export async function itgeCrew() {
   const users = await db.listApprovedUsers();
-  const counts = await q(sql`SELECT userId, COUNT(*) c FROM itgeNotes GROUP BY userId`);
+  const counts = await q(sql`SELECT userId, COUNT(*) c FROM itgeNotes WHERE bragged=1 GROUP BY userId`);
   const m = new Map(counts.map(r => [Number(r.userId), Number(r.c)]));
   return users.map(u => ({ userId: u.id, name: u.name ?? "멤버", count: m.get(u.id) ?? 0 })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
 /* ---------- 1년 미션 클리어: 날짜별 기상·식단 여부 ---------- */
 export async function dayFlags(userId: number, since: string, until: string) {
-  const wake = await q(sql`SELECT DISTINCT DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM sleeps WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`);
-  const meal = await q(sql`SELECT DISTINCT DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM meals WHERE userId=${userId} AND recordedDate BETWEEN ${since} AND ${until}`);
+  const wake = await q(sql`SELECT DISTINCT DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM sleeps WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until}`);
+  const meal = await q(sql`SELECT DISTINCT DATE_FORMAT(recordedDate,'%Y-%m-%d') d FROM meals WHERE userId=${userId} AND bragged=1 AND recordedDate BETWEEN ${since} AND ${until}`);
   return { wake: wake.map(r => r.d as string), meal: meal.map(r => r.d as string) };
 }
 
@@ -230,4 +230,30 @@ export async function checkNickname(name: string, selfId?: number) {
   const similar = users.filter(u => u.id !== selfId && u.name).map(u => u.name as string)
     .filter(other => { const o = norm(other); return o === n || o.includes(n) || n.includes(o); });
   return { ok: similar.length === 0, reason: similar.length ? "이미 쓰는 이름이거나 너무 비슷해요." : "", similar };
+}
+
+
+/* ---------- 자랑(공개)하면 그때 정식 인증 (2026-11-25 해이) ---------- */
+const BRAG_TABLE = { meal: "meals", water: "waters", exercise: "exercises", wake: "sleeps", weight: "weights", itge: "itgeNotes" } as const;
+export type BragKind = keyof typeof BRAG_TABLE;
+/** 그 날짜·그 항목에서, 자랑 창이 열린 시각 앞뒤(fromMs~toMs)에 저장된 '자랑 전' 기록을 '자랑함'으로. 수면·체중은 하루 1건이라 날짜만 본다 */
+export async function markBragged(userId: number, kind: BragKind, date: string, fromMs: number, toMs: number) {
+  const t = sql.raw(BRAG_TABLE[kind]);
+  const from = Math.floor(fromMs / 1000), to = Math.ceil(toMs / 1000);
+  if (kind === "wake" || kind === "weight") {
+    await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date}`);
+  } else {
+    await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0 AND createdAt BETWEEN FROM_UNIXTIME(${from}) AND FROM_UNIXTIME(${to})`);
+  }
+  // 기상 인증 때 같이 저장된 물 한 잔도 함께 인정
+  if (kind === "wake") {
+    await q(sql`UPDATE waters SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0 AND createdAt BETWEEN FROM_UNIXTIME(${from}) AND FROM_UNIXTIME(${to})`);
+  }
+  return { ok: true };
+}
+/** 그 날 '자랑함'인 기록 id */
+export async function braggedIds(userId: number, kind: BragKind, date: string): Promise<Set<number>> {
+  const t = sql.raw(BRAG_TABLE[kind]);
+  const rows = await q(sql`SELECT id FROM ${t} WHERE userId=${userId} AND recordedDate=${date} AND bragged=1`).catch(() => [] as any[]);
+  return new Set(rows.map((r: any) => Number(r.id)));
 }

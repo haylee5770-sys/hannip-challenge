@@ -2594,7 +2594,7 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
       </div>)}
 
       {/* 오늘 마신 물: 메달 (누르면 사진 · 삭제) */}
-      <Medals items={items.map((it, i) => ({ id: it.id, label: `${i + 1}회`, sub: `${it.volumeMl}ml` }))} onOpen={setOpenId} />
+      <Medals items={items.map((it: any, i) => ({ id: it.id, label: `${i + 1}회`, sub: it.bragged === false ? "⏳ 자랑 전" : `${it.volumeMl}ml` }))} onOpen={setOpenId} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && (
           <div className="space-y-3">

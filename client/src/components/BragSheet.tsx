@@ -9,6 +9,11 @@ import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { isIOS, makeProofBlobs, savePhotosToPhone, shareImages, shareTextOf, type ProofCard } from "@/lib/proofCard";
 import { listPending, openBrag, removePending } from "@/lib/bragQueue";
+import { trpc } from "@/lib/trpc";
+
+const BRAG_KIND: Record<string, "meal" | "water" | "exercise" | "wake" | "weight" | "itge"> = {
+  "물": "water", "식단": "meal", "스무디": "meal", "일반식": "meal", "운동": "exercise", "기상": "wake", "체중": "weight", "이게돼": "itge",
+};
 
 export default function BragSheet() {
   const [cur, setCur] = useState<{ card: ProofCard; key: string } | null>(null);
@@ -19,11 +24,14 @@ export default function BragSheet() {
   const saving = useIsMutating() > 0;
   const qc = useQueryClient();
   const openedAt = useRef(0);
+  const savedAt = useRef(0); // 인증 저장을 누른 시각 (자랑하면 그 무렵 저장된 기록을 '자랑함'으로)
+  const markBragged = trpc.rounds.markBragged.useMutation({ onSuccess: () => qc.invalidateQueries() });
 
   useEffect(() => {
     const h = (e: Event) => {
       const d = (e as CustomEvent).detail as { card: ProofCard; key: string };
       setCur(d); setBlobs(null); setFailed(false); setSaveIdx(0); openedAt.current = Date.now();
+      savedAt.current = listPending().find(p => p.key === d.key)?.at ?? Date.now();
       setPreviews([]);
       makeProofBlobs(d.card).then(b => { setBlobs(b); setPreviews(b.map(x => URL.createObjectURL(x))); }).catch(() => setBlobs([]));
     };
@@ -52,7 +60,12 @@ export default function BragSheet() {
   const brag = async () => {
     if (!blobs?.length) return;
     const r = await shareImages(blobs, text, base); // 글 복사 + 공유창이 누르자마자 열림 (사진은 이미 만들어 둠)
-    if (r === "shared" || r === "downloaded" || r === "preview") { removePending(cur.key); close(); }
+    if (r === "shared" || r === "downloaded" || r === "preview") {
+      // 2026-11-25 해이: 단톡방에 자랑(공개)해야 누적·합계·순위에 들어간다
+      const kind = BRAG_KIND[cur.card.itemLabel ?? ""];
+      if (kind) markBragged.mutate({ kind, date: cur.card.date, fromMs: savedAt.current - 15_000, toMs: savedAt.current + 180_000 });
+      removePending(cur.key); close();
+    }
     else if (r === "blocked") toast.error("한 번만 더 눌러 주세요.");
   };
   // 2026-11-24 해이: 여러 장을 한꺼번에 내려받으면 갤럭시가 "여러 파일 다운로드" 허용 창을 띄움 → 한 번 누를 때 한 장씩

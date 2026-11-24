@@ -1624,6 +1624,9 @@ const roundsRouter = router({
     return { ...r, counts: await rounds.itemCounts(ctx.user.id, r.since, r.until) };
   }),
   /** 기록 하나의 누적 번호 (카톡 글 다시 복사용, 2026-11-23) */
+  markBragged: approvedProcedure
+    .input(z.object({ kind: z.enum(["meal", "water", "exercise", "wake", "weight", "itge"]), date: dateString, fromMs: z.number(), toMs: z.number() }))
+    .mutation(async ({ ctx, input }) => rounds.markBragged(ctx.user.id, input.kind, input.date, input.fromMs, input.toMs)),
   seqOf: approvedProcedure
     .input(z.object({ kind: z.enum(["meal", "water", "exercise", "wake", "weight"]), id: z.number() }))
     .query(async ({ ctx, input }) => rounds.seqOf(ctx.user.id, input.kind, input.id)),
@@ -1914,8 +1917,11 @@ const watersRouter = router({
     .input(z.object({ date: dateString }))
     .query(async ({ ctx, input }) => {
       const rows = await db.listWatersByDate(ctx.user.id, input.date);
-      const totalMl = rows.reduce((acc, r) => acc + (r.volumeMl || 0), 0);
-      return { items: rows, totalMl };
+      // 2026-11-25 해이: 합계는 자랑(공개)한 물만. 자랑 전 기록은 bragged=false
+      const ok = await rounds.braggedIds(ctx.user.id, "water", input.date);
+      const items = rows.map(r => ({ ...r, bragged: ok.has(r.id) }));
+      const totalMl = items.reduce((acc, r) => acc + (r.bragged ? (r.volumeMl || 0) : 0), 0);
+      return { items, totalMl };
     }),
 
   /** 사진 여러 장(N장) + 장당 용량(이미 동일 세트로 선택됨) → N건 인증을 의미한다. */

@@ -52,6 +52,11 @@ export async function ensureSeasonPlusSchema() {
     ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS repliedAt TIMESTAMP NULL", "feedbacks.repliedAt"],
     ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS replySeen BOOLEAN NOT NULL DEFAULT false", "feedbacks.replySeen"],
     ["ALTER TABLE feedbacks ADD COLUMN IF NOT EXISTS editedAt TIMESTAMP NULL", "feedbacks.editedAt"],
+    // 2026-11-25 해이: 단톡방에 자랑(공개)한 인증만 누적·합계·순위에 센다. 예전 기록은 모두 자랑한 것(1), 새 기록은 자랑 전(0)으로 시작
+    ...["meals", "waters", "exercises", "sleeps", "weights", "itgeNotes"].flatMap(t => [
+      [`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS bragged TINYINT(1) NOT NULL DEFAULT 1`, `${t}.bragged`] as [string, string],
+      [`ALTER TABLE ${t} ALTER COLUMN bragged SET DEFAULT 0`, `${t}.bragged default 0`] as [string, string],
+    ]),
     [`CREATE TABLE IF NOT EXISTS openEvents (
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(200) NOT NULL,
