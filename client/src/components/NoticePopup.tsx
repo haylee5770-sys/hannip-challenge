@@ -38,14 +38,14 @@ export default function NoticePopup() {
   };
 
   return (
-    // 2026-11-24 해이: 바깥 테두리(포인트 색)가 최대 크기 — 그 안은 여백·테두리 없이 사진을 꽉 채운다
-    <div className="fixed inset-0 z-[115] bg-black/90 flex items-stretch justify-center p-1.5" style={{ paddingTop: "max(6px, env(safe-area-inset-top))", paddingBottom: "max(6px, env(safe-area-inset-bottom))" }}>
-      <div className="w-full max-w-lg flex flex-col rounded-3xl bg-card border-2 border-primary overflow-hidden">
+    // 2026-11-24 해이: 바깥 테두리(포인트 색)가 최대 크기 — 그 안은 여백·테두리 없이 사진을 꽉 채운다. 가로는 꽉, 세로는 사진 비율만큼만(위아래로 뒤 화면이 보여야 팝업 느낌)
+    <div className="fixed inset-0 z-[115] bg-black/70 flex items-center justify-center p-1.5" style={{ paddingTop: "max(6px, env(safe-area-inset-top))", paddingBottom: "max(6px, env(safe-area-inset-bottom))" }}>
+      <div className="w-full max-w-lg max-h-full flex flex-col rounded-3xl bg-card border-2 border-primary overflow-hidden shadow-2xl">
         <div className="px-3 pt-2 pb-1 flex items-baseline gap-2">
           <div className="text-base font-black text-primary truncate">{n.title}</div>
           <span className="ml-auto shrink-0 rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white">{idx + 1} / {total}</span>
         </div>
-        <div className="relative flex-1 min-h-0">
+        <div className="relative w-full aspect-[4/5] max-h-[72vh] shrink">
           <div ref={box} onScroll={onScroll} className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory" style={{ scrollbarWidth: "none" }}>
             {n.images.map((src, i) => (
               <img key={src} src={src} alt={`공지 ${i + 1}`} loading={i < 2 ? "eager" : "lazy"} onClick={() => setZoom(src)}
