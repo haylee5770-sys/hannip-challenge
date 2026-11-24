@@ -70,7 +70,8 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   g.fillStyle = accent; g.fillText(item, textX + nw, 152);
   if (hasCount) {
     // 2026-11-24 해이: 동그라미 약 1.4배 크게, 가운데·아래쪽으로 넓어지게 (반지름 80 → 112)
-    const cx = W - 172, cy = 140, r = 112;
+    // 2026-11-24 해이: 위에 붙어 보여서 윗부분(0~사진 시작 300) 위아래 한가운데(150)로
+    const cx = W - 172, cy = 150, r = 112;
     // 2026-11-22 (해이): 네온·번짐 없이 깔끔한 꽉 찬 동그라미
     // 2026-11-24 해이: 앱의 '누적 1회' 유리알 동그라미와 똑같이 (한 톤 진한 같은 색 + 흰 테두리 + 위쪽 반짝임, 글씨 '누적' / 'N회')
     g.save();
