@@ -12,6 +12,11 @@ export const COLORS = [
   { id: "sun", name: "햇살", hex: "#ffd84d" },
   { id: "peach", name: "피치", hex: "#ffb26b" },
   { id: "cream", name: "크림", hex: "#f3ead3" },
+  // 2026-11-24 크리스마스 테마용
+  { id: "xred", name: "산타 레드", hex: "#ff5c5c" },
+  { id: "gold", name: "골드", hex: "#f5c86b" },
+  { id: "snow", name: "스노우", hex: "#e8f1ff" },
+  { id: "candy", name: "캔디", hex: "#ff6b8b" },
 ];
 
 export const FONTS = [
@@ -31,6 +36,11 @@ export const PATTERNS = [
   { id: "grid", name: "모눈", css: "linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px) 0 0 / 24px 24px, linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px) 0 0 / 24px 24px" },
   { id: "stripe", name: "사선", css: "repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0 10px, transparent 10px 20px)" },
   { id: "glow", name: "빛", css: "radial-gradient(circle at 15% 0%, var(--primary-glow) 0, transparent 45%), radial-gradient(circle at 100% 30%, var(--primary-glow) 0, transparent 40%)" },
+  // 2026-11-24 크리스마스 무늬
+  { id: "snowfall", name: "눈송이", css: "radial-gradient(circle, rgba(255,255,255,0.55) 1.6px, transparent 2.2px) 0 0 / 46px 46px, radial-gradient(circle, rgba(255,255,255,0.32) 1.2px, transparent 1.8px) 23px 17px / 46px 46px, radial-gradient(circle, rgba(255,255,255,0.22) 2.6px, transparent 3.4px) 11px 31px / 92px 92px" },
+  { id: "tartan", name: "체크", css: "repeating-linear-gradient(0deg, rgba(0,0,0,0.20) 0 14px, transparent 14px 28px), repeating-linear-gradient(90deg, rgba(0,0,0,0.20) 0 14px, transparent 14px 28px), repeating-linear-gradient(0deg, rgba(245,200,107,0.12) 0 2px, transparent 2px 56px), repeating-linear-gradient(90deg, rgba(245,200,107,0.12) 0 2px, transparent 2px 56px)" },
+  { id: "candycane", name: "캔디", css: "repeating-linear-gradient(135deg, rgba(255,107,139,0.16) 0 14px, rgba(255,255,255,0.05) 14px 28px)" },
+  { id: "starlight", name: "별빛", css: "radial-gradient(circle, rgba(245,200,107,0.65) 1.2px, transparent 1.9px) 0 0 / 58px 58px, radial-gradient(circle, rgba(255,255,255,0.45) 1px, transparent 1.6px) 29px 21px / 58px 58px, radial-gradient(circle at 50% 0%, rgba(245,200,107,0.16) 0, transparent 55%)" },
 ];
 
 // 배경 색 (어두운 계열만 — 글씨가 밝은색이라)
@@ -45,6 +55,19 @@ export const BACKGROUNDS = [
   { id: "brown", name: "브라운", hex: "#33281f" },
   { id: "burgundy", name: "버건디", hex: "#3a1d24" },
   { id: "plum", name: "자두", hex: "#2e2238" },
+  // 2026-11-24 크리스마스 테마용
+  { id: "pine", name: "트리", hex: "#11301f" },
+  { id: "midnight", name: "눈 오는 밤", hex: "#131a30" },
+  { id: "wine", name: "와인", hex: "#3d1218" },
+];
+
+/** 크리스마스 테마 (2026-11-24 해이): 누르면 포인트 색 · 배경 색 · 무늬가 한 번에 바뀐다 */
+export const THEMES = [
+  { id: "xmas-tree", name: "🎄 트리 숲", color: "xred", bg: "pine", pattern: "snowfall" },
+  { id: "xmas-snow", name: "❄️ 눈 오는 밤", color: "snow", bg: "midnight", pattern: "snowfall" },
+  { id: "xmas-santa", name: "🎅 산타 체크", color: "gold", bg: "wine", pattern: "tartan" },
+  { id: "xmas-candy", name: "🍭 캔디케인", color: "candy", bg: "charcoal", pattern: "candycane" },
+  { id: "xmas-gold", name: "✨ 골든 나이트", color: "gold", bg: "black", pattern: "starlight" },
 ];
 
 export type Decor = { color: string; bg: string; font: string; pattern: string; quote?: boolean; coach?: boolean; fortune?: boolean; birthDate?: string };

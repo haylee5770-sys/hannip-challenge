@@ -52,9 +52,9 @@ describe("evaluateSleep", () => {
     expect(r.durationMinutes).toBe(4 * 60);
   });
 
-  it("자정 이후 취침이면 7시간이어도 danger", () => {
+  it("자정 이후 취침이어도 7시간 잤으면 경고 안 함 (2026-11-24)", () => {
     const r = evaluateSleep(1, 0, 8, 0); // 7h but pastMidnight
-    expect(r.status).toBe("danger");
+    expect(r.status).toBe("neutral");
     expect(r.pastMidnight).toBe(true);
   });
 
@@ -81,9 +81,9 @@ describe("evaluateSleep", () => {
     expect(r.status).toBe("neutral");
   });
 
-  it("새벽 0시 취침·8시 기상은 8시간이더라도 danger (자정 이후)", () => {
+  it("새벽 0시 취침·8시 기상은 8시간 잤으니 경고 안 함 (2026-11-24)", () => {
     const r = evaluateSleep(0, 0, 8, 0);
-    expect(r.status).toBe("danger");
+    expect(r.status).toBe("neutral");
     expect(r.pastMidnight).toBe(true);
   });
 });

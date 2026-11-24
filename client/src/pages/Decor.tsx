@@ -3,7 +3,7 @@ import PageTitle from "@/components/PageTitle";
 import InstallButton from "@/components/InstallButton";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { COLORS, BACKGROUNDS, FONTS, PATTERNS, DEFAULT_DECOR, loadDecor, saveDecor, type Decor as DecorT } from "@/lib/decor";
+import { COLORS, BACKGROUNDS, FONTS, PATTERNS, THEMES, DEFAULT_DECOR, loadDecor, saveDecor, type Decor as DecorT } from "@/lib/decor";
 
 export default function Decor() {
   const [d, setD] = useState<DecorT>(() => loadDecor());
@@ -12,6 +12,27 @@ export default function Decor() {
   return (
     <div>
       <div className="pb-6"><PageTitle eyebrow="STYLE" title="내 앱 꾸미기" sub="고르는 즉시 바뀌고, 이 휴대폰에만 저장돼요." /></div>
+
+      {/* 2026-11-24 해이: 크리스마스 테마 5개 — 맨 위, 누르면 한 번에 */}
+      <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
+        <h2 className="text-lg font-semibold mb-1">🎄 크리스마스 테마</h2>
+        <p className="text-xs text-muted-foreground mb-3">누르면 포인트 색 · 배경 색 · 무늬가 한 번에 바뀌어요. 아래에서 하나씩 다시 바꿀 수도 있어요.</p>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {THEMES.map(t => {
+            const c = COLORS.find(x => x.id === t.color)!, b = BACKGROUNDS.find(x => x.id === t.bg)!, p = PATTERNS.find(x => x.id === t.pattern)!;
+            const on = d.color === t.color && d.bg === t.bg && d.pattern === t.pattern;
+            return (
+              <button key={t.id} type="button" onClick={() => set({ color: t.color, bg: t.bg, pattern: t.pattern })}
+                className={cn("relative rounded-2xl border-2 h-24 p-3 text-left overflow-hidden transition-transform", on ? "scale-[1.03]" : "")}
+                style={{ background: p.css !== "none" ? `${p.css}, ${b.hex}` : b.hex, borderColor: on ? c.hex : "rgba(255,255,255,0.15)" }}>
+                <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full border-2 border-white/40" style={{ background: c.hex }} />
+                <span className="absolute left-3 bottom-2.5 text-sm font-bold" style={{ color: c.hex }}>{t.name}</span>
+                {on && <span className="absolute top-2 left-3 text-[11px] font-bold text-white/90">✓ 사용 중</span>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="mb-4 rounded-2xl bg-card border border-border p-5 md:p-7">
         <h2 className="text-lg font-semibold mb-1">포인트 색</h2>

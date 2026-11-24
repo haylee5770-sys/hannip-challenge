@@ -57,7 +57,7 @@ const DANGER_MESSAGE =
 /**
  * Evaluate a sleep entry and produce a status + coach message.
  * Rules (per user request):
- *   - 5시간 미만 OR 자정 이후 취침 → "danger" + 위험 멘트
+ *   - 6시간 미만 → "danger" + 위험 멘트 (2026-11-24: 자정 이후 취침 조건 뺌)
  *   - 그 외 → "neutral" + 빈 메시지
  *   ※ 칭찬 메시지는 의도적으로 제거되었다. 과수면(예: 20시간)도 칭찬되는 문제를 방지하고,
  *     "위험 신호일 때만 알려준다"는 정책으로 단순화한다.
@@ -70,7 +70,8 @@ export function evaluateSleep(
 ): SleepEvaluation {
   const durationMinutes = computeSleepMinutes(bedHour, bedMinute, wakeHour, wakeMinute);
   const pastMidnight = isPastMidnightBed(bedHour);
-  if (durationMinutes < 300 || pastMidnight) {
+  // 2026-11-24 해이: 경고는 잠이 모자란 사람(6시간 미만)에게만. 늦게 잔 것만으로는 경고하지 않는다
+  if (durationMinutes < 360) {
     return { durationMinutes, status: "danger", message: DANGER_MESSAGE, pastMidnight };
   }
   return { durationMinutes, status: "neutral", message: "", pastMidnight };

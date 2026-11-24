@@ -1364,17 +1364,17 @@ function computeSleepMin(bH: number, bM: number, wH: number, wM: number): number
 
 function evaluateSleepClient(bH: number, bM: number, wH: number, wM: number): { durationMinutes: number; status: SleepStatus; message: string } {
   const dur = computeSleepMin(bH, bM, wH, wM);
-  const pastMidnight = bH >= 0 && bH < 12;
-  if (dur < 300 || pastMidnight) {
+  // 2026-11-24 해이: '반쪽짜리' 문구는 잠이 모자란 사람(6시간 미만)에게만. 잘 잔 사람은 칭찬 (늦게 잔 것만으로는 경고 안 함)
+  if (dur < 360) {
     return { durationMinutes: dur, status: "danger", message: "운동과 식단을 아무리 열심히 해도 수면이 부족하면 반쪽짜리에요" };
   }
   if (dur < 420) {
     return { durationMinutes: dur, status: "warning", message: "조금 더 자면 컨디션이 훨씬 좋아질 거예요" };
   }
-  if (dur <= 510) {
-    return { durationMinutes: dur, status: "good", message: "100점이에요" };
+  if (dur <= 540) {
+    return { durationMinutes: dur, status: "good", message: "푹 잤어요! 100점이에요 💚" };
   }
-  return { durationMinutes: dur, status: "over", message: "8시간 수면이 가장 이상적이에요" };
+  return { durationMinutes: dur, status: "over", message: "푹 쉬었어요! 7~8시간이 가장 이상적이에요" };
 }
 
 const HOUR_VALUES = Array.from({ length: 24 }, (_, i) => i);
