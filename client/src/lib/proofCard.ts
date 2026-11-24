@@ -63,11 +63,21 @@ export async function makeProofImage2(card: ProofCard): Promise<Blob> {
   if (hasCount) {
     const cx = W - 170, cy = 168, r = 80;
     // 2026-11-22 (해이): 네온·번짐 없이 깔끔한 꽉 찬 동그라미
-    g.save(); g.fillStyle = accent; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.restore();
-    g.textAlign = "center"; g.fillStyle = "#1b1d20";
-    const cs = String(card.count);
-    g.font = `900 ${cs.length >= 3 ? 60 : 84}px ${bodyFont}`; g.fillText(cs, cx, cy + 20);
-    g.font = `800 22px ${bodyFont}`; g.fillText("인증", cx, cy + 56);
+    // 2026-11-24 해이: 앱의 '누적 1회' 유리알 동그라미와 똑같이 (한 톤 진한 같은 색 + 흰 테두리 + 위쪽 반짝임, 글씨 '누적' / 'N회')
+    g.save();
+    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.closePath();
+    g.fillStyle = accent; g.fill();
+    const dk = g.createLinearGradient(0, cy - r, 0, cy + r); dk.addColorStop(0, "rgba(0,0,0,0.45)"); dk.addColorStop(1, "rgba(0,0,0,0.70)");
+    g.fillStyle = dk; g.fill();
+    g.lineWidth = 2.5; g.strokeStyle = "rgba(255,255,255,0.28)"; g.stroke();
+    g.clip();
+    const hl = g.createLinearGradient(0, cy - r * 0.92, 0, cy - r * 0.4); hl.addColorStop(0, "rgba(255,255,255,0.4)"); hl.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = hl; g.beginPath(); g.ellipse(cx, cy - r * 0.66, r * 0.56, r * 0.26, 0, 0, Math.PI * 2); g.fill();
+    g.restore();
+    g.textAlign = "center";
+    g.fillStyle = "rgba(255,255,255,0.75)"; g.font = `700 24px ${bodyFont}`; g.fillText("누적", cx, cy - 22);
+    const cs = `${card.count}회`;
+    g.fillStyle = "#f4fff7"; g.font = `900 ${cs.length >= 4 ? 46 : 58}px ${bodyFont}`; g.fillText(cs, cx, cy + 38);
   }
   // 시계 + 날짜·시간 (아래 피드백 글씨와 같은 크기·두께)
   g.textAlign = "left";
