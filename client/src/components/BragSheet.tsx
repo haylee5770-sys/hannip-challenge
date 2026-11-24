@@ -13,7 +13,7 @@ import { listPending, openBrag, removePending } from "@/lib/bragQueue";
 export default function BragSheet() {
   const [cur, setCur] = useState<{ card: ProofCard; key: string } | null>(null);
   const [blobs, setBlobs] = useState<Blob[] | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<string[]>([]); // 2026-11-24: 이게돼처럼 여러 장이면 전부 보여 준다
   const [failed, setFailed] = useState(false);
   const saving = useIsMutating() > 0;
   const qc = useQueryClient();
@@ -23,12 +23,13 @@ export default function BragSheet() {
     const h = (e: Event) => {
       const d = (e as CustomEvent).detail as { card: ProofCard; key: string };
       setCur(d); setBlobs(null); setFailed(false); openedAt.current = Date.now();
-      makeProofBlobs(d.card).then(b => { setBlobs(b); setPreview(URL.createObjectURL(b[0])); }).catch(() => setBlobs([]));
+      setPreviews([]);
+      makeProofBlobs(d.card).then(b => { setBlobs(b); setPreviews(b.map(x => URL.createObjectURL(x))); }).catch(() => setBlobs([]));
     };
     window.addEventListener("hannip-brag-open", h);
     return () => window.removeEventListener("hannip-brag-open", h);
   }, []);
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  useEffect(() => () => { previews.forEach(u => URL.revokeObjectURL(u)); }, [previews]);
 
   // 창이 떠 있는 동안 저장이 실패하면: 자랑 대기에서 빼고 다시 하라고 알림
   useEffect(() => {
@@ -71,8 +72,14 @@ export default function BragSheet() {
         {failed ? (
           <p className="text-sm text-muted-foreground">기록이 남지 않았어요. 창을 닫고 인증을 한 번 더 해 주세요.</p>
         ) : (<>
-          <div className="rounded-2xl overflow-hidden border border-border bg-black/30 aspect-[4/5] flex items-center justify-center">
-            {preview ? <img src={preview} alt="인증 사진" className="w-full h-full object-contain allow-save" /> : <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
+          {previews.length > 1 && <p className="text-center text-sm font-bold text-primary">사진 {previews.length}장이 한 번에 올라가요 · 옆으로 넘겨 보세요 👉</p>}
+          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory">
+            {previews.length ? previews.map((u, i) => (
+              <div key={u} className="relative shrink-0 w-full snap-center rounded-2xl overflow-hidden border border-border bg-black/30 aspect-[4/5]">
+                <img src={u} alt={`인증 사진 ${i + 1}`} className="w-full h-full object-contain allow-save" />
+                {previews.length > 1 && <span className="absolute top-2 right-2 rounded-full bg-black/70 px-2 py-0.5 text-xs font-bold text-white">{i + 1}/{previews.length}</span>}
+              </div>
+            )) : <div className="w-full aspect-[4/5] flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
           </div>
           <button type="button" disabled={!ready} onClick={brag}
             className="w-full h-14 rounded-2xl glass-btn text-lg font-black disabled:opacity-50 nudge">

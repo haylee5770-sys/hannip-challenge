@@ -38,7 +38,10 @@ function Pop({ note, name, onClose }: { note: Note | null; name?: string; onClos
           <div><div className="text-primary font-semibold">#이게돼</div><div className="text-xs text-muted-foreground">{name ? `${name} · ` : ""}{note.createdAt}</div></div>
           <button type="button" onClick={onClose} className="text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
-        <p className="whitespace-pre-wrap leading-relaxed">{note.content}</p>
+        <p className="whitespace-pre-wrap leading-relaxed allow-select">{note.content}</p>
+        {/* 2026-11-24 해이: 글을 길게 눌러 고를 수 있고, 버튼 한 번으로 통째로 복사 */}
+        <button type="button" className="mt-4 w-full h-11 rounded-2xl border border-primary/60 text-sm font-bold text-primary"
+          onClick={async () => { try { await navigator.clipboard.writeText(note.content); toast.success("이게돼 글을 복사했어요"); } catch { toast.error("복사가 안 됐어요. 글을 길게 눌러 복사해 주세요."); } }}>📋 글 복사하기</button>
       </div>
     </div>
   );
@@ -63,6 +66,7 @@ export default function Itge() {
       openBrag({
         emoji: "✨", title: "이게돼", lines: [], userName: user?.name ?? "", date: todayKst(),
         itemLabel: "이게돼", count: r.count, body, avatar: (user as any)?.avatarUrl ?? null,
+        stamp: (() => { const d = new Date(); return `${todayKst()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; })(),
         time: new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }),
       });
     },

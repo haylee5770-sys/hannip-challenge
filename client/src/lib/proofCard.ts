@@ -12,6 +12,7 @@ export type ProofCard = {
   itemLabel?: string;   // 예: "스무디" "기상" "물" "운동" "식단" "이게돼"
   feedback?: string;    // 맨 아래 피드백
   body?: string;        // 사진 대신 글(이게돼)
+  stamp?: string;       // 이게돼 카드의 '2026-11-24 13:33' (없으면 지금 시각)
   time?: string;        // 인증 시각 "오후 8:18"
   avatar?: string | null; // 카톡방과 같은 프로필 사진 (이름 앞 둥근 네모)
   chatLines?: string[];   // 이게돼: 가운데 칸에 카톡 말풍선으로 넣을 줄들 (한 장 분량)
@@ -216,21 +217,64 @@ export function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: 
 
 /** 이게돼 (2026-11-21 고침): 바깥 틀은 다른 자랑 사진과 똑같고(프로필·이름 이게돼·인증 번호·시계),
  *  가운데 사진 자리에 카톡 대화 화면(연회색 바탕 + 흰 말풍선)이 들어간다. 글이 길면 4:5 그대로 여러 장. */
+/**
+ * 이게돼 공유 사진 (2026-11-24 해이 확정): 앱에서 이게돼 글을 눌렀을 때 뜨는 카드 그대로 —
+ * 테마 배경색 한 장에 '#이게돼' · '이름 · 날짜 시각' · 글만. 테두리·번호·로고 없음 (번호는 붙여넣는 글에만).
+ * 글이 길면 4:5 사진 여러 장으로 나눠서 전부 보낸다.
+ */
 export async function makeItgeImages(card: ProofCard): Promise<Blob[]> {
-  const bodyFont = getComputedStyle(document.body).fontFamily || "sans-serif";
+  const font = getComputedStyle(document.body).fontFamily || "sans-serif";
   try { await (document as any).fonts?.ready; } catch {}
-  const meas = document.createElement("canvas").getContext("2d")!;
-  meas.font = `500 40px ${bodyFont}`;
-  // 가운데 칸 너비 900 - 말풍선 왼쪽 여백(30+92+22) - 오른쪽 30 - 안쪽 여백 64
-  const lines = wrap(meas, (card.body ?? "").trim(), 900 - 144 - 30 - 64);
-  const first = Math.floor((780 - 90 - 56 - 60) / 60), rest = Math.floor((780 - 40 - 56 - 60) / 60);
+  const W = 1080, H = 1350, PX = 92, TOP = 96, BOTTOM = 96;
+  const probe = document.createElement("canvas").getContext("2d")!;
+  const color = (v: string, fb: string) => { probe.fillStyle = fb; if (v) probe.fillStyle = v; return probe.fillStyle as string; };
+  const bg = color(cssVar("--card", ""), "#3f3848");
+  const accent = color(cssVar("--primary", ""), "#b7a4f0");
+  const fg = color(cssVar("--foreground", ""), "#f1f0f3");
+  const muted = color(cssVar("--muted-foreground", ""), "#a9a4b0");
+  const SIZE = 44, LH = Math.round(SIZE * 1.75);
+  probe.font = `500 ${SIZE}px ${font}`;
+  // 띄어쓰기 단위로 줄바꿈 (긴 낱말만 글자 단위로 자름)
+  const lines: string[] = [];
+  for (const para of (card.body ?? "").replace(/\r/g, "").trim().split("\n")) {
+    if (!para.trim()) { lines.push(""); continue; }
+    let line = "";
+    for (const word of para.split(/(\s+)/)) {
+      if (!word) continue;
+      if (probe.measureText(line + word).width <= W - PX * 2) { line += word; continue; }
+      if (line.trim()) { lines.push(line.trimEnd()); line = ""; }
+      if (/^\s+$/.test(word)) continue;
+      for (const ch of Array.from(word)) {
+        if (probe.measureText(line + ch).width > W - PX * 2 && line) { lines.push(line); line = ch; } else line += ch;
+      }
+    }
+    if (line.trim()) lines.push(line.trimEnd());
+  }
+  const now = new Date();
+  const stamp = card.stamp ?? `${card.date} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const HEAD = 230; // 첫 장 머리글 높이
   const pages: string[][] = [];
   let i = 0;
-  pages.push(lines.slice(0, first)); i = first;
-  while (i < lines.length) { pages.push(lines.slice(i, i + rest)); i += rest; }
+  while (i < lines.length || pages.length === 0) {
+    const room = Math.floor((H - BOTTOM - TOP - (pages.length === 0 ? HEAD : 0)) / LH);
+    while (pages.length > 0 && i < lines.length && lines[i] === "") i++; // 다음 장은 빈 줄로 시작하지 않게
+    pages.push(lines.slice(i, i + room)); i += room;
+  }
   const out: Blob[] = [];
   for (let p = 0; p < pages.length; p++) {
-    out.push(await makeProofImage2({ ...card, photo: undefined, feedback: "", chatLines: pages[p], pageInfo: { idx: p, total: pages.length } }));
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d")!;
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.textAlign = "left"; g.textBaseline = "alphabetic";
+    let y = TOP;
+    if (p === 0) {
+      g.fillStyle = accent; g.font = `800 64px ${font}`; g.fillText("#이게돼", PX, y + 58);
+      g.fillStyle = muted; g.font = `500 38px ${font}`; g.fillText(`${card.userName ?? ""} · ${stamp}`, PX, y + 130);
+      y += HEAD;
+    }
+    g.fillStyle = fg; g.font = `500 ${SIZE}px ${font}`;
+    pages[p].forEach((l, k) => { if (l) g.fillText(l, PX, y + SIZE + k * LH); });
+    out.push(await new Promise<Blob>(res => c.toBlob(b => res(b!), "image/png")));
   }
   return out;
 }
