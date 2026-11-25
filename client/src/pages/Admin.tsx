@@ -1048,7 +1048,7 @@ function RosterAdmin() {
             <div className="flex-1 min-w-0">
               <div className="font-semibold">{r.nickname} <span className="text-xs text-muted-foreground font-normal">{r.realName} · {r.phone}</span></div>
               {r.address && <div className="text-xs text-muted-foreground leading-relaxed">{r.address}</div>}
-              <div className={`text-[11px] mt-1 ${r.usedByUserId ? "text-primary font-semibold" : "text-muted-foreground"}`}>{r.usedByUserId ? `✓ 가입함 (${r.userName ?? ""})` : "아직 가입 전"}</div>
+              <div className={`text-[11px] mt-1 ${r.usedByUserId ? "text-primary font-semibold" : r.byName ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>{r.usedByUserId ? `✓ 가입함 (${r.userName ?? ""})` : r.byName ? `△ 가입한 듯 (${r.byName}) · 이름만 같고 전화번호가 달라요` : "아직 가입 전"}</div>
               {r.userEmail && <div className="text-[11px] text-muted-foreground allow-select">구글: {r.userEmail}</div>}
             </div>
             <button type="button" className="text-xs text-muted-foreground underline shrink-0"

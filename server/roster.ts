@@ -59,9 +59,33 @@ export async function markRosterUsed(id: number, userId: number) {
 }
 
 export async function listRoster() {
+  // 2026-11-25 해이: 명단을 만들기 전에 가입했거나 방장이 직접 수락한 사람은 명단에 '아직 가입 전'으로 남았다
+  // → 가입한 사람의 전화번호(숫자만)가 같으면 명단 칸과 이어 준다(한 번 이으면 저장). 전화번호가 달라도 이름이 딱 한 명만 같으면 '이름으로 찾음'으로 보여 준다(저장은 안 함)
+  try {
+    const free = await q(sql`SELECT id, realName, phone FROM roster WHERE usedByUserId IS NULL`);
+    if (free.length) {
+      const users = await q(sql`SELECT id, name, realName, phone FROM users`);
+      const linked = new Set((await q(sql`SELECT usedByUserId FROM roster WHERE usedByUserId IS NOT NULL`)).map(r => Number(r.usedByUserId)));
+      for (const r of free) {
+        const p = normPhone(r.phone);
+        const hits = users.filter(u => !linked.has(Number(u.id)) && p.length >= 10 && normPhone(u.phone) === p);
+        if (hits.length === 1) { await markRosterUsed(Number(r.id), Number(hits[0].id)); linked.add(Number(hits[0].id)); }
+      }
+    }
+  } catch (e: any) { console.warn("[roster] 자동 잇기 실패", e?.message ?? e); }
   const rows = await q(sql`SELECT r.id, r.nickname, r.realName, r.phone, r.address, r.usedByUserId, u.name AS userName, u.email AS userEmail
     FROM roster r LEFT JOIN users u ON u.id = r.usedByUserId ORDER BY r.id`);
-  return rows.map(r => ({ ...r, phone: fmtPhone(String(r.phone)) }));
+  const users = await q(sql`SELECT id, name, realName FROM users`);
+  const linked = new Set(rows.filter(r => r.usedByUserId).map(r => Number(r.usedByUserId)));
+  return rows.map(r => {
+    let byName: string | null = null;
+    if (!r.usedByUserId) {
+      const n = normName(r.realName);
+      const hits = users.filter(u => !linked.has(Number(u.id)) && n && normName(u.realName) === n);
+      if (hits.length === 1) byName = hits[0].name ?? hits[0].realName;
+    }
+    return { ...r, phone: fmtPhone(String(r.phone)), byName };
+  });
 }
 
 /**
