@@ -4,30 +4,13 @@
 import PageTitle from "@/components/PageTitle";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { saleWindow } from "@/lib/saleDays";
 
 const PRODUCTS = [
   { qty: 15, list: 100000, salePrice: 90000, sale: "10% 할인", extra: null as string | null, point: "1,000원", url: "https://smartstore.naver.com/superhane/products/10116621156" },
   { qty: 45, list: 290000, salePrice: 258000, sale: "10% 할인", extra: "+ 3,000원 추가 할인", point: "2,000원", url: "https://smartstore.naver.com/superhane/products/10378603578" },
 ];
-// 2026-11-25 (해이 확정): 할인 링크는 상시로 열지 않는다 → 매달 1일·15일, 한국 시간 0시 ~ 밤 11시 59분 딱 하루만 저절로 열리고 닫힌다
-const SALE_DAYS = [1, 15];
-const KST = 9 * 3600_000;
-const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-/** 한국 시간으로 y년 m월(0부터) d일 0시의 실제 시각 */
-const kstMidnight = (y: number, m: number, d: number) => Date.UTC(y, m, d) - KST;
-function saleWindow(now: number) {
-  const k = new Date(now + KST); // 한국 날짜를 UTC 칸으로 읽는다
-  const y = k.getUTCFullYear(), m = k.getUTCMonth(), d = k.getUTCDate();
-  const mk = (yy: number, mm: number, dd: number) => {
-    const start = kstMidnight(yy, mm, dd), end = start + 24 * 3600_000 - 1000;
-    const t = new Date(start + KST);
-    return { start, end, label: `${t.getUTCMonth() + 1}월 ${t.getUTCDate()}일(${DOW[t.getUTCDay()]}) 0시 ~ 밤 11시 59분` };
-  };
-  const live = SALE_DAYS.includes(d) ? mk(y, m, d) : undefined;
-  const nextDay = SALE_DAYS.find(x => x > d);
-  const next = nextDay ? mk(y, m, nextDay) : mk(y, m + 1, SALE_DAYS[0]);
-  return { live, next };
-}
+// 할인 날짜 계산(매달 1일·15일)은 lib/saleDays.ts 에 있다 (2026-11-25)
 const won = (n: number) => n.toLocaleString("ko-KR") + "원";
 
 export default function Shop() {
