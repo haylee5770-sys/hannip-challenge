@@ -2,15 +2,32 @@
 // 15개 구매: 10% 할인 / 45개 구매: 10% 할인 + 3,000원 추가 할인
 // 후기 이벤트: 2달에 한 번(홀수달) 1명 네이버페이 2만 원권 (2026-11-22 변경) · 포토 후기 적립: 45개 2,000원 / 15개 1,000원
 import PageTitle from "@/components/PageTitle";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const PRODUCTS = [
   { qty: 15, list: 100000, salePrice: 90000, sale: "10% 할인", extra: null as string | null, point: "1,000원", url: "https://smartstore.naver.com/superhane/products/10116621156" },
   { qty: 45, list: 290000, salePrice: 258000, sale: "10% 할인", extra: "+ 3,000원 추가 할인", point: "2,000원", url: "https://smartstore.naver.com/superhane/products/10378603578" },
 ];
-// 2026-11-23 (해이): 공구 할인 기간. 이 시간 안에만 공구가가 보이고, 끝나면 안내 문구는 저절로 사라진다. 다음 공구 때 여기만 바꾸면 됨
-const SALES = [{ start: "2026-11-23T09:50:00+09:00", end: "2026-11-23T23:59:59+09:00", label: "11월 23일(월) 오전 9시 50분 ~ 밤 11시 59분" }];
+// 2026-11-25 (해이 확정): 할인 링크는 상시로 열지 않는다 → 매달 1일·15일, 한국 시간 0시 ~ 밤 11시 59분 딱 하루만 저절로 열리고 닫힌다
+const SALE_DAYS = [1, 15];
+const KST = 9 * 3600_000;
+const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+/** 한국 시간으로 y년 m월(0부터) d일 0시의 실제 시각 */
+const kstMidnight = (y: number, m: number, d: number) => Date.UTC(y, m, d) - KST;
+function saleWindow(now: number) {
+  const k = new Date(now + KST); // 한국 날짜를 UTC 칸으로 읽는다
+  const y = k.getUTCFullYear(), m = k.getUTCMonth(), d = k.getUTCDate();
+  const mk = (yy: number, mm: number, dd: number) => {
+    const start = kstMidnight(yy, mm, dd), end = start + 24 * 3600_000 - 1000;
+    const t = new Date(start + KST);
+    return { start, end, label: `${t.getUTCMonth() + 1}월 ${t.getUTCDate()}일(${DOW[t.getUTCDay()]}) 0시 ~ 밤 11시 59분` };
+  };
+  const live = SALE_DAYS.includes(d) ? mk(y, m, d) : undefined;
+  const nextDay = SALE_DAYS.find(x => x > d);
+  const next = nextDay ? mk(y, m, nextDay) : mk(y, m + 1, SALE_DAYS[0]);
+  return { live, next };
+}
 const won = (n: number) => n.toLocaleString("ko-KR") + "원";
 
 export default function Shop() {
@@ -18,9 +35,11 @@ export default function Shop() {
   // 2026-11-22 구매 안내창(해이 확정): 누르면 '닉네임 크루'를 복사하고, 배송 메시지에 붙여 넣으라고 안내한 뒤 네이버로
   const [pick, setPick] = useState<(typeof PRODUCTS)[number] | null>(null);
   const tag = `${user?.name ?? ""} 크루`;
+  const [, setTick] = useState(0); // 화면을 켜 둔 채 0시가 지나도 1분 안에 저절로 열리고 닫히게
+  useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 60_000); return () => clearInterval(t); }, []);
   const now = Date.now();
-  const live = SALES.find(x => now >= Date.parse(x.start) && now <= Date.parse(x.end));
-  const soon = !live ? SALES.find(x => now < Date.parse(x.start) && Date.parse(x.start) - now < 24 * 3600_000) : undefined;
+  const { live, next } = saleWindow(now);
+  const soon = !live && next.start - now < 24 * 3600_000 ? next : undefined;
   const open = async (p: (typeof PRODUCTS)[number]) => {
     // 2026-11-22 (해이): 선물은 45개만 → 15개는 안내창 없이 바로 네이버로
     if (p.qty !== 45) { window.open(p.url, "_blank", "noopener"); return; }
@@ -56,8 +75,13 @@ export default function Shop() {
           <div className="text-xs mt-0.5">{soon.label}</div>
         </section>
       ) : (
-        <p className="text-center text-xs text-muted-foreground">지금은 <b className="text-foreground">정가</b>예요. 공구 할인은 단톡방 공지 후 열려요.</p>
+        <section className="rounded-2xl border border-border bg-card px-4 py-2.5 text-center">
+          <div className="text-xs text-muted-foreground">지금은 <b className="text-foreground">정가</b>예요</div>
+          <div className="text-sm font-black mt-0.5">📅 할인 링크는 <span className="text-primary">매달 1일·15일</span> 딱 하루만 열려요</div>
+          <div className="text-xs mt-0.5">다음 오픈: <b>{next.label}</b></div>
+        </section>
       )}
+      {live && <p className="text-center text-[11px] text-muted-foreground">할인 링크는 <b className="text-foreground">매달 1일·15일</b> 0시 ~ 밤 11시 59분에만 열려요.</p>}
 
       {/* 상품 — 같은 모양 두 칸 */}
       <section className="grid grid-cols-2 gap-3">
