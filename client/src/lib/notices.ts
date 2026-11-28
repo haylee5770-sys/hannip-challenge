@@ -13,15 +13,8 @@ export type Notice = {
 // 00.jpg(인증 멈추고 새로고침)는 빼고 01~12만 — 팝업이 떴다면 이미 새로고침된 것 (2026-11-24 해이)
 const n1124 = Array.from({ length: 14 }, (_, i) => `/notice/1124/${String(i + 1).padStart(2, "0")}.jpg?v=5`); // 사진을 바꾸면 v 숫자를 올린다(옛 사진이 남지 않게)
 
-const n1125 = Array.from({ length: 4 }, (_, i) => `/notice/1125/${String(i + 1).padStart(2, "0")}.jpg?v=1`);
-
+// 2026-11-28 해이: '할인 링크는 매달 1일·15일' 공지 팝업(사진 /notice/1125/)은 날마다 떠서 뺐다. 사용설명서 NEW 칸에는 그대로 남김.
 export const NOTICES: Notice[] = [
-  {
-    id: "2026-11-25-sale-days", // 할인 링크는 매달 1일·15일 하루만 (해이 확정)
-    title: "📅 할인 링크는 매달 1일·15일",
-    sub: "이제 상시로 열지 않아요. 끝까지 넘겨 봐 주세요!",
-    images: n1125,
-  },
   {
     id: "2026-11-24-update-v3", // 글씨 키운 최종본 — 먼저 본 사람도 한 번 더 뜨게
     title: "🆕 11월 24일 앱 업데이트",
