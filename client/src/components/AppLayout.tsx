@@ -232,11 +232,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   locRef.current = location;
   useEffect(() => {
     const GUARD = { hannipGuard: 1 };
-    const baseLen = history.length; // 앱을 연 순간의 기록 개수 → 종료할 때 앱 안 기록을 한꺼번에 건너뛰려고 (2026-11-25 카즈하 의견)
+    const prior = Math.max(0, history.length - 1); // 앱을 열기 전에 있던 기록 개수 (카톡·크롬에서 링크로 열었을 때)
     // 2026-11-25: 안드로이드 크롬은 '화면을 누르지 않고' 만든 기록을 뒤로 가기 때 건너뛴다(그래서 묻지 않고 바로 꺼졌다)
     // → 막이 기록은 사용자가 '오늘' 화면을 누르는 순간에 만든다
     const isToday = (p: string) => p === "/today" || p === "/";
     let hasGuard = !!(history.state && history.state.hannipGuard);
+    // 2026-11-28 해이: 메뉴 화면에서 뒤로 한 번에 "종료할까요?"가 뜨고, [종료]를 눌러도 '오늘'로만 가던 문제.
+    // ① 뒤로 가기 직전 화면을 우리가 직접 기억한다(화면 주소가 휴대폰에 따라 먼저 바뀌어 있어서 틀렸음)
+    // ② 앱 안에서 몇 칸 들어왔는지 직접 센다 → [종료]면 그만큼 + 1칸 한 번에 돌아가 앱 밖으로
+    let lastPath = window.location.pathname;
+    let depth = 0;
+    const origPush = history.pushState.bind(history), origReplace = history.replaceState.bind(history);
+    history.pushState = (...a: Parameters<History["pushState"]>) => { origPush(...a); depth++; lastPath = window.location.pathname; };
+    history.replaceState = (...a: Parameters<History["replaceState"]>) => { origReplace(...a); lastPath = window.location.pathname; };
     const push = () => { try { history.pushState(GUARD, ""); hasGuard = true; } catch {} };
     const arm = () => { if (!hasGuard && isToday(window.location.pathname)) push(); };
     window.addEventListener("pointerdown", arm, true);
@@ -244,9 +252,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     let asking = false;
     const onPop = async () => {
       const path = window.location.pathname;
+      const from = lastPath; // 뒤로 가기 직전에 보던 화면
+      lastPath = path;
+      depth = Math.max(0, depth - 1);
       const onGuard = !!(history.state && history.state.hannipGuard);
       if (!isToday(path)) { navigate("/today", { replace: true }); return; } // 다른 화면에서 뒤로 = '오늘' (막이 기록은 그 아래에 그대로)
-      if (!isToday(locRef.current)) { if (!onGuard) hasGuard = false; return; } // 다른 화면에서 '오늘'로 돌아온 것
+      if (!isToday(from)) { if (!onGuard) hasGuard = false; return; } // 다른 화면에서 '오늘'로 돌아온 것 → 묻지 않는다
       hasGuard = onGuard;
       if (asking) return;
       asking = true;
@@ -259,13 +270,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         try { window.close(); } catch {}
         // 앱 안에서 쌓인 화면 기록을 한 번에 지나 앱 밖으로 (한 칸만 돌아가 '오늘'이 다시 뜨던 문제)
         // (바탕화면 앱처럼 앞 기록이 없으면 범위를 넘지 않게 — 넘으면 브라우저가 아무것도 안 함)
-        const back = Math.min(history.length - baseLen + 1, history.length - 1);
+        history.pushState = origPush; history.replaceState = origReplace;
+        const back = prior > 0 ? depth + 1 : depth; // 앞 기록이 없으면(바탕화면 앱) 첫 화면까지만 — 넘으면 브라우저가 아무것도 안 함
         if (back > 0) history.go(-back);
       }
       else push(); // [취소]를 누른 순간이라 건너뛰지 않는 기록으로 남는다
     };
     window.addEventListener("popstate", onPop);
     return () => {
+      history.pushState = origPush; history.replaceState = origReplace;
       window.removeEventListener("popstate", onPop);
       window.removeEventListener("pointerdown", arm, true);
       window.removeEventListener("keydown", arm, true);
