@@ -60,13 +60,13 @@ export default function BragSheet() {
   const brag = async () => {
     if (!blobs?.length) return;
     const r = await shareImages(blobs, text, base); // 글 복사 + 공유창이 누르자마자 열림 (사진은 이미 만들어 둠)
-    if (r === "shared" || r === "downloaded" || r === "preview") {
-      // 2026-11-25 해이: 단톡방에 자랑(공개)해야 누적·합계·순위에 들어간다
-      const kind = BRAG_KIND[cur.card.itemLabel ?? ""];
-      if (kind) markBragged.mutate({ kind, date: cur.card.date, fromMs: savedAt.current - 15_000, toMs: savedAt.current + 180_000 });
-      removePending(cur.key); close();
-    }
-    else if (r === "blocked") toast.error("한 번만 더 눌러 주세요.");
+    if (r === "blocked") { toast.error("한 번만 더 눌러 주세요."); return; }
+    // 2026-11-25 해이: 단톡방에 자랑(공개)해야 누적·합계·순위에 들어간다
+    // 2026-11-28: 카톡에 잘 올려도 휴대폰(기종·카톡 버전)에 따라 '공유 취소'로 알려 오는 경우가 있어,
+    // 공유창이 열렸으면 자랑한 것으로 센다 (누적이 날마다 1로 돌아가던 문제)
+    const kind = BRAG_KIND[cur.card.itemLabel ?? ""];
+    if (kind) markBragged.mutate({ kind, date: cur.card.date, fromMs: savedAt.current - 15_000, toMs: Date.now() + 180_000 });
+    if (r !== "cancelled") { removePending(cur.key); close(); }
   };
   // 2026-11-24 해이: 여러 장을 한꺼번에 내려받으면 갤럭시가 "여러 파일 다운로드" 허용 창을 띄움 → 한 번 누를 때 한 장씩
   const keep = async () => {

@@ -238,16 +238,15 @@ const BRAG_TABLE = { meal: "meals", water: "waters", exercise: "exercises", wake
 export type BragKind = keyof typeof BRAG_TABLE;
 /** 그 날짜·그 항목에서, 자랑 창이 열린 시각 앞뒤(fromMs~toMs)에 저장된 '자랑 전' 기록을 '자랑함'으로. 수면·체중은 하루 1건이라 날짜만 본다 */
 export async function markBragged(userId: number, kind: BragKind, date: string, fromMs: number, toMs: number) {
+  // 2026-11-28 해이: 누적이 날마다 1로 돌아가는 사람이 있었다. 휴대폰 시계(fromMs~toMs)로 기록을 골랐더니
+  // 폰 시계가 조금만 틀려도 '자랑함' 표시가 안 남아 전날까지의 누적이 빠졌다 → 폰 시각은 쓰지 않고,
+  // 그 날짜·그 항목의 '자랑 전' 기록을 지금까지 저장된 것 모두 '자랑함'으로 (서버 시각 기준)
+  void fromMs; void toMs;
   const t = sql.raw(BRAG_TABLE[kind]);
-  const from = Math.floor(fromMs / 1000), to = Math.ceil(toMs / 1000);
-  if (kind === "wake" || kind === "weight") {
-    await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date}`);
-  } else {
-    await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0 AND createdAt BETWEEN FROM_UNIXTIME(${from}) AND FROM_UNIXTIME(${to})`);
-  }
+  await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0`);
   // 기상 인증 때 같이 저장된 물 한 잔도 함께 인정
   if (kind === "wake") {
-    await q(sql`UPDATE waters SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0 AND createdAt BETWEEN FROM_UNIXTIME(${from}) AND FROM_UNIXTIME(${to})`);
+    await q(sql`UPDATE waters SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0`);
   }
   return { ok: true };
 }
