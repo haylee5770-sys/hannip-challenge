@@ -237,18 +237,36 @@ export async function checkNickname(name: string, selfId?: number) {
 const BRAG_TABLE = { meal: "meals", water: "waters", exercise: "exercises", wake: "sleeps", weight: "weights", itge: "itgeNotes" } as const;
 export type BragKind = keyof typeof BRAG_TABLE;
 /** 그 날짜·그 항목에서, 자랑 창이 열린 시각 앞뒤(fromMs~toMs)에 저장된 '자랑 전' 기록을 '자랑함'으로. 수면·체중은 하루 1건이라 날짜만 본다 */
-export async function markBragged(userId: number, kind: BragKind, date: string, fromMs: number, toMs: number) {
-  // 2026-11-28 해이: 누적이 날마다 1로 돌아가는 사람이 있었다. 휴대폰 시계(fromMs~toMs)로 기록을 골랐더니
-  // 폰 시계가 조금만 틀려도 '자랑함' 표시가 안 남아 전날까지의 누적이 빠졌다 → 폰 시각은 쓰지 않고,
-  // 그 날짜·그 항목의 '자랑 전' 기록을 지금까지 저장된 것 모두 '자랑함'으로 (서버 시각 기준)
-  void fromMs; void toMs;
+export async function markBragged(userId: number, kind: BragKind, date: string, n = 1) {
+  // 2026-11-28 해이 규칙: 자랑하기를 누른 그 인증만 누적에 들어간다. 저장만 하고 자랑 안 한 건 절대 안 들어간다.
+  // 예전엔 휴대폰 시계로 '방금 저장한 기록'을 찾았는데, 폰 시계가 조금만 틀려도 못 찾아 누적에서 빠졌다
+  // → 폰 시각은 쓰지 않고, 그 날짜·그 항목의 '자랑 전' 기록 중 가장 최근에 저장된 n개(이번에 자랑한 것)만 '자랑함'으로
   const t = sql.raw(BRAG_TABLE[kind]);
-  await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0`);
-  // 기상 인증 때 같이 저장된 물 한 잔도 함께 인정
+  const cnt = Math.max(1, Math.min(10, Math.floor(n) || 1));
+  if (kind === "wake" || kind === "weight") {
+    await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date}`); // 하루 1건
+  } else {
+    await q(sql`UPDATE ${t} SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0 ORDER BY id DESC LIMIT ${sql.raw(String(cnt))}`); // cnt는 1~10 정수(위에서 걸러 냄)
+  }
+  // 기상 인증 때 같이 저장된 아침 물 한 잔도 함께 인정 (기상 기록을 저장한 시각 앞뒤 10분 안에 서버에 들어온 물만)
   if (kind === "wake") {
-    await q(sql`UPDATE waters SET bragged=1 WHERE userId=${userId} AND recordedDate=${date} AND bragged=0`);
+    await q(sql`UPDATE waters w JOIN sleeps s ON s.userId=w.userId AND s.recordedDate=w.recordedDate
+      SET w.bragged=1
+      WHERE w.userId=${userId} AND w.recordedDate=${date} AND w.bragged=0
+        AND w.createdAt BETWEEN s.updatedAt - INTERVAL 10 MINUTE AND s.updatedAt + INTERVAL 10 MINUTE`);
   }
   return { ok: true };
+}
+
+/** 방장용 확인 (2026-11-28): 한 사람의 날짜별 '저장한 기록 / 자랑함' 개수 */
+export async function bragAudit(userId: number, since: string) {
+  const out: Record<string, Record<string, string>> = {};
+  for (const [label, table] of Object.entries(BRAG_TABLE)) {
+    const rows = await q(sql`SELECT DATE_FORMAT(recordedDate,'%Y-%m-%d') d, COUNT(*) total, SUM(bragged) b FROM ${sql.raw(table)}
+      WHERE userId=${userId} AND recordedDate >= ${since} GROUP BY recordedDate ORDER BY recordedDate`).catch(() => [] as any[]);
+    for (const r of rows) { (out[r.d] ??= {})[label] = `${Number(r.b ?? 0)}/${Number(r.total)}`; }
+  }
+  return out;
 }
 /** 그 날 '자랑함'인 기록 id */
 export async function braggedIds(userId: number, kind: BragKind, date: string): Promise<Set<number>> {

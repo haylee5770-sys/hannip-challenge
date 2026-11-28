@@ -88,7 +88,7 @@ export default function Today() {
     const time = new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
     // 카톡 자랑 사진에서는 일반식·스무디 모두 '식단'으로 (누적은 둘을 합친 숫자) (2026-11-21)
     const shownLabel = p.item === "meal" || p.item === "smoothie" ? "식단" : p.label;
-    const card: ProofCard = { emoji: p.emoji, title: shownLabel, lines: [], userName, date, count: n, photo: p.photo, itemLabel: shownLabel, feedback: p.feedback, shareSections: p.shareSections, time, avatar: (user as any)?.avatarUrl ?? null };
+    const card: ProofCard = { emoji: p.emoji, title: shownLabel, lines: [], userName, date, count: n, add: p.add ?? 1, photo: p.photo, itemLabel: shownLabel, feedback: p.feedback, shareSections: p.shareSections, time, avatar: (user as any)?.avatarUrl ?? null };
     utils.happy.yearProgress.invalidate();
     // 2026-11-24: 공유창을 바로 열지 않고 '저장 완료 → 카톡에 자랑하기' 창을 띄운다 (저장 끊김·여러 번 눌러야 하는 문제)
     openBrag(card);

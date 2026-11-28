@@ -8,6 +8,7 @@ export type ProofCard = {
   userName?: string;
   date: string;         // YYYY-MM-DD
   count?: number;       // 이번 회차 안에서 이 항목 몇 번째
+  add?: number;         // 이번에 자랑하는 인증 개수 (물 사진 3장이면 3) — 자랑하면 이만큼 누적에 (2026-11-28)
   photo?: string;       // 직접 올린 사진(dataURL 또는 주소) → 가운데 크게
   itemLabel?: string;   // 예: "스무디" "기상" "물" "운동" "식단" "이게돼"
   feedback?: string;    // 맨 아래 피드백

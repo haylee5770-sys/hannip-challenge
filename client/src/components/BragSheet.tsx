@@ -25,6 +25,7 @@ export default function BragSheet() {
   const qc = useQueryClient();
   const openedAt = useRef(0);
   const savedAt = useRef(0); // 인증 저장을 누른 시각 (자랑하면 그 무렵 저장된 기록을 '자랑함'으로)
+  const markedKey = useRef<string | null>(null);
   const markBragged = trpc.rounds.markBragged.useMutation({ onSuccess: () => qc.invalidateQueries() });
 
   useEffect(() => {
@@ -65,7 +66,8 @@ export default function BragSheet() {
     // 2026-11-28: 카톡에 잘 올려도 휴대폰(기종·카톡 버전)에 따라 '공유 취소'로 알려 오는 경우가 있어,
     // 공유창이 열렸으면 자랑한 것으로 센다 (누적이 날마다 1로 돌아가던 문제)
     const kind = BRAG_KIND[cur.card.itemLabel ?? ""];
-    if (kind) markBragged.mutate({ kind, date: cur.card.date, fromMs: savedAt.current - 15_000, toMs: Date.now() + 180_000 });
+    // 같은 인증을 두 번 눌러도 한 번만 센다
+    if (kind && markedKey.current !== cur.key) { markedKey.current = cur.key; markBragged.mutate({ kind, date: cur.card.date, n: cur.card.add ?? 1 }); removePending(cur.key); }
     if (r !== "cancelled") { removePending(cur.key); close(); }
   };
   // 2026-11-24 해이: 여러 장을 한꺼번에 내려받으면 갤럭시가 "여러 파일 다운로드" 허용 창을 띄움 → 한 번 누를 때 한 장씩

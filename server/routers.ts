@@ -1625,8 +1625,11 @@ const roundsRouter = router({
   }),
   /** 기록 하나의 누적 번호 (카톡 글 다시 복사용, 2026-11-23) */
   markBragged: approvedProcedure
-    .input(z.object({ kind: z.enum(["meal", "water", "exercise", "wake", "weight", "itge"]), date: dateString, fromMs: z.number(), toMs: z.number() }))
-    .mutation(async ({ ctx, input }) => rounds.markBragged(ctx.user.id, input.kind, input.date, input.fromMs, input.toMs)),
+    .input(z.object({ kind: z.enum(["meal", "water", "exercise", "wake", "weight", "itge"]), date: dateString, n: z.number().int().optional(), fromMs: z.number().optional(), toMs: z.number().optional() }))
+    .mutation(async ({ ctx, input }) => rounds.markBragged(ctx.user.id, input.kind, input.date, input.n ?? 1)),
+  bragAudit: adminProcedure
+    .input(z.object({ userId: z.number(), since: dateString }))
+    .query(async ({ input }) => rounds.bragAudit(input.userId, input.since)),
   seqOf: approvedProcedure
     .input(z.object({ kind: z.enum(["meal", "water", "exercise", "wake", "weight"]), id: z.number() }))
     .query(async ({ ctx, input }) => rounds.seqOf(ctx.user.id, input.kind, input.id)),
