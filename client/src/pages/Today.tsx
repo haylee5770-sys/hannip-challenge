@@ -1810,7 +1810,8 @@ function useBraggedOn(date: string) {
   const q = trpc.rounds.braggedOn.useQuery({ date });
   return (kind: "meal" | "water" | "exercise" | "wake", id: number) => (q.data ? q.data[kind].includes(id) : true);
 }
-function offLabel(date: string) { return date === kstToday() ? "⏳ 자랑 전" : "자랑 안 함"; }
+// 2026-11-28 해이: 자랑 안 한 메달은 번호를 주지 않는다. 오늘은 '⏳ 자랑 전'(밤 12시까지 자랑 가능), 지난 날은 글자 없이 종류만(스무디·일반식…)
+function offLabel(date: string) { return date === kstToday() ? "⏳ 자랑 전" : ""; }
 
 function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: string; sub?: string; off?: boolean }>; onOpen: (id: number) => void; total?: number }) {
   if (!items.length && total == null) return null;
@@ -1820,8 +1821,8 @@ function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: st
         <button key={it.id} type="button" data-view-ok onClick={() => onOpen(it.id)}
           className={cn("aspect-square rounded-full border flex flex-col items-center justify-center transition-colors",
             it.off ? "border-zinc-500/60 bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20" : "border-primary/70 bg-primary/[0.07] text-primary hover:bg-primary/15")}>
-          <span className="text-sm font-bold leading-none">{it.label}</span>
-          {it.sub && <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">{it.sub}</span>}
+          {it.label && <span className="text-sm font-bold leading-none">{it.label}</span>}
+          {it.sub && <span className={it.label ? "text-[10px] text-muted-foreground mt-0.5 leading-none" : "text-sm font-bold leading-none"}>{it.sub}</span>}
         </button>
       ))}
       {total != null && (
