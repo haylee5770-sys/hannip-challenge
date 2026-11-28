@@ -6,11 +6,15 @@ export type PendingBrag = { key: string; card: ProofCard; at: number };
 const KEY = "hannip_pending_brag";
 const MAX = 6;
 
+/** 한국 날짜 YYYY-MM-DD */
+export const kstToday = () => new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+
 export function listPending(): PendingBrag[] {
   try {
     const arr = JSON.parse(localStorage.getItem(KEY) || "[]") as PendingBrag[];
-    const cut = Date.now() - 3 * 24 * 3600_000; // 3일 지난 건 버림
-    return arr.filter(p => p && p.card && p.at > cut);
+    // 2026-11-28 해이: '자랑 전'은 그날 밤 12시까지만. 날짜가 바뀌면 목록에서 사라진다 (기록은 남고 메달은 회색)
+    const today = kstToday();
+    return arr.filter(p => p && p.card && p.card.date === today);
   } catch { return []; }
 }
 

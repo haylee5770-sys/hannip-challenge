@@ -22,7 +22,7 @@ import { PRODUCTS, PRODUCT_ROWS, DAILY_TARGET } from "@/lib/products";
 import { quoteOf } from "@/lib/quotes";
 import { Link } from "wouter";
 import { shareProof, shareTextOf, type ProofCard } from "@/lib/proofCard";
-import { openBrag } from "@/lib/bragQueue";
+import { kstToday, openBrag } from "@/lib/bragQueue";
 import { PendingBrags } from "@/components/BragSheet";
 import CropCamera, { canUseInAppCamera } from "@/components/CropCamera";
 import { shareBeforeAfterCard, shareToast } from "@/lib/shareCards";
@@ -549,6 +549,7 @@ function MealsSection({
   onBrag?: BragFn;
 }) {
   const [creating, setCreating] = useState(false);
+  const isBragged = useBraggedOn(date);
   const [openId, setOpenId] = useState<number | null>(null);
   const opened = meals.find(m => m.id === openId);
 
@@ -567,7 +568,9 @@ function MealsSection({
       )}
       {/* 오늘 기록: 메달 (누르면 자세히 · 코멘트 · 삭제) */}
       <Medals
-        items={(() => { const n = { s: 0, r: 0 }; return meals.slice().sort((a, b) => a.id - b.id).map(m => { const sm = m.category === "smoothie"; const k = sm ? ++n.s : ++n.r; return { id: m.id, label: `${k}회`, sub: sm ? "스무디" : "일반식" }; }); })()}
+        items={(() => { const n = { s: 0, r: 0 }; return meals.slice().sort((a, b) => a.id - b.id).map(m => { const sm = m.category === "smoothie"; const sub = sm ? "스무디" : "일반식";
+          if (!isBragged("meal", m.id)) return { id: m.id, label: offLabel(date), sub, off: true };
+          const k = sm ? ++n.s : ++n.r; return { id: m.id, label: `${k}회`, sub }; }); })()}
         onOpen={setOpenId}
       />
       <DailyNutritionTotals meals={meals} date={date} />
@@ -1189,6 +1192,7 @@ function paceToSec(s: string): number | null {
 const secToPace = (s?: number | null) => (s ? `${Math.floor(s / 60)}'${String(s % 60).padStart(2, "0")}"` : "");
 
 function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, onBrag }: { date: string; exercises: ExRow[]; exerciseCount?: number; userName?: string; onChange: () => void; onBrag?: BragFn }) {
+  const isBragged = useBraggedOn(date);
   const [openId, setOpenId] = useState<number | null>(null);
   const sports = trpc.wellness.sports.useQuery(undefined, { staleTime: Infinity });
   const [sport, setSport] = useState("walk");
@@ -1345,7 +1349,9 @@ function ExerciseSection({ date, exercises, exerciseCount, userName, onChange, o
         <p className={cn("text-sm rounded-lg px-3 py-2", lastComment.warn ? "bg-rose-500/15 text-rose-300 border border-rose-400/50" : "bg-primary/10 text-primary border border-primary/30")}>{lastComment.text}</p>
       )}
 
-      <Medals items={exercises.map((x, i) => ({ id: x.id, label: `${i + 1}회`, sub: `${x.durationMin}분` }))} onOpen={setOpenId} />
+      <Medals items={(() => { let k = 0; return exercises.map(x => isBragged("exercise", x.id)
+        ? { id: x.id, label: `${++k}회`, sub: `${x.durationMin}분` }
+        : { id: x.id, label: offLabel(date), sub: `${x.durationMin}분`, off: true }); })()} onOpen={setOpenId} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && (
           <div className="space-y-3">
@@ -1515,6 +1521,7 @@ function WheelPicker({
 }
 
 function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?: number; onBrag?: BragFn }) {
+  const isBragged = useBraggedOn(date);
   const [wakePhoto, setWakePhoto] = useState<string | null>(null);
   const [wakeMl, setWakeMl] = useState<number | null>(null); // 2026-11-24: 기상 물 한 잔 → 물 기록에도 자동으로
   const wakeRef = useRef<HTMLInputElement>(null);
@@ -1662,7 +1669,7 @@ function SleepSection({ date, sleepCount, onBrag }: { date: string; sleepCount?:
       </div>
       {todaySleep.data && (() => { const sd = todaySleep.data as any; const m = sd.durationMinutes ?? 0; return (
         <div className="mt-3">
-          <Medals items={[{ id: sd.id, label: "1회", sub: `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ""}` }]} onOpen={() => setSleepOpen(true)} />
+          <Medals items={[{ id: sd.id, label: isBragged("wake", sd.id) ? "1회" : offLabel(date), off: !isBragged("wake", sd.id), sub: `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ""}` }]} onOpen={() => setSleepOpen(true)} />
           <Popup open={sleepOpen} onClose={() => setSleepOpen(false)}>
             <div className="space-y-3">
               {sd.morningPhotoUrl
@@ -1795,13 +1802,24 @@ function AlbumIcon() {
   return (<span className="flex flex-col items-center text-primary"><Images className="h-5 w-5" /><span className="text-[10px] font-bold mt-0.5 leading-none">앨범</span></span>);
 }
 
-function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: string; sub?: string }>; onOpen: (id: number) => void; total?: number }) {
+/**
+ * 2026-11-28 해이: 메달 색 — 자랑한 인증은 색(1회·2회… 번호도 자랑한 것만), 자랑 안 한 건 회색.
+ * 회색도 눌러서 볼 수 있지만 누적엔 안 들어간다. 오늘은 '⏳ 자랑 전'(밤 12시까지 자랑 가능), 지난 날은 '자랑 안 함'
+ */
+function useBraggedOn(date: string) {
+  const q = trpc.rounds.braggedOn.useQuery({ date });
+  return (kind: "meal" | "water" | "exercise" | "wake", id: number) => (q.data ? q.data[kind].includes(id) : true);
+}
+function offLabel(date: string) { return date === kstToday() ? "⏳ 자랑 전" : "자랑 안 함"; }
+
+function Medals({ items, onOpen, total }: { items: Array<{ id: number; label: string; sub?: string; off?: boolean }>; onOpen: (id: number) => void; total?: number }) {
   if (!items.length && total == null) return null;
   return (
     <div className="grid grid-cols-5 gap-2">
       {items.map(it => (
         <button key={it.id} type="button" data-view-ok onClick={() => onOpen(it.id)}
-          className="aspect-square rounded-full border border-primary/70 bg-primary/[0.07] flex flex-col items-center justify-center text-primary hover:bg-primary/15 transition-colors">
+          className={cn("aspect-square rounded-full border flex flex-col items-center justify-center transition-colors",
+            it.off ? "border-zinc-500/60 bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20" : "border-primary/70 bg-primary/[0.07] text-primary hover:bg-primary/15")}>
           <span className="text-sm font-bold leading-none">{it.label}</span>
           {it.sub && <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">{it.sub}</span>}
         </button>
@@ -2594,7 +2612,9 @@ function WaterSection({ date, waterCount, userName, onBrag }: { date: string; wa
       </div>)}
 
       {/* 오늘 마신 물: 메달 (누르면 사진 · 삭제) */}
-      <Medals items={items.map((it: any, i) => ({ id: it.id, label: `${i + 1}회`, sub: it.bragged === false ? "⏳ 자랑 전" : `${it.volumeMl}ml` }))} onOpen={setOpenId} />
+      <Medals items={(() => { let k = 0; return items.map((it: any) => it.bragged === false
+        ? { id: it.id, label: offLabel(date), sub: `${it.volumeMl}ml`, off: true }
+        : { id: it.id, label: `${++k}회`, sub: `${it.volumeMl}ml` }); })()} onOpen={setOpenId} />
       <Popup open={!!opened} onClose={() => setOpenId(null)}>
         {opened && (
           <div className="space-y-3">

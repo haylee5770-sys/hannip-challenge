@@ -8,7 +8,7 @@ import { useIsMutating, useQueryClient } from "@tanstack/react-query";
 import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { isIOS, makeProofBlobs, savePhotosToPhone, shareImages, shareTextOf, type ProofCard } from "@/lib/proofCard";
-import { listPending, openBrag, removePending } from "@/lib/bragQueue";
+import { kstToday, listPending, openBrag, removePending } from "@/lib/bragQueue";
 import { trpc } from "@/lib/trpc";
 
 const BRAG_KIND: Record<string, "meal" | "water" | "exercise" | "wake" | "weight" | "itge"> = {
@@ -56,10 +56,12 @@ export default function BragSheet() {
   const close = () => setCur(null);
   const text = shareTextOf(cur.card);
   const base = `hannip_${cur.card.date}`;
-  const ready = !!blobs?.length && !saving && !failed;
+  // 2026-11-28 해이: 그날 밤 12시가 지나면 자랑해도 누적에 안 들어간다
+  const expired = cur.card.date !== kstToday();
+  const ready = !!blobs?.length && !saving && !failed && !expired;
 
   const brag = async () => {
-    if (!blobs?.length) return;
+    if (!blobs?.length || expired) return;
     const r = await shareImages(blobs, text, base); // 글 복사 + 공유창이 누르자마자 열림 (사진은 이미 만들어 둠)
     if (r === "blocked") { toast.error("한 번만 더 눌러 주세요."); return; }
     // 2026-11-25 해이: 단톡방에 자랑(공개)해야 누적·합계·순위에 들어간다
@@ -108,8 +110,9 @@ export default function BragSheet() {
           </div>
           <button type="button" disabled={!ready} onClick={brag}
             className="w-full h-14 rounded-2xl glass-btn text-lg font-black disabled:opacity-50 nudge">
-            {ready ? "💚 카톡에 자랑하기" : <span className="inline-flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /> 저장하는 중…</span>}
+            {expired ? "날짜가 지나서 자랑할 수 없어요" : ready ? "💚 카톡에 자랑하기" : <span className="inline-flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /> 저장하는 중…</span>}
           </button>
+          {expired && <p className="text-center text-xs font-bold text-amber-300">자랑은 인증한 날 밤 12시까지만 할 수 있어요. 이 인증은 누적에 들어가지 않아요.</p>}
           <p className="text-center text-[11px] text-muted-foreground">누르면 글이 복사돼요. 사진을 올린 뒤 입력칸을 길게 눌러 '붙여넣기' 해 주세요.</p>
           <button type="button" disabled={!blobs?.length} onClick={keep}
             className="w-full h-11 rounded-2xl border border-border text-sm font-bold disabled:opacity-50">

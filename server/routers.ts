@@ -1627,6 +1627,9 @@ const roundsRouter = router({
   markBragged: approvedProcedure
     .input(z.object({ kind: z.enum(["meal", "water", "exercise", "wake", "weight", "itge"]), date: dateString, n: z.number().int().optional(), fromMs: z.number().optional(), toMs: z.number().optional() }))
     .mutation(async ({ ctx, input }) => rounds.markBragged(ctx.user.id, input.kind, input.date, input.n ?? 1)),
+  braggedOn: approvedProcedure
+    .input(z.object({ date: dateString }))
+    .query(async ({ ctx, input }) => rounds.braggedOn(ctx.user.id, input.date)),
   bragAudit: adminProcedure
     .input(z.object({ userId: z.number(), since: dateString }))
     .query(async ({ input }) => rounds.bragAudit(input.userId, input.since)),

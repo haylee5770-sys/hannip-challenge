@@ -238,6 +238,8 @@ const BRAG_TABLE = { meal: "meals", water: "waters", exercise: "exercises", wake
 export type BragKind = keyof typeof BRAG_TABLE;
 /** 그 날짜·그 항목에서, 자랑 창이 열린 시각 앞뒤(fromMs~toMs)에 저장된 '자랑 전' 기록을 '자랑함'으로. 수면·체중은 하루 1건이라 날짜만 본다 */
 export async function markBragged(userId: number, kind: BragKind, date: string, n = 1) {
+  // 2026-11-28 해이: '자랑 전' 인증은 그날 밤 12시(한국 시간)까지만 자랑할 수 있다. 날짜가 지나면 자랑해도 누적에 안 들어간다
+  if (date !== kstToday()) return { ok: false, expired: true };
   // 2026-11-28 해이 규칙: 자랑하기를 누른 그 인증만 누적에 들어간다. 저장만 하고 자랑 안 한 건 절대 안 들어간다.
   // 예전엔 휴대폰 시계로 '방금 저장한 기록'을 찾았는데, 폰 시계가 조금만 틀려도 못 찾아 누적에서 빠졌다
   // → 폰 시각은 쓰지 않고, 그 날짜·그 항목의 '자랑 전' 기록 중 가장 최근에 저장된 n개(이번에 자랑한 것)만 '자랑함'으로
@@ -255,7 +257,14 @@ export async function markBragged(userId: number, kind: BragKind, date: string, 
       WHERE w.userId=${userId} AND w.recordedDate=${date} AND w.bragged=0
         AND w.createdAt BETWEEN s.updatedAt - INTERVAL 10 MINUTE AND s.updatedAt + INTERVAL 10 MINUTE`);
   }
-  return { ok: true };
+  return { ok: true, expired: false };
+}
+
+/** 그 날짜에 '자랑함'인 기록 id (메달 색: 자랑한 건 색, 안 한 건 회색 — 2026-11-28 해이) */
+export async function braggedOn(userId: number, date: string) {
+  const out: Record<BragKind, number[]> = { meal: [], water: [], exercise: [], wake: [], weight: [], itge: [] };
+  for (const k of Object.keys(BRAG_TABLE) as BragKind[]) out[k] = Array.from(await braggedIds(userId, k, date));
+  return out;
 }
 
 /** 방장용 확인 (2026-11-28): 한 사람의 날짜별 '저장한 기록 / 자랑함' 개수 */
